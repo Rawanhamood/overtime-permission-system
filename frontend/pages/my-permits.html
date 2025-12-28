@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تصاريحي - نظام تصاريح العمل</title>
+    <style>
+        /* ========== RESET & BASE STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fb 0%, #e3edf7 100%);
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+        
+        /* ========== NAVBAR STYLES ========== */
+        .navbar {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            background: #fff;
+            color: #3498db;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .user-role {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        /* ========== NOTIFICATION SYSTEM ========== */
+        .notification-container {
+            position: relative;
+        }
+        
+        .notification-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .notification-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border: 2px solid #2c3e50;
+        }
+        
+        .notifications-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 400px;
+            max-width: 90vw;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 1001;
+            overflow: hidden;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) translateX(0);
+            }
+        }
+        
+        .notifications-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notifications-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .notifications-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-item:hover {
+            background: #f8fafc;
+        }
+        
+        .notification-item.unread {
+            background: #f0f7ff;
+            border-right: 4px solid #3498db;
+        }
+        
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .notification-message {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .notification-time {
+            color: #95a5a6;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .notification-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-mark-read, .btn-view-permit {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-mark-read {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-view-permit {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .notifications-empty {
+            padding: 50px 20px;
+            text-align: center;
+            color: #95a5a6;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header-content {
+            flex: 1;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .page-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .new-permit-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+            white-space: nowrap;
+        }
+        
+        .new-permit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+        }
+        
+        /* ========== STATS CARDS ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            text-align: center;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px;
+        }
+        
+        .stat-icon.total { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
+        .stat-icon.pending { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; }
+        .stat-icon.approved { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; }
+        .stat-icon.rejected { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .stat-number.total { color: #3498db; }
+        .stat-number.pending { color: #f39c12; }
+        .stat-number.approved { color: #2ecc71; }
+        .stat-number.rejected { color: #e74c3c; }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        /* ========== FILTERS SECTION ========== */
+        .filters-container {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+        
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .filter-select, .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e8f4ff;
+            border-radius: 10px;
+            font-size: 15px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus, .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-input {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%237f8c8d' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 16px center;
+            background-size: 16px;
+            padding-left: 45px;
+        }
+        
+        /* ========== PERMITS LIST ========== */
+        .permits-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            min-height: 400px;
+        }
+        
+        .permits-section {
+            margin-bottom: 30px;
+        }
+        
+        .permits-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .permits-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f8fafc;
+        }
+        
+        .permits-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .permits-count {
+            background: #e8f4ff;
+            color: #3498db;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .permits-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .permit-card {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 25px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .permit-card:hover {
+            border-color: #3498db;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+        }
+        
+        .permit-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+        }
+        
+        .permit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .permit-id {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .permit-date {
+            color: #7f8c8d;
+            font-size: 14px;
+            background: #edf2f7;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+        
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status-approved { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-rejected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-security { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        .permit-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #edf2f7;
+        }
+        
+        .detail-label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            font-weight: 500;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+        
+        .permit-notes {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-right: 4px solid #3498db;
+        }
+        
+        .permit-timeline {
+            position: relative;
+            padding: 20px 0;
+            margin: 20px 0;
+        }
+        
+        .permit-timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #3498db;
+            transform: translateX(-50%);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+            width: 45%;
+        }
+        
+        .timeline-item:nth-child(odd) {
+            margin-right: 55%;
+        }
+        
+        .timeline-item:nth-child(even) {
+            margin-left: 55%;
+        }
+        
+        .timeline-content {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border: 1px solid #edf2f7;
+        }
+        
+        .timeline-date {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .permit-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-view {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn-print {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .btn-print:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+        
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.2;
+            color: #7f8c8d;
+        }
+        
+        .empty-title {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-description {
+            color: #7f8c8d;
+            font-size: 16px;
+            max-width: 400px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        /* ========== LOADING STATE ========== */
+        .loading-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e8f4ff;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        /* ========== PAGINATION ========== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 40px;
+        }
+        
+        .page-btn {
+            padding: 10px 16px;
+            border: 2px solid #edf2f7;
+            background: white;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 40px;
+        }
+        
+        .page-btn:hover:not(.active) {
+            border-color: #3498db;
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+        
+        .page-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        /* ========== إضافات جديدة ========== */
+        .type-badge {
+            font-size: 12px;
+            color: #3498db;
+            background: #e8f4ff;
+            padding: 3px 10px;
+            border-radius: 15px;
+            margin-right: 10px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .extra-details {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #f8fafc;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .extra-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 10px;
+        }
+        
+        .extra-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sub-title {
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .employees-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .employee-item {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #e8f4ff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .employee-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .employee-name {
+            font-weight: 500;
+            color: #2c3e50;
+            flex: 1;
+        }
+        
+        .employee-profession {
+            color: #7f8c8d;
+            font-size: 14px;
+            background: #f8f9fa;
+            padding: 3px 10px;
+            border-radius: 15px;
+        }
+        
+        .employee-id {
+            color: #666;
+            font-size: 13px;
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 3px 10px;
+            border-radius: 15px;
+        }
+        
+        .purpose-details,
+        .reason-details,
+        .additional-notes {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e8f4ff;
+            line-height: 1.6;
+            color: #2c3e50;
+        }
+        
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+
+        /* ========== إضافات جديدة ========== */
+.type-badge {
+    font-size: 12px;
+    color: #3498db;
+    background: #e8f4ff;
+    padding: 3px 10px;
+    border-radius: 15px;
+    margin-right: 10px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.extra-details {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 2px solid #f8fafc;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.extra-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 10px;
+}
+
+.extra-title {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sub-title {
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 20px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.employees-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.employee-item {
+    background: white;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #e8f4ff;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.employee-number {
+    background: #3498db;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.employee-name {
+    font-weight: 500;
+    color: #2c3e50;
+    flex: 1;
+}
+
+.employee-profession {
+    color: #7f8c8d;
+    font-size: 14px;
+    background: #f8f9fa;
+    padding: 3px 10px;
+    border-radius: 15px;
+}
+
+.employee-id {
+    color: #666;
+    font-size: 13px;
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 3px 10px;
+    border-radius: 15px;
+}
+
+.purpose-details,
+.reason-details,
+.additional-notes {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e8f4ff;
+    line-height: 1.6;
+    color: #2c3e50;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+        
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 1024px) {
+            .main-container {
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .permit-details-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .new-permit-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-row {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                min-width: 100%;
+            }
+            
+            .permit-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .permit-timeline::before {
+                left: 20px;
+            }
+            
+            .timeline-item,
+            .timeline-item:nth-child(odd),
+            .timeline-item:nth-child(even) {
+                width: calc(100% - 40px);
+                margin: 0 0 25px 40px;
+            }
+            
+            .permit-actions {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .employee-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .page-title {
+                font-size: 24px;
+            }
+            
+            .stat-number {
+                font-size: 28px;
+            }
+            
+            .permits-container {
+                padding: 20px;
+            }
+            
+            .permit-card {
+                padding: 20px;
+            }
+            
+            .extra-section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">📋</div>
+            <span>نظام تصاريح العمل</span>
+        </div>
+        
+        <div class="nav-links">
+            <a href="/dashboard.html" class="nav-link">🏠 الرئيسية</a>
+            <a href="/pages/my-permits.html" class="nav-link active">📋 تصاريحي</a>
+            <a id="manageDeptLink" href="/pages/manage-departments.html" class="nav-link">⚙️ إدارة الأقسام</a>
+            
+            <div class="notification-container">
+                <button onclick="showNotifications()" class="notification-btn" id="notificationBell">
+                    🔔
+                    <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="user-info" id="userInfo">
+            <div class="user-details">
+                <div class="user-name">جاري التحميل...</div>
+                <div class="user-role">...</div>
+            </div>
+            <div class="user-avatar" id="userAvatar">...</div>
+        </div>
+    </nav>
+
+    <!-- ========== NOTIFICATIONS PANEL ========== -->
+    <div id="notificationsPanel" class="notifications-panel">
+        <div class="notifications-header">
+            <h3>🔔 الإشعارات</h3>
+            <button onclick="markAllNotificationsAsRead()" class="btn-mark-read" style="background: rgba(255,255,255,0.2);">
+                تحديد الكل كمقروء
+            </button>
+            <button onclick="closeNotifications()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">
+                ✕
+            </button>
+        </div>
+        <div class="notifications-list" id="notificationsList"></div>
+        <div class="notifications-empty" id="notificationsEmpty" style="display: none;">
+            لا توجد إشعارات جديدة
+        </div>
+    </div>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <div class="main-container">
+        <!-- Page Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">
+                    <span>📋</span>
+                    تصاريحي
+                </h1>
+                <p class="page-subtitle">
+                    عرض جميع طلبات التصاريح الخاصة بك، تتبع حالتها، وإدارة طلباتك الحالية
+                </p>
+            </div>
+            
+        </header>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon total">📊</div>
+                <div class="stat-number total" id="totalPermits">0</div>
+                <div class="stat-label">إجمالي التصاريح</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon pending">⏳</div>
+                <div class="stat-number pending" id="pendingPermits">0</div>
+                <div class="stat-label">قيد المراجعة</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon approved">✅</div>
+                <div class="stat-number approved" id="approvedPermits">0</div>
+                <div class="stat-label">موافق عليها</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon rejected">❌</div>
+                <div class="stat-number rejected" id="rejectedPermits">0</div>
+                <div class="stat-label">مرفوضة</div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-container">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label class="filter-label">حالة التصريح</label>
+                    <select class="filter-select" id="statusFilter" onchange="filterPermits()">
+                        <option value="">جميع الحالات</option>
+                        <option value="pending_manager">⏳ قيد مراجعة المدير</option>
+                        <option value="approved_manager">✅ موافق عليها من المدير</option>
+                        <option value="approved_security">✅ موافق عليها نهائياً</option>
+                        <option value="rejected_manager">❌ مرفوضة من المدير</option>
+                        <option value="rejected_security">❌ مرفوضة نهائياً</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+    <label class="filter-label">نوع التصريح</label>
+    <select class="filter-select" id="typeFilter" onchange="filterPermits()">
+        <option value="">جميع الأنواع</option>
+        <option value="personal">تصاريح شخصية</option>
+        <option value="company_entry">تصاريح شركات</option>
+        <option value="exit">خروج من العمل</option>
+        <option value="entry">دخول إلى الشركة</option>
+        <option value="visit">زيارة</option>
+        <option value="delivery">توصيل</option>
+    </select>
+</div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">الفترة الزمنية</label>
+                    <select class="filter-select" id="dateFilter" onchange="filterPermits()">
+                        <option value="">جميع التواريخ</option>
+                        <option value="today">اليوم</option>
+                        <option value="week">هذا الأسبوع</option>
+                        <option value="month">هذا الشهر</option>
+                        <option value="last_month">الشهر الماضي</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">بحث</label>
+                    <input type="text" class="search-input" id="searchInput" 
+                           placeholder="ابحث باسم التصريح، السبب، أو التاريخ..." 
+                           onkeyup="searchPermits()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Permits List -->
+        <div class="permits-container">
+            <!-- قسم تصاريح بعد الدوام -->
+            <div class="permits-section">
+                <div class="permits-header">
+                    <div class="permits-title">
+                        ⏰ تصاريح بعد الدوام
+                        <span class="permits-count" id="personalPermitsCount">0 تصريح</span>
+                    </div>
+                </div>
+                
+                <div id="personalPermitsList">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل التصاريح...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- قسم تصاريح دخول الشركات -->
+            <div class="permits-section" style="margin-top: 30px;">
+                <div class="permits-header">
+                    <div class="permits-title">
+                        🏢 تصاريح دخول الشركات
+                        <span class="permits-count" id="companyPermitsCount">0 تصريح</span>
+                    </div>
+                </div>
+                
+                <div id="companyPermitsList">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل التصاريح...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============== SYSTEM INITIALIZATION ===============
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load user data and permits
+            loadUserData();
+            loadPermits();
+            loadNotifications();
+            
+            // Hide admin link for non-admin users
+            hideAdminLink();
+            
+            // Close notifications when clicking outside
+            setupNotificationsClose();
+        });
+
+        // =============== AUTHENTICATION FUNCTIONS ===============
+        function getToken() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showError('❌ يرجى تسجيل الدخول أولاً');
+                setTimeout(() => window.location.href = '/login', 1500);
+                return null;
+            }
+            return token;
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            if (!token) return null;
+            
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            };
+        }
+
+        async function fetchJson(url, method = 'GET', body = null) {
+            const headers = getAuthHeaders();
+            if (!headers) throw new Error('No token');
+            
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+            
+            const res = await fetch(url, options);
+            
+            if (res.status === 401 || res.status === 403) {
+                showError('❌ صلاحية الدخول منتهية. يرجى تسجيل الدخول مرة أخرى');
+                setTimeout(() => window.location.href = '/login', 2000);
+                throw new Error('Unauthorized');
+            }
+            
+            return await res.json();
+        }
+
+        // =============== USER MANAGEMENT ===============
+        async function loadUserData() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            const token = localStorage.getItem('token');
+            
+            if (!userData || !token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Update user info in navbar
+            document.getElementById('userInfo').innerHTML = `
+                <div class="user-details">
+                    <div class="user-name">${userData.name || userData.username}</div>
+                    <div class="user-role">${getRoleName(userData.role)}</div>
+                </div>
+                <div class="user-avatar">
+                    ${(userData.name || userData.username).charAt(0)}
+                </div>
+            `;
+        }
+
+        function getRoleName(role) {
+            const roles = {
+                'admin': 'مسؤول النظام',
+                'employee': 'موظف',
+                'manager': 'مدير',
+                'security': 'مسؤول أمن'
+            };
+            return roles[role] || role;
+        }
+
+        function hideAdminLink() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const role = user && (user.role || user.user_type);
+                const el = document.getElementById('manageDeptLink');
+                if (el && (!user || role !== 'admin')) {
+                    el.style.display = 'none';
+                }
+            } catch(e) {
+                const el = document.getElementById('manageDeptLink');
+                if(el) el.style.display = 'none';
+            }
+        }
+
+        // =============== NOTIFICATIONS SYSTEM ===============
+        function showNotifications() {
+            const panel = document.getElementById('notificationsPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'block';
+            if (panel.style.display === 'block') {
+                loadNotifications();
+            }
+        }
+
+        function closeNotifications() {
+            document.getElementById('notificationsPanel').style.display = 'none';
+        }
+
+        function setupNotificationsClose() {
+            document.addEventListener('click', function(event) {
+                const panel = document.getElementById('notificationsPanel');
+                const bell = document.getElementById('notificationBell');
+                
+                if (panel && bell && !panel.contains(event.target) && !bell.contains(event.target)) {
+                    panel.style.display = 'none';
+                }
+            });
+        }
+
+        async function loadNotifications() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) return;
+            
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                const response = await fetch(`/api/notifications/${userData.username}`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderNotifications(data.notifications);
+                    updateBadge(data.unread_count);
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل الإشعارات:', error);
+            }
+        }
+
+        function renderNotifications(notifications) {
+            const list = document.getElementById('notificationsList');
+            const empty = document.getElementById('notificationsEmpty');
+            
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            
+            empty.style.display = 'none';
+            
+            list.innerHTML = notifications.map(notification => `
+                <div class="notification-item ${notification.is_read ? '' : 'unread'}">
+                    <div class="notification-icon">
+                        ${getNotificationIcon(notification.type)}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">
+                            ${formatTime(notification.created_at)}
+                        </div>
+                        ${!notification.is_read ? `
+                            <div class="notification-actions">
+                                <button class="btn-mark-read" onclick="markNotificationAsRead(${notification.notification_id})">
+                                    تحديد كمقروء
+                                </button>
+                                ${notification.permit_id ? `
+                                    <button class="btn-view-permit" onclick="viewPermitDetails(${notification.permit_id})">
+                                        عرض التصريح
+                                    </button>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                'success': '✅',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            };
+            return icons[type] || '📢';
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('ar-SA', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function markNotificationAsRead(notificationId) {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) return;
+            
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                await fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        notification_id: notificationId,
+                        username: userData.username
+                    })
+                });
+                
+                loadNotifications();
+            } catch (error) {
+                console.error('خطأ في تحديث الإشعار:', error);
+            }
+        }
+
+        async function markAllNotificationsAsRead() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) return;
+            
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                await fetch('/api/notifications/mark-all-read', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        username: userData.username
+                    })
+                });
+                
+                loadNotifications();
+            } catch (error) {
+                console.error('خطأ في تحديث الإشعارات:', error);
+            }
+        }
+
+        function updateBadge(count) {
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        // =============== PERMITS MANAGEMENT ===============
+let allPermits = [];
+let currentFilteredPermits = [];
+
+async function loadPermits() {
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (!userData) return;
+    
+    try {
+        // جلب جميع أنواع التصاريح (الشخصية + الشركات)
+        const [personalPermitsResponse, companyPermitsResponse] = await Promise.all([
+            fetchJson(`/api/permits/my/${userData.username}`),
+            fetchJson(`/api/permits/company-entry/my/${userData.username}`)
+        ]);
+        
+        allPermits = [];
+        
+        // إضافة التصاريح الشخصية (بعد ساعات الدوام)
+        if (personalPermitsResponse.success && personalPermitsResponse.permits) {
+            personalPermitsResponse.permits.forEach(p => {
+                p.permit_type = 'personal';
+            });
+            allPermits = [...allPermits, ...personalPermitsResponse.permits];
+        }
+        
+        // إضافة تصاريح الشركات
+        if (companyPermitsResponse.success && companyPermitsResponse.permits) {
+            companyPermitsResponse.permits.forEach(p => {
+                p.permit_type = 'company_entry';
+            });
+            allPermits = [...allPermits, ...companyPermitsResponse.permits];
+        }
+        
+        // ترتيب حسب التاريخ (الأحدث أولاً)
+        allPermits.sort((a, b) => {
+            const dateA = new Date(a.request_date || a.created_at || 0);
+            const dateB = new Date(b.request_date || b.created_at || 0);
+            return dateB - dateA;
+        });
+        
+        // فصل التصاريح حسب النوع
+        const personalPermits = allPermits.filter(p => p.permit_type !== 'company_entry');
+        const companyPermits = allPermits.filter(p => p.permit_type === 'company_entry');
+        
+        updateStatistics(allPermits);
+        displayPermitsSeparated(personalPermits, companyPermits);
+        
+    } catch (error) {
+        console.error('خطأ في تحميل التصاريح:', error);
+        showEmptyState('حدث خطأ في تحميل التصاريح', 'يرجى المحاولة مرة أخرى');
+    }
+}
+
+        function updateStatistics(permits) {
+            const total = permits.length;
+            const pending = permits.filter(p => 
+                p.status === 'pending_manager' || p.status === 'approved_manager'
+            ).length;
+            const approved = permits.filter(p => 
+                p.status === 'approved_security'
+            ).length;
+            const rejected = permits.filter(p => 
+                p.status === 'rejected_manager' || p.status === 'rejected_security'
+            ).length;
+            
+            document.getElementById('totalPermits').textContent = total;
+            document.getElementById('pendingPermits').textContent = pending;
+            document.getElementById('approvedPermits').textContent = approved;
+            document.getElementById('rejectedPermits').textContent = rejected;
+        }
+
+        function filterPermits() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    let filteredPermits = [...allPermits];
+    
+    // تطبيق فلتر الحالة
+    if (statusFilter) {
+        filteredPermits = filteredPermits.filter(permit => permit.status === statusFilter);
+    }
+    
+    // تطبيق فلتر النوع
+    if (typeFilter) {
+        filteredPermits = filteredPermits.filter(permit => {
+            if (typeFilter === 'personal') {
+                return permit.permit_type === 'personal';
+            } else if (typeFilter === 'company_entry') {
+                return permit.permit_type === 'company_entry';
+            } else {
+                // للأنواع الفرعية للتصاريح الشخصية
+                return permit.permit_type === 'personal' && permit.type === typeFilter;
+            }
+        });
+    }
+    
+    // تطبيق فلتر التاريخ
+    if (dateFilter) {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        
+        filteredPermits = filteredPermits.filter(permit => {
+            const permitDate = new Date(permit.request_date);
+            
+            switch(dateFilter) {
+                case 'today':
+                    return permitDate.toDateString() === today.toDateString();
+                case 'week':
+                    return permitDate >= startOfWeek;
+                case 'month':
+                    return permitDate >= startOfMonth;
+                case 'last_month':
+                    return permitDate >= startOfLastMonth && permitDate <= endOfLastMonth;
+                default:
+                    return true;
+            }
+        });
+    }
+    
+    // تطبيق البحث
+    if (searchTerm) {
+        filteredPermits = filteredPermits.filter(permit => {
+            // البحث في التصاريح الشخصية
+            if (permit.permit_type === 'personal') {
+                return (
+                    permit.permit_id.toString().includes(searchTerm) ||
+                    (permit.reason && permit.reason.toLowerCase().includes(searchTerm)) ||
+                    (permit.manager_notes && permit.manager_notes.toLowerCase().includes(searchTerm)) ||
+                    (permit.security_notes && permit.security_notes.toLowerCase().includes(searchTerm)) ||
+                    (permit.start_date && permit.start_date.includes(searchTerm)) ||
+                    (permit.end_date && permit.end_date.includes(searchTerm))
+                );
+            }
+            // البحث في تصاريح الشركات
+            else if (permit.permit_type === 'company_entry') {
+                return (
+                    permit.permit_id.toString().includes(searchTerm) ||
+                    (permit.company_name && permit.company_name.toLowerCase().includes(searchTerm)) ||
+                    (permit.company_representative && permit.company_representative.toLowerCase().includes(searchTerm)) ||
+                    (permit.entry_purpose && permit.entry_purpose.toLowerCase().includes(searchTerm))
+                );
+            }
+            return false;
+        });
+    }
+    
+    currentFilteredPermits = filteredPermits;
+    displayPermits(filteredPermits);
+}
+
+        function searchPermits() {
+            filterPermits();
+        }
+
+        function displayPermits(permits) {
+            // فصل التصاريح حسب النوع
+            const personalPermits = permits.filter(p => p.permit_type !== 'company_entry');
+            const companyPermits = permits.filter(p => p.permit_type === 'company_entry');
+            
+            displayPermitsSeparated(personalPermits, companyPermits);
+        }
+        
+        function displayPermitsSeparated(personalPermits, companyPermits) {
+            const personalContainer = document.getElementById('personalPermitsList');
+            const companyContainer = document.getElementById('companyPermitsList');
+            
+            // عرض تصاريح بعد الدوام
+            if (personalPermits.length === 0) {
+                personalContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p class="empty-title">لا توجد تصاريح بعد الدوام</p>
+                        <p class="empty-message">لم تقم بتقديم أي تصاريح بعد الدوام حتى الآن</p>
+                    </div>
+                `;
+            } else {
+                personalContainer.innerHTML = `
+                    <div class="permits-list">
+                        ${personalPermits.map(permit => createPermitCardHTML(permit)).join('')}
+                    </div>
+                `;
+            }
+            
+            // عرض تصاريح الشركات
+            if (companyPermits.length === 0) {
+                companyContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p class="empty-title">لا توجد تصاريح دخول شركات</p>
+                        <p class="empty-message">لم تقم بتقديم أي تصاريح دخول شركات حتى الآن</p>
+                    </div>
+                `;
+            } else {
+                companyContainer.innerHTML = `
+                    <div class="permits-list">
+                        ${companyPermits.map(permit => createPermitCardHTML(permit)).join('')}
+                    </div>
+                `;
+            }
+            
+            // تحديث العداد
+            document.getElementById('personalPermitsCount').textContent = `${personalPermits.length} تصريح`;
+            document.getElementById('companyPermitsCount').textContent = `${companyPermits.length} تصريح`;
+        }
+
+        function createPermitCardHTML(permit) {
+    const statusInfo = getStatusInfo(permit.status);
+    const requestDate = formatDate(permit.request_date);
+    
+    // تحديد نوع التصريح
+    const permitType = permit.permit_type === 'company_entry' 
+        ? { name: 'دخول شركة', icon: '🏢' }
+        : getPermitType(permit.type || 'exit');
+    
+    return `
+        <div class="permit-card" id="permitCard_${permit.permit_id}" data-type="${permit.permit_type}">
+            <div class="permit-header">
+                <div>
+                    <div class="permit-id">
+                        📋 ${permit.permit_type === 'company_entry' ? 'تصريح شركة' : 'تصريح'} #${permit.permit_id}
+                        <span class="type-badge">
+                            ${permitType.icon} ${permitType.name}
+                        </span>
+                    </div>
+                    <div class="permit-date">
+                        ${requestDate}
+                    </div>
+                </div>
+                <div class="status-badge ${statusInfo.class}">
+                    ${statusInfo.icon} ${statusInfo.text}
+                </div>
+            </div>
+            
+            <!-- تفاصيل أساسية -->
+            ${renderBasicDetails(permit)}
+            
+            <!-- تفاصيل إضافية قابلة للطي -->
+            <div id="extraDetails_${permit.permit_id}" class="extra-details" style="display: none;">
+                ${permit.permit_type === 'company_entry' ? 
+                    renderCompanyEntryExtraDetails(permit) : 
+                    renderPersonalPermitExtraDetails(permit)}
+            </div>
+            
+            <!-- الملاحظات -->
+            ${renderNotesSection(permit)}
+            
+            <!-- الجدول الزمني -->
+            ${renderTimelineSection(permit)}
+            
+            <!-- أزرار الإجراءات -->
+            <div class="permit-actions">
+                <button class="action-btn btn-view" onclick="togglePermitDetails(${permit.permit_id})" id="toggleBtn_${permit.permit_id}">
+                    👁️ عرض التفاصيل
+                </button>
+                ${permit.status === 'pending_manager' ? `
+                    <button class="action-btn btn-cancel" onclick="cancelPermit(${permit.permit_id}, '${permit.permit_type}')">
+                        ✖️ إلغاء الطلب
+                    </button>
+                ` : ''}
+                ${permit.status === 'approved_security' ? `
+                    <button class="action-btn btn-print" onclick="printPermit(${permit.permit_id}, '${permit.permit_type}')">
+                        🖨️ طباعة التصريح
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+        // دالة لعرض التفاصيل الأساسية
+        function renderBasicDetails(permit) {
+            if (permit.permit_type === 'company_entry') {
+                // للتصاريح الشركات
+                let additionalInfo = {};
+                try {
+                    if (permit.additional_notes) {
+                        additionalInfo = typeof permit.additional_notes === 'string' 
+                            ? JSON.parse(permit.additional_notes) 
+                            : permit.additional_notes;
+                    }
+                } catch (e) {
+                    console.warn('خطأ في تحليل البيانات الإضافية:', e);
+                }
+                
+                return `
+                    <div class="permit-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">اسم الشركة</div>
+                            <div class="detail-value">${permit.company_name || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">ممثل الشركة</div>
+                            <div class="detail-value">${permit.company_representative || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">الغرض</div>
+                            <div class="detail-value" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${permit.entry_purpose || 'غير محدد'}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">عدد الزوار</div>
+                            <div class="detail-value">${permit.number_of_visitors || 1} شخص</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // للتصاريح الشخصية
+                const permitType = getPermitType(permit.type || 'exit');
+                
+                return `
+                    <div class="permit-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">النوع</div>
+                            <div class="detail-value">${permitType.name}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">${permit.type === 'entry' ? 'وقت الدخول' : 'السبب'}</div>
+                            <div class="detail-value" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${permit.reason || 'لا يوجد'}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">الفترة</div>
+                            <div class="detail-value">${permit.start_date} إلى ${permit.end_date}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // دالة لعرض تفاصيل إضافية لتصاريح الشركات
+        function renderCompanyEntryExtraDetails(permit) {
+            let additionalInfo = {};
+            try {
+                if (permit.additional_notes) {
+                    additionalInfo = typeof permit.additional_notes === 'string' 
+                        ? JSON.parse(permit.additional_notes) 
+                        : permit.additional_notes;
+                }
+            } catch (e) {
+                console.warn('خطأ في تحليل البيانات الإضافية:', e);
+            }
+            
+            const requestingDepartment = additionalInfo.requesting_department || {};
+            const employeesList = additionalInfo.employees || [];
+            
+            return `
+                <!-- قسم التفاصيل الكاملة -->
+                <div class="extra-section">
+                    <h4 class="extra-title">📋 معلومات كاملة</h4>
+                    
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">تاريخ تقديم الطلب</div>
+                            <div class="detail-value">${formatDateTime(permit.request_date)}</div>
+                        </div>
+                        
+                        ${requestingDepartment.directorate ? `
+                        <div class="detail-item">
+                            <div class="detail-label">المديرية</div>
+                            <div class="detail-value">${requestingDepartment.directorate}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${requestingDepartment.department ? `
+                        <div class="detail-item">
+                            <div class="detail-label">القسم</div>
+                            <div class="detail-value">${requestingDepartment.department}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${requestingDepartment.job_number ? `
+                        <div class="detail-item">
+                            <div class="detail-label">الرقم الوظيفي</div>
+                            <div class="detail-value">${requestingDepartment.job_number}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${requestingDepartment.supervisor_name ? `
+                        <div class="detail-item">
+                            <div class="detail-label">المشرف المباشر</div>
+                            <div class="detail-value">${requestingDepartment.supervisor_name}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- تواريخ الدخول والخروج -->
+                    <div class="details-grid" style="margin-top: 20px;">
+                        <div class="detail-item">
+                            <div class="detail-label">تاريخ الدخول</div>
+                            <div class="detail-value highlight">${permit.expected_entry_date || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">وقت الدخول</div>
+                            <div class="detail-value highlight">${permit.expected_entry_time || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">تاريخ الخروج</div>
+                            <div class="detail-value highlight">${permit.expected_exit_date || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">وقت الخروج</div>
+                            <div class="detail-value highlight">${permit.expected_exit_time || 'غير محدد'}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- تفاصيل الشركة -->
+                    <div class="details-grid" style="margin-top: 20px;">
+                        <div class="detail-item">
+                            <div class="detail-label">اسم الشركة</div>
+                            <div class="detail-value">${permit.company_name || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">الممثل القانوني</div>
+                            <div class="detail-value">${permit.company_representative || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">رقم الهاتف</div>
+                            <div class="detail-value">${permit.representative_phone || 'غير محدد'}</div>
+                        </div>
+                        
+                        ${requestingDepartment.company_address ? `
+                        <div class="detail-item">
+                            <div class="detail-label">عنوان الشركة</div>
+                            <div class="detail-value">${requestingDepartment.company_address}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- قائمة العمال -->
+                    ${employeesList.length > 0 ? `
+                    <div style="margin-top: 25px;">
+                        <h5 class="sub-title">👥 قائمة العمال (${employeesList.length})</h5>
+                        <div class="employees-list">
+                            ${employeesList.map((employee, index) => `
+                            <div class="employee-item">
+                                <span class="employee-number">${index + 1}</span>
+                                <span class="employee-name">${employee.name || 'غير محدد'}</span>
+                                <span class="employee-profession">(${employee.profession || 'عامل'})</span>
+                                <span class="employee-id">${employee.id_number || 'غير محدد'}</span>
+                            </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- الغرض بالتفصيل -->
+                    <div style="margin-top: 25px;">
+                        <h5 class="sub-title">🎯 الغرض من الدخول بالتفصيل</h5>
+                        <div class="purpose-details">
+                            ${permit.entry_purpose || 'غير محدد'}
+                        </div>
+                    </div>
+                    
+                    <!-- الملاحظات الإضافية -->
+                    ${requestingDepartment.additional_notes ? `
+                    <div style="margin-top: 25px;">
+                        <h5 class="sub-title">📝 ملاحظات إضافية</h5>
+                        <div class="additional-notes">
+                            ${requestingDepartment.additional_notes}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // دالة لعرض تفاصيل إضافية للتصاريح الشخصية
+        function renderPersonalPermitExtraDetails(permit) {
+            const permitType = getPermitType(permit.type || 'exit');
+            
+            return `
+                <div class="extra-section">
+                    <h4 class="extra-title">📋 معلومات كاملة</h4>
+                    
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">نوع التصريح</div>
+                            <div class="detail-value">${permitType.name}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">تاريخ التقديم</div>
+                            <div class="detail-value">${formatDateTime(permit.request_date)}</div>
+                        </div>
+                        
+                        ${permit.type === 'entry' ? `
+                        <div class="detail-item">
+                            <div class="detail-label">تاريخ الدخول</div>
+                            <div class="detail-value">${permit.entry_date || permit.start_date}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">وقت الدخول</div>
+                            <div class="detail-value">${permit.entry_time || 'غير محدد'}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${permit.expected_exit_time ? `
+                        <div class="detail-item">
+                            <div class="detail-label">وقت الانصراف</div>
+                            <div class="detail-value">${permit.expected_exit_time}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- السبب بالتفصيل -->
+                    <div style="margin-top: 25px;">
+                        <h5 class="sub-title">📄 السبب بالتفصيل</h5>
+                        <div class="reason-details">
+                            ${permit.reason || 'لا يوجد'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // دالة لعرض الملاحظات
+        function renderNotesSection(permit) {
+            let notesHTML = '';
+            
+            if (permit.manager_notes) {
+                notesHTML += `
+                    <div class="permit-notes">
+                        <div class="detail-label">ملاحظات المدير</div>
+                        <div class="detail-value">${permit.manager_notes}</div>
+                    </div>
+                `;
+            }
+            
+            if (permit.security_notes) {
+                notesHTML += `
+                    <div class="permit-notes" style="background: #f0f7ff; border-right-color: #2ecc71;">
+                        <div class="detail-label">ملاحظات الأمن</div>
+                        <div class="detail-value">${permit.security_notes}</div>
+                    </div>
+                `;
+            }
+            
+            return notesHTML;
+        }
+
+        // دالة لعرض الجدول الزمني
+        function renderTimelineSection(permit) {
+            return `
+                <div class="permit-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <div class="timeline-date">${formatDate(permit.request_date)}</div>
+                            <div>📥 تم تقديم الطلب</div>
+                        </div>
+                    </div>
+                    
+                    ${permit.manager_decision_date ? `
+                        <div class="timeline-item">
+                            <div class="timeline-content">
+                                <div class="timeline-date">${formatDate(permit.manager_decision_date)}</div>
+                                <div>${permit.status.includes('approved') ? '✅' : '❌'} 
+                                ${permit.status.includes('approved') ? 'تمت الموافقة من المدير' : 'تم الرفض من المدير'}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${permit.security_decision_date ? `
+                        <div class="timeline-item">
+                            <div class="timeline-content">
+                                <div class="timeline-date">${formatDate(permit.security_decision_date)}</div>
+                                <div>${permit.status === 'approved_security' ? '✅' : '❌'} 
+                                ${permit.status === 'approved_security' ? 'تمت الموافقة النهائية' : 'تم الرفض النهائي'}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // =============== دوال مساعدة ===============
+        function getStatusInfo(status) {
+            switch(status) {
+                case 'pending_manager':
+                    return { class: 'status-pending', icon: '⏳', text: 'قيد مراجعة المدير' };
+                case 'approved_manager':
+                    return { class: 'status-security', icon: '✅', text: 'موافق عليها من المدير' };
+                case 'approved_security':
+                    return { class: 'status-approved', icon: '✅', text: 'موافق عليها نهائياً' };
+                case 'rejected_manager':
+                    return { class: 'status-rejected', icon: '❌', text: 'مرفوضة من المدير' };
+                case 'rejected_security':
+                    return { class: 'status-rejected', icon: '❌', text: 'مرفوضة نهائياً' };
+                default:
+                    return { class: 'status-pending', icon: '⏳', text: 'قيد المراجعة' };
+            }
+        }
+
+        function getPermitType(type) {
+            const types = {
+                'exit': { name: 'خروج من العمل', icon: '🚪' },
+                'entry': { name: 'دخول إلى الشركة', icon: '🏢' },
+                'visit': { name: 'زيارة', icon: '👥' },
+                'delivery': { name: 'توصيل', icon: '📦' }
+            };
+            return types[type] || { name: type, icon: '📋' };
+        }
+
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('ar-SA', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        function formatDateTime(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('ar-SA', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        // =============== عرض/إخفاء التفاصيل ===============
+        function togglePermitDetails(permitId) {
+            const detailsDiv = document.getElementById(`extraDetails_${permitId}`);
+            const toggleBtn = document.getElementById(`toggleBtn_${permitId}`);
+            const permitCard = document.getElementById(`permitCard_${permitId}`);
+            
+            if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                // إظهار التفاصيل
+                detailsDiv.style.display = 'block';
+                toggleBtn.innerHTML = '👁️ إخفاء التفاصيل';
+                permitCard.style.borderColor = '#3498db';
+                permitCard.style.boxShadow = '0 8px 30px rgba(52, 152, 219, 0.2)';
+                
+                // تحريك العرض إلى التفاصيل
+                setTimeout(() => {
+                    detailsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 300);
+            } else {
+                // إخفاء التفاصيل
+                detailsDiv.style.display = 'none';
+                toggleBtn.innerHTML = '👁️ عرض التفاصيل';
+                permitCard.style.borderColor = 'transparent';
+                permitCard.style.boxShadow = 'none';
+            }
+        }
+
+        function showEmptyState(title, description) {
+            document.getElementById('permitsList').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3 class="empty-title">${title}</h3>
+                    <p class="empty-description">${description}</p>
+                </div>
+            `;
+            
+            document.getElementById('permitsCount').textContent = '0 تصريح';
+        }
+
+        // =============== PERMIT ACTIONS ===============
+        async function cancelPermit(permitId, permitType = 'personal') {
+            if (!confirm('هل أنت متأكد من إلغاء هذا التصريح؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                return;
+            }
+            
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                const endpoint = permitType === 'company_entry' 
+                    ? '/api/permits/company-entry/cancel' 
+                    : '/api/permits/cancel';
+                    
+                const data = await fetchJson(endpoint, 'POST', {
+                    permit_id: permitId,
+                    username: userData.username,
+                    notes: 'تم الإلغاء من قبل الموظف'
+                });
+
+                if (data.success) {
+                    showSuccess('✅ تم إلغاء التصريح بنجاح');
+                    loadPermits();
+                } else {
+                    showError('❌ ' + (data.message || 'حدث خطأ في إلغاء التصريح'));
+                }
+            } catch (error) {
+                console.error('خطأ في إلغاء التصريح:', error);
+                showError('❌ حدث خطأ في الاتصال بالخادم');
+            }
+        }
+
+        function printPermit(permitId, permitType = 'personal') {
+            const endpoint = permitType === 'company_entry'
+                ? `/api/permits/company-entry/print/${permitId}`
+                : `/api/permits/print/${permitId}`;
+            
+            window.open(endpoint, '_blank');
+        }
+
+        function viewPermitDetails(permitId, permitType = 'personal') {
+            // استخدام عرض التفاصيل القابلة للطي بدلاً من صفحة منفصلة
+            togglePermitDetails(permitId);
+        }
+
+        // =============== UTILITY FUNCTIONS ===============
+        function showSuccess(message) {
+            alert(message);
+        }
+
+        function showError(message) {
+            alert(message);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // =============== EXPORT FUNCTIONS ===============
+        window.togglePermitDetails = togglePermitDetails;
+        window.cancelPermit = cancelPermit;
+        window.printPermit = printPermit;
+        window.viewPermitDetails = viewPermitDetails;
+
+
+        // دالة لعرض التفاصيل الأساسية
+function renderBasicDetails(permit) {
+    if (permit.permit_type === 'company_entry') {
+        // للتصاريح الشركات
+        return `
+            <div class="permit-details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">اسم الشركة</div>
+                    <div class="detail-value">${permit.company_name || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">ممثل الشركة</div>
+                    <div class="detail-value">${permit.company_representative || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">الغرض</div>
+                    <div class="detail-value">${permit.entry_purpose || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">عدد الزوار</div>
+                    <div class="detail-value">${permit.number_of_visitors || 1} شخص</div>
+                </div>
+            </div>
+        `;
+    } else {
+        // للتصاريح الشخصية
+        const permitType = getPermitType(permit.type || 'exit');
+        
+        return `
+            <div class="permit-details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">النوع</div>
+                    <div class="detail-value">${permitType.name}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">${permit.type === 'entry' ? 'وقت الدخول' : 'السبب'}</div>
+                    <div class="detail-value">${permit.reason || 'لا يوجد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">الفترة</div>
+                    <div class="detail-value">${permit.start_date} إلى ${permit.end_date}</div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// دالة لعرض تفاصيل إضافية لتصاريح الشركات
+function renderCompanyEntryExtraDetails(permit) {
+    let additionalInfo = {};
+    try {
+        if (permit.additional_notes) {
+            additionalInfo = typeof permit.additional_notes === 'string' 
+                ? JSON.parse(permit.additional_notes) 
+                : permit.additional_notes;
+        }
+    } catch (e) {
+        console.warn('خطأ في تحليل البيانات الإضافية:', e);
+    }
+    
+    const requestingDepartment = additionalInfo.requesting_department || {};
+    const employeesList = additionalInfo.employees || [];
+    
+    return `
+        <!-- قسم التفاصيل الكاملة -->
+        <div class="extra-section">
+            <h4 class="extra-title">📋 معلومات كاملة - تصريح دخول شركة</h4>
+            
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">تاريخ تقديم الطلب</div>
+                    <div class="detail-value">${formatDateTime(permit.request_date)}</div>
+                </div>
+                
+                ${requestingDepartment.directorate ? `
+                <div class="detail-item">
+                    <div class="detail-label">المديرية</div>
+                    <div class="detail-value">${requestingDepartment.directorate}</div>
+                </div>
+                ` : ''}
+                
+                ${requestingDepartment.department ? `
+                <div class="detail-item">
+                    <div class="detail-label">القسم</div>
+                    <div class="detail-value">${requestingDepartment.department}</div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- تفاصيل الشركة -->
+            <div class="details-grid" style="margin-top: 20px;">
+                <div class="detail-item">
+                    <div class="detail-label">اسم الشركة</div>
+                    <div class="detail-value">${permit.company_name || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">الممثل القانوني</div>
+                    <div class="detail-value">${permit.company_representative || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">رقم الهاتف</div>
+                    <div class="detail-value">${permit.representative_phone || 'غير محدد'}</div>
+                </div>
+                
+                ${requestingDepartment.company_address ? `
+                <div class="detail-item">
+                    <div class="detail-label">عنوان الشركة</div>
+                    <div class="detail-value">${requestingDepartment.company_address}</div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- قائمة العمال -->
+            ${employeesList.length > 0 ? `
+            <div style="margin-top: 25px;">
+                <h5 class="sub-title">👥 قائمة العمال (${employeesList.length})</h5>
+                <div class="employees-list">
+                    ${employeesList.map((employee, index) => `
+                    <div class="employee-item">
+                        <span class="employee-number">${index + 1}</span>
+                        <span class="employee-name">${employee.name || 'غير محدد'}</span>
+                        <span class="employee-profession">(${employee.profession || 'عامل'})</span>
+                        <span class="employee-id">${employee.id_number || 'غير محدد'}</span>
+                    </div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- الغرض بالتفصيل -->
+            <div style="margin-top: 25px;">
+                <h5 class="sub-title">🎯 الغرض من الدخول بالتفصيل</h5>
+                <div class="purpose-details">
+                    ${permit.entry_purpose || 'غير محدد'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// دالة لعرض تفاصيل إضافية للتصاريح الشخصية
+function renderPersonalPermitExtraDetails(permit) {
+    const permitType = getPermitType(permit.type || 'exit');
+    
+    return `
+        <div class="extra-section">
+            <h4 class="extra-title">📋 معلومات كاملة - تصريح عمل بعد الدوام</h4>
+            
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">نوع التصريح</div>
+                    <div class="detail-value">${permitType.name}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">تاريخ التقديم</div>
+                    <div class="detail-value">${formatDateTime(permit.request_date)}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">الفترة</div>
+                    <div class="detail-value">${permit.start_date} إلى ${permit.end_date}</div>
+                </div>
+            </div>
+            
+            <!-- السبب بالتفصيل -->
+            <div style="margin-top: 25px;">
+                <h5 class="sub-title">📄 السبب بالتفصيل</h5>
+                <div class="reason-details">
+                    ${permit.reason || 'لا يوجد'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+    </script>
+</body>
+</html>

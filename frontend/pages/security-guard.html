@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نقطة الحراسة - تسجيل الدخول والخروج</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eff5 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* ========== NAVBAR ========== */
+        .navbar {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .home-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .home-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .guard-info {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* ========== GUARD NAME SECTION ========== */
+        .guard-name-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 2px solid #e3f2fd;
+        }
+        
+        .guard-name-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .guard-name-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .guard-name-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 18px;
+            border: 2px solid #e3f2fd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .guard-name-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .save-guard-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .save-guard-btn:hover {
+            background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .current-guard-display {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* ========== PERMITS SECTION ========== */
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f4f8;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .permits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        /* ========== PERMIT CARD ========== */
+        .permit-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e3f2fd;
+            transition: all 0.3s;
+        }
+        
+        .permit-card:hover {
+            border-color: #3498db;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.15);
+        }
+        
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .employee-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .employee-details h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .employee-details p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .permit-details {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #edf2f7;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #3498db;
+            font-size: 14px;
+        }
+        
+        .detail-value {
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        /* ========== ACTION BUTTONS ========== */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-checkin {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .btn-checkin:hover {
+            background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+            transform: translateY(-2px);
+        }
+        
+        .btn-checkout {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .btn-checkout:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+            transform: translateY(-2px);
+        }
+        
+        /* ========== MODAL ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(3px);
+        }
+        
+        .modal-box {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .modal-btn-confirm:hover {
+            background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+        }
+        
+        /* ========== NOTIFICATION ========== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1001;
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification-success {
+            border-right: 4px solid #2ecc71;
+        }
+        
+        .notification-error {
+            border-right: 4px solid #e74c3c;
+        }
+        
+        /* ========== NEW BADGE ========== */
+        .new-badge {
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+        
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .permits-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .guard-name-form {
+                flex-direction: column;
+            }
+            
+            .guard-name-input {
+                width: 100%;
+            }
+            
+            .logo-section {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar">
+        <div class="logo-section">
+            <!-- زر العودة للصفحة الرئيسية -->
+            <a href="/dashboard.html" class="home-btn" title="العودة للصفحة الرئيسية">
+                🏠
+            </a>
+            <div class="logo">
+                <span>👮</span>
+                <span>نقطة الحراسة</span>
+            </div>
+        </div>
+        <div class="guard-info" id="currentGuardDisplay">
+            لم يتم تحديد اسم الحارس
+        </div>
+    </nav>
+    
+    <div class="main-container">
+        <!-- ========== GUARD NAME SECTION ========== -->
+        <div class="guard-name-section">
+            <div class="guard-name-title">
+                <span>👤</span>
+                اسم الحارس المناوب
+            </div>
+            
+            <div id="guardNameContainer">
+                <!-- سيتم تعبئته بالجافاسكريبت -->
+            </div>
+        </div>
+        
+        <!-- ========== NEW PERMITS FROM SECURITY ========== -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>📋</span>
+                    التصاريح الجديدة من مكتب الأمن
+                    <span id="newPermitsBadge" class="new-badge" style="display: none;"></span>
+                </div>
+                <span id="approvedCount">0 تصريح</span>
+            </div>
+            <div class="permits-grid" id="approvedPermits">
+                <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                    <div style="font-size: 50px; margin-bottom: 15px;">📋</div>
+                    <h3>لا توجد تصاريح جديدة</h3>
+                    <p>لم يتم إرسال أي تصاريح من مكتب الأمن</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ========== ✅ COMPANY ENTRY PERMITS SECTION ========== -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>🏢</span>
+                    تصاريح دخول الشركات
+                </div>
+                <span id="companyPermitsCount">0 تصريح</span>
+            </div>
+            <div class="permits-grid" id="companyPermitsContainer">
+                <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                    <div style="font-size: 50px; margin-bottom: 15px;">🏢</div>
+                    <h3>لا توجد تصاريح شركات</h3>
+                    <p>لم يتم إرسال أي تصاريح شركات من مكتب الأمن</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ========== ACTIVE PERMITS SECTION ========== -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>👥</span>
+                    الموظفين داخل المبنى حالياً
+                </div>
+                <span id="checkedInCount">0 موظف</span>
+            </div>
+            <div class="permits-grid" id="checkedInPermits">
+                <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                    <div style="font-size: 50px; margin-bottom: 15px;">👥</div>
+                    <h3>لا يوجد موظفين داخل المبنى</h3>
+                    <p>لم يتم تسجيل دخول أي موظف</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========== MODAL FOR CHECKIN/CHECKOUT ========== -->
+    <div id="actionModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header" id="modalTitle">تسجيل الدخول</div>
+            <div class="modal-body" id="modalContent">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <button id="modalCancel" class="modal-btn modal-btn-cancel">إلغاء</button>
+                <button id="modalConfirm" class="modal-btn modal-btn-confirm">تأكيد</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ========== GLOBAL VARIABLES ==========
+        let approvedPermits = [];
+        let checkedInEmployees = [];
+        
+        // ========== INITIALIZATION ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGuardName();
+            loadPermitsFromSecurity();
+            setupModalListeners();
+            
+            // تحديث تلقائي كل 30 ثانية
+            setInterval(loadPermitsFromSecurity, 30000);
+            
+            // الاستماع لتحديثات من مكتب الأمن
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'security_to_guard_permits') {
+                    showNotification('📢 هناك تصاريح جديدة من مكتب الأمن', 'success');
+                    loadPermitsFromSecurity();
+                }
+            });
+            // ========== REAL-TIME UPDATES ==========
+
+// تحديث تلقائي كل 10 ثواني
+setInterval(loadPermitsFromSecurity, 10000);
+
+// الاستماع لتحديثات من مكتب الأمن
+window.addEventListener('storage', function(event) {
+    console.log('🔄 حدث تخزين جديد:', event.key);
+    
+    if (event.key === 'security_to_guard_permits') {
+        console.log('📢 تحديث جديد من مكتب الأمن!');
+        
+        // إظهار إشعار
+        showNotification('📢 هناك تصاريح جديدة من مكتب الأمن', 'success');
+        
+        // جلب التحديثات فوراً
+        setTimeout(loadPermitsFromSecurity, 500);
+        
+        // تأثير مرئي
+        const title = document.querySelector('.section-title');
+        if (title) {
+            title.style.animation = 'none';
+            setTimeout(() => {
+                title.style.animation = 'slideInRight 0.5s';
+                title.style.color = '#e74c3c';
+                setTimeout(() => {
+                    title.style.color = '';
+                }, 2000);
+            }, 10);
+        }
+    }
+});
+
+// استدعاء مباشر من مكتب الأمن
+window.updateGuardFromSecurity = function() {
+    console.log('👮 تحديث مباشر من مكتب الأمن');
+    loadPermitsFromSecurity();
+    showNotification('🔄 تم تحديث التصاريح من مكتب الأمن', 'success');
+};
+
+// محاكاة إضافة تصريح جديد (للتجربة)
+window.simulateNewPermit = function() {
+    const permits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || getMockApprovedPermits();
+    const newPermit = {
+        permit_id: Date.now(),
+        employee_name: "محمد عبدالله",
+        job_number: "EMP-" + Math.floor(Math.random() * 1000),
+        department_name: "التطوير",
+        reason: "اختبار تصريح جديد",
+        expected_exit_time: "23:00",
+        status: "approved_security",
+        approved_by_security: "مكتب الأمن",
+        approval_time: new Date().toLocaleTimeString('ar-SA'),
+        date: new Date().toLocaleDateString('ar-SA')
+    };
+    
+    permits.unshift(newPermit);
+    localStorage.setItem('security_to_guard_permits', JSON.stringify(permits));
+    
+    // إطلاق حدث التخزين
+    window.dispatchEvent(new Event('storage'));
+    
+    showNotification('✅ تمت محاكاة إضافة تصريح جديد', 'success');
+};
+        });
+        
+        // ========== GUARD NAME MANAGEMENT ==========
+        function loadGuardName() {
+            const guardName = localStorage.getItem('guard_name');
+            const container = document.getElementById('guardNameContainer');
+            const display = document.getElementById('currentGuardDisplay');
+            
+            if (guardName) {
+                container.innerHTML = `
+                    <div class="current-guard-display">
+                        <div style="font-size: 30px;">👮</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 18px;">${guardName}</div>
+                            <div style="font-size: 14px; opacity: 0.9;">الحارس المناوب حالياً</div>
+                        </div>
+                        <button onclick="changeGuardName()" style="padding: 8px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            تغيير الاسم
+                        </button>
+                    </div>
+                `;
+                display.textContent = `الحارس: ${guardName}`;
+            } else {
+                container.innerHTML = `
+                    <form class="guard-name-form" onsubmit="saveGuardName(event)">
+                        <input type="text" 
+                               class="guard-name-input" 
+                               id="guardNameInput" 
+                               placeholder="أدخل اسم الحارس المناوب"
+                               required>
+                        <button type="submit" class="save-guard-btn">
+                            <span>💾</span>
+                            حفظ اسم الحارس
+                        </button>
+                    </form>
+                `;
+                display.textContent = 'لم يتم تحديد اسم الحارس';
+            }
+        }
+        
+        function saveGuardName(event) {
+            event.preventDefault();
+            const guardName = document.getElementById('guardNameInput').value.trim();
+            
+            if (!guardName) {
+                showNotification('يرجى إدخال اسم الحارس', 'error');
+                return;
+            }
+            
+            localStorage.setItem('guard_name', guardName);
+            showNotification(`تم حفظ اسم الحارس: ${guardName}`, 'success');
+            
+            // إرسال إشعار لمكتب الأمن أن الحارس بدأ المناوبة
+            const notificationData = {
+                type: 'guard_name_set',
+                guard_name: guardName,
+                data: {
+                    message: `بدأ الحارس ${guardName} المناوبة`,
+                    action: 'guard_start_duty',
+                    time: new Date().toLocaleTimeString('ar-SA')
+                }
+            };
+            
+            sendNotificationToSecurity(notificationData);
+            
+            setTimeout(() => {
+                loadGuardName();
+            }, 1000);
+        }
+        
+        function changeGuardName() {
+            localStorage.removeItem('guard_name');
+            loadGuardName();
+            
+            // إرسال إشعار لمكتب الأمن
+            const notificationData = {
+                type: 'guard_name_changed',
+                data: {
+                    message: 'تم تغيير اسم الحارس المناوب',
+                    action: 'guard_change',
+                    time: new Date().toLocaleTimeString('ar-SA')
+                }
+            };
+            
+            sendNotificationToSecurity(notificationData);
+        }
+        
+        // ========== LOAD PERMITS FROM SECURITY ==========
+        // ========== LOAD PERMITS FROM SECURITY ==========
+async function loadPermitsFromSecurity() {
+    try {
+        console.log('🔍 جاري جلب التصاريح من مكتب الأمن...');
+        
+        // 1. أولاً: جلب من localStorage (للعمل دون اتصال)
+        const localPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+        
+        if (localPermits.length > 0) {
+            console.log('📋 تم العثور على تصاريح محلية:', localPermits.length);
+            approvedPermits = localPermits;
+        } else {
+            console.log('📋 لا توجد تصاريح محلية، جاري استخدام بيانات محاكاة...');
+            approvedPermits = getMockApprovedPermits();
+        }
+        
+        // 2. محاولة جلب من الخادم (إذا كان هناك اتصال)
+        try {
+            const response = await fetch('/api/permits/guard-approved', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + (localStorage.getItem('token') || ''),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ تم جلب التصاريح من الخادم:', data.permits?.length || 0);
+                
+                if (data.permits && data.permits.length > 0) {
+                    approvedPermits = data.permits;
+                    
+                    // حفظ في localStorage للاستخدام المستقبلي
+                    localStorage.setItem('security_to_guard_permits', JSON.stringify(data.permits));
+                    console.log('💾 تم حفظ التصاريح في localStorage');
+                }
+                
+                if (data.checked_in) {
+                    checkedInEmployees = data.checked_in;
+                }
+            }
+        } catch (serverError) {
+            console.log('⚠️ استخدام البيانات المحلية (فشل الاتصال بالخادم)');
+        }
+        
+        // 3. جلب الموظفين المسجل دخولهم
+        const localCheckedIn = JSON.parse(localStorage.getItem('checked_in_employees')) || [];
+        if (localCheckedIn.length > 0) {
+            checkedInEmployees = localCheckedIn;
+        }
+        
+        console.log('📊 التصاريح المتاحة:', approvedPermits.length);
+        console.log('👥 الموظفون المسجل دخولهم:', checkedInEmployees.length);
+        
+        // 4. عرض البيانات
+        displayApprovedPermits(approvedPermits);
+        displayCheckedInPermits(checkedInEmployees);
+        
+        // 5. التحقق من التصاريح الجديدة
+        checkForNewPermits(approvedPermits);
+        
+    } catch (error) {
+        console.error('❌ خطأ في جلب التصاريح:', error);
+        showNotification('❌ حدث خطأ في جلب التصاريح', 'error');
+        
+        // استخدام بيانات محاكاة في حالة الخطأ
+        approvedPermits = getMockApprovedPermits();
+        checkedInEmployees = getMockCheckedInEmployees();
+        
+        displayApprovedPermits(approvedPermits);
+        displayCheckedInPermits(checkedInEmployees);
+    }
+}
+        
+        function getMockCheckedInEmployees() {
+            // بيانات محاكاة للموظفين الموجودين حالياً
+            return [
+                {
+                    permit_id: 100,
+                    employee_name: "فاطمة علي",
+                    job_number: "EMP-004",
+                    department_name: "الموارد البشرية",
+                    check_in_time: "18:30",
+                    check_in_by: "سالم علي",
+                    status: "checked_in"
+                }
+            ];
+        }
+        
+        // ========== DISPLAY FUNCTIONS ==========
+        function displayApprovedPermits(permits) {
+            const container = document.getElementById('approvedPermits');
+            const countElement = document.getElementById('approvedCount');
+            
+            if (!permits || permits.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
+                        <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">📋</div>
+                        <h3 style="margin-bottom: 10px; color: #2c3e50;">لا توجد تصاريح جديدة</h3>
+                        <p>لم يتم إرسال أي تصاريح من مكتب الأمن</p>
+                    </div>
+                `;
+                countElement.textContent = '0 تصريح';
+                return;
+            }
+            
+            let html = '';
+            permits.forEach(permit => {
+                // التحقق إذا كان الموظف قد سجل دخول بالفعل
+                const isAlreadyCheckedIn = checkedInEmployees.some(
+                    emp => emp.permit_id === permit.permit_id
+                );
+                
+                html += `
+                    <div class="permit-card">
+                        <div style="position: relative;">
+                            <div style="background: #e8f5e9; color: #155724; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px;">
+                                ✅ معتمد من الأمن
+                            </div>
+                        </div>
+                        
+                        <div class="employee-info">
+                            <div class="employee-avatar">${permit.employee_name?.charAt(0) || 'م'}</div>
+                            <div class="employee-details">
+                                <h3>${permit.employee_name}</h3>
+                                <p>${permit.job_number}</p>
+                                <p>${permit.department_name}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="permit-details">
+                            <div class="detail-item">
+                                <span class="detail-label">رقم التصريح:</span>
+                                <span class="detail-value">${permit.permit_id}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">الوقت المسموح:</span>
+                                <span class="detail-value">${permit.expected_exit_time}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">السبب:</span>
+                                <span class="detail-value">${permit.reason}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">وافق عليه:</span>
+                                <span class="detail-value">${permit.approved_by_security || 'مكتب الأمن'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            ${!isAlreadyCheckedIn ? `
+                                <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name}')">
+                                    <span>✅</span> تسجيل دخول
+                                </button>
+                            ` : `
+                                <button class="action-btn btn-checkin" style="background: #95a5a6; cursor: not-allowed;" disabled>
+                                    <span>✅</span> مسجل دخول
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            countElement.textContent = `${permits.length} تصريح`;
+        }
+        
+        function displayCheckedInPermits(employees) {
+            const container = document.getElementById('checkedInPermits');
+            const countElement = document.getElementById('checkedInCount');
+            
+            if (!employees || employees.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
+                        <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">👥</div>
+                        <h3 style="margin-bottom: 10px; color: #2c3e50;">لا يوجد موظفين داخل المبنى</h3>
+                        <p>لم يتم تسجيل دخول أي موظف</p>
+                    </div>
+                `;
+                countElement.textContent = '0 موظف';
+                return;
+            }
+            
+            let html = '';
+            employees.forEach(employee => {
+                // حساب المدة منذ الدخول
+                const duration = calculateDuration(employee.check_in_time);
+                
+                html += `
+                    <div class="permit-card">
+                        <div style="position: relative;">
+                            <div style="background: #d4edda; color: #155724; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px;">
+                                🟢 داخل المبنى
+                            </div>
+                        </div>
+                        
+                        <div class="employee-info">
+                            <div class="employee-avatar">${employee.employee_name?.charAt(0) || 'م'}</div>
+                            <div class="employee-details">
+                                <h3>${employee.employee_name}</h3>
+                                <p>${employee.job_number}</p>
+                                <p>${employee.department_name}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="permit-details">
+                            <div class="detail-item">
+                                <span class="detail-label">وقت الدخول:</span>
+                                <span class="detail-value">${employee.check_in_time}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">رقم التصريح:</span>
+                                <span class="detail-value">${employee.permit_id}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">سجل بواسطة:</span>
+                                <span class="detail-value">${employee.check_in_by || 'الحارس'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">المدة:</span>
+                                <span class="detail-value">${duration}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="action-btn btn-checkout" onclick="openCheckOutModal(${employee.permit_id}, '${employee.employee_name}')">
+                                <span>🚪</span> تسجيل خروج
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            countElement.textContent = `${employees.length} موظف`;
+        }
+        
+        function calculateDuration(checkInTime) {
+            // محاكاة حساب المدة
+            const hours = Math.floor(Math.random() * 3) + 1;
+            const minutes = Math.floor(Math.random() * 60);
+            return `${hours} ساعة ${minutes} دقيقة`;
+        }
+        
+        // ========== CHECK FOR NEW PERMITS ==========
+       // ========== CHECK FOR NEW PERMITS ==========
+function checkForNewPermits(newPermits) {
+    try {
+        const lastPermitIds = JSON.parse(localStorage.getItem('last_permit_ids')) || [];
+        const currentPermitIds = newPermits.map(p => p.permit_id || p.id);
+        
+        console.log('🆔 آخر التصاريح:', lastPermitIds);
+        console.log('🆔 التصاريح الحالية:', currentPermitIds);
+        
+        // العثور على التصاريح الجديدة
+        const newPermitIds = currentPermitIds.filter(id => !lastPermitIds.includes(id));
+        
+        console.log('🆕 التصاريح الجديدة:', newPermitIds);
+        
+        if (newPermitIds.length > 0) {
+            // إظهار إشعار بوجود تصاريح جديدة
+            const badge = document.getElementById('newPermitsBadge');
+            if (badge) {
+                badge.style.display = 'flex';
+                badge.textContent = newPermitIds.length > 9 ? '9+' : newPermitIds.length;
+                
+                // تأثير اهتزاز للإشعارات الجديدة
+                badge.style.animation = 'slideInRight 0.5s';
+                
+                // إظهار تنبيه
+                showNotification(`📢 هناك ${newPermitIds.length} تصريح جديد من مكتب الأمن`, 'success');
+                
+                // لون أحمر للإشعارات الجديدة
+                badge.style.background = '#e74c3c';
+                badge.style.boxShadow = '0 0 10px rgba(231, 76, 60, 0.5)';
+            }
+            
+            // حفظ التصاريح الحالية للمرة القادمة
+            localStorage.setItem('last_permit_ids', JSON.stringify(currentPermitIds));
+            
+            // 🔊 صوت تنبيه (اختياري)
+            try {
+                const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(e => console.log('🔇 لا يمكن تشغيل الصوت'));
+            } catch (audioError) {
+                console.log('🔇 خطأ في تشغيل الصوت');
+            }
+            
+        } else {
+            const badge = document.getElementById('newPermitsBadge');
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+        
+        // تحديث العداد
+        updatePermitsCount(newPermits.length);
+        
+    } catch (error) {
+        console.error('❌ خطأ في التحقق من التصاريح الجديدة:', error);
+    }
+}
+
+function updatePermitsCount(count) {
+    const countElement = document.getElementById('approvedCount');
+    if (countElement) {
+        countElement.textContent = `${count} ${count === 1 ? 'تصريح' : 'تصريح'}`;
+    }
+}
+        
+        // ========== CHECK IN/OUT FUNCTIONS ==========
+        function setupModalListeners() {
+            const modal = document.getElementById('actionModal');
+            const modalCancel = document.getElementById('modalCancel');
+            const modalConfirm = document.getElementById('modalConfirm');
+            
+            modalCancel.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            
+            modalConfirm.addEventListener('click', () => {
+                const permitId = modal.getAttribute('data-permit-id');
+                const action = modal.getAttribute('data-action');
+                const employeeName = modal.getAttribute('data-employee-name');
+                
+                if (action === 'checkin') {
+                    processCheckIn(permitId, employeeName);
+                } else if (action === 'checkout') {
+                    const notes = document.getElementById('checkOutNotes')?.value || '';
+                    processCheckOut(permitId, employeeName, notes);
+                }
+                
+                modal.style.display = 'none';
+            });
+        }
+        
+        function openCheckInModal(permitId, employeeName) {
+            const guardName = localStorage.getItem('guard_name');
+            if (!guardName) {
+                showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('actionModal');
+            const now = new Date().toLocaleTimeString('ar-SA', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            document.getElementById('modalTitle').textContent = 'تسجيل دخول الموظف';
+            document.getElementById('modalContent').innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <p style="margin-bottom: 10px; color: #666;">الموظف: <strong>${employeeName}</strong></p>
+                    <p style="margin-bottom: 10px; color: #666;">رقم التصريح: <strong>${permitId}</strong></p>
+                    <p style="margin-bottom: 10px; color: #666;">الحارس المسجل: <strong>${guardName}</strong></p>
+                </div>
+                
+                <div style="background: #f0f7ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <p style="color: #3498db; font-weight: 600; margin-bottom: 5px;">الوقت الحالي:</p>
+                    <p style="font-size: 18px; color: #2c3e50;">${now}</p>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">
+                        ملاحظات (اختياري):
+                    </label>
+                    <textarea id="checkInNotes" 
+                              style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; min-height: 80px; font-family: inherit;"
+                              placeholder="أدخل أي ملاحظات..."></textarea>
+                </div>
+            `;
+            
+            modal.setAttribute('data-permit-id', permitId);
+            modal.setAttribute('data-action', 'checkin');
+            modal.setAttribute('data-employee-name', employeeName);
+            modal.style.display = 'flex';
+        }
+        
+        function openCheckOutModal(permitId, employeeName) {
+            const guardName = localStorage.getItem('guard_name');
+            if (!guardName) {
+                showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('actionModal');
+            const now = new Date().toLocaleTimeString('ar-SA', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            document.getElementById('modalTitle').textContent = 'تسجيل خروج الموظف';
+            document.getElementById('modalContent').innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <p style="margin-bottom: 10px; color: #666;">الموظف: <strong>${employeeName}</strong></p>
+                    <p style="margin-bottom: 10px; color: #666;">رقم التصريح: <strong>${permitId}</strong></p>
+                    <p style="margin-bottom: 10px; color: #666;">الحارس المسجل: <strong>${guardName}</strong></p>
+                </div>
+                
+                <div style="background: #f0f7ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <p style="color: #3498db; font-weight: 600; margin-bottom: 5px;">الوقت الحالي:</p>
+                    <p style="font-size: 18px; color: #2c3e50;">${now}</p>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">
+                        ملاحظات الخروج (اختياري):
+                    </label>
+                    <textarea id="checkOutNotes" 
+                              style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; min-height: 80px; font-family: inherit;"
+                              placeholder="أدخل ملاحظات الخروج..."></textarea>
+                </div>
+                
+                <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; border-right: 4px solid #2ecc71;">
+                    <p style="color: #155724; font-size: 14px;">
+                        <strong>ملاحظة:</strong> سيتم إرسال إشعار لمكتب الأمن بتسجيل الخروج
+                    </p>
+                </div>
+            `;
+            
+            modal.setAttribute('data-permit-id', permitId);
+            modal.setAttribute('data-action', 'checkout');
+            modal.setAttribute('data-employee-name', employeeName);
+            modal.style.display = 'flex';
+        }
+        
+        // 🔥 MODIFIED: دالة processCheckIn - الإصدار المحسن
+function processCheckIn(permitId, employeeName) {
+    const guardName = localStorage.getItem('guard_name');
+    if (!guardName) {
+        showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
+        return;
+    }
+    
+    const now = new Date().toLocaleTimeString('ar-SA', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    const notes = document.getElementById('checkInNotes')?.value || '';
+    
+    console.log('🔄 بدء تسجيل دخول لـ:', employeeName, 'رقم التصريح:', permitId);
+    console.log('📋 التصاريح الحالية قبل:', approvedPermits.length);
+    
+    // 1. 🔥 البحث عن التصريح وإزالته من approvedPermits
+    let removedPermit = null;
+    const permitIndex = approvedPermits.findIndex(p => p.permit_id == permitId);
+    
+    if (permitIndex !== -1) {
+        // 🔥 إزالة التصريح من القائمة
+        removedPermit = approvedPermits[permitIndex];
+        approvedPermits.splice(permitIndex, 1);
+        
+        console.log('✅ تم إزالة التصريح من القائمة:', removedPermit);
+        console.log('📋 التصاريح المتبقية بعد:', approvedPermits.length);
+        
+        // 2. 🔥 تحديث localStorage فوراً
+        localStorage.setItem('security_to_guard_permits', JSON.stringify(approvedPermits));
+        
+        // 3. 🔥 تحديث القائمة المحلية مباشرة
+        const localPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+        const localIndex = localPermits.findIndex(p => p.permit_id == permitId);
+        if (localIndex !== -1) {
+            localPermits.splice(localIndex, 1);
+            localStorage.setItem('security_to_guard_permits', JSON.stringify(localPermits));
+        }
+    } else {
+        console.log('⚠️ التصريح غير موجود في approvedPermits:', permitId);
+    }
+    
+    // 4. إرسال البيانات للخادم لتسجيل الدخول
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/permits/guard-checkin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                permit_id: permitId,
+                guard_username: guardName,
+                actual_entry_time: now,
+                entry_notes: notes
+            })
+        });
+        
+        const data = await response.json();
+        if (!data.success) {
+            console.error('خطأ في تسجيل الدخول:', data.message);
+            showNotification('❌ ' + (data.message || 'حدث خطأ في تسجيل الدخول'), 'error');
+            return;
+        }
+    } catch (error) {
+        console.error('خطأ في الاتصال بالخادم:', error);
+        // الاستمرار في العملية حتى لو فشل الاتصال بالخادم
+    }
+    
+    // 5. 🔥 إضافة الموظف إلى قائمة الداخلين
+    const newEmployee = {
+        id: Date.now(),
+        permit_id: permitId,
+        employee_name: employeeName,
+        job_number: removedPermit?.job_number || '',
+        department_name: removedPermit?.department_name || '',
+        check_in_time: now,
+        check_in_by: guardName,
+        status: 'checked_in',
+        notes: notes,
+        original_permit_data: removedPermit || {}
+    };
+    
+    console.log('👤 بيانات الموظف الجديد:', newEmployee);
+    
+    // 🔥 تحديث checkedInEmployees مباشرة
+    checkedInEmployees.push(newEmployee);
+    localStorage.setItem('checked_in_employees', JSON.stringify(checkedInEmployees));
+    
+    // 6. 🔥 تحديث العرض مباشرة وفوراً - بدون تأخير
+    displayApprovedPermits(approvedPermits);
+    displayCheckedInPermits(checkedInEmployees);
+    
+    // 7. إرسال إشعار لمكتب الأمن
+    const notificationData = {
+        type: 'employee_checkin',
+        guard_name: guardName,
+        data: {
+            message: `دخل الموظف ${employeeName} الساعة ${now}`,
+            employee_name: employeeName,
+            permit_id: permitId,
+            check_in_time: now,
+            guard_notes: notes,
+            guard_name: guardName
+        }
+    };
+    
+    sendNotificationToSecurity(notificationData);
+    
+    showNotification(`✅ تم تسجيل دخول ${employeeName}`, 'success');
+    
+    // 🔥🔥🔥 NEW: إغلاق نافذة المودال فوراً
+    setTimeout(() => {
+        // 1. إغلاق النافذة المنبثقة
+        const modal = document.getElementById('actionModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        
+        // 2. مسح الحقول
+        const notesField = document.getElementById('checkInNotes');
+        if (notesField) notesField.value = '';
+        
+        // 3. 🔥 التأكد من تحديث القوائم مرة أخرى
+        setTimeout(() => {
+            displayApprovedPermits(approvedPermits);
+            displayCheckedInPermits(checkedInEmployees);
+        }, 100);
+        
+    }, 800); // انتظار قصير جداً ثم الإغلاق
+    
+    // 🔥 تحديث جميع العدادات
+    updateAllCounts();
+}
+
+// 🔥 NEW: دالة لتحديث جميع العدادات
+function updateAllCounts() {
+    // 1. تحديث عداد التصاريح الجديدة
+    const approvedCount = approvedPermits.length;
+    const approvedCountElement = document.getElementById('approvedCount');
+    if (approvedCountElement) {
+        approvedCountElement.textContent = `${approvedCount} ${approvedCount === 1 ? 'تصريح' : 'تصريح'}`;
+    }
+    
+    // 2. تحديث عداد الموظفين الداخلين
+    const checkedInCount = checkedInEmployees.length;
+    const checkedInCountElement = document.getElementById('checkedInCount');
+    if (checkedInCountElement) {
+        checkedInCountElement.textContent = `${checkedInCount} ${checkedInCount === 1 ? 'موظف' : 'موظف'}`;
+        
+        // تأثير للعداد
+        checkedInCountElement.style.transition = 'all 0.3s';
+        checkedInCountElement.style.transform = 'scale(1.2)';
+        checkedInCountElement.style.color = '#2ecc71';
+        
+        setTimeout(() => {
+            checkedInCountElement.style.transform = 'scale(1)';
+            checkedInCountElement.style.color = '';
+        }, 500);
+    }
+    
+    // 3. تحديث الـ badge
+    const badge = document.getElementById('newPermitsBadge');
+    if (badge) {
+        if (approvedCount > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = approvedCount > 9 ? '9+' : approvedCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+// 🔥 MODIFIED: دالة displayApprovedPermits - نسخة محسنة
+function displayApprovedPermits(permits) {
+    const container = document.getElementById('approvedPermits');
+    const countElement = document.getElementById('approvedCount');
+    
+    console.log('🎯 عرض التصاريح الجديدة:', permits?.length || 0);
+    
+    // 🔥 تصفية التصاريح التي تم تسجيل دخولها بالفعل
+    const filteredPermits = (permits || []).filter(permit => {
+        const isCheckedIn = checkedInEmployees.some(emp => emp.permit_id == permit.permit_id);
+        return !isCheckedIn; // 🔥 إظهار فقط التصاريح غير المسجلة
+    });
+    
+    console.log('🎯 التصاريح بعد التصفية:', filteredPermits.length);
+    
+    if (!filteredPermits || filteredPermits.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
+                <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">📋</div>
+                <h3 style="margin-bottom: 10px; color: #2c3e50;">لا توجد تصاريح جديدة</h3>
+                <p>جميع التصاريح قد تمت معالجتها</p>
+                <p style="margin-top: 15px; font-size: 14px; color: #95a5a6;">
+                    <span>💡</span> سيظهر التصريح هنا بعد الموافقة عليه من مكتب الأمن
+                </p>
+            </div>
+        `;
+        countElement.textContent = '0 تصريح';
+        
+        // 🔥 إخفاء العداد الجديد
+        const badge = document.getElementById('newPermitsBadge');
+        if (badge) {
+            badge.style.display = 'none';
+        }
+        
+        return;
+    }
+    
+    let html = '';
+    filteredPermits.forEach(permit => {
+        html += `
+            <div class="permit-card" id="permit-${permit.permit_id}">
+                <div style="position: relative;">
+                    <div style="background: #e8f5e9; color: #155724; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px;">
+                        ✅ معتمد من الأمن
+                    </div>
+                </div>
+                
+                <div class="employee-info">
+                    <div class="employee-avatar">${permit.employee_name?.charAt(0) || 'م'}</div>
+                    <div class="employee-details">
+                        <h3>${permit.employee_name}</h3>
+                        <p>${permit.job_number}</p>
+                        <p>${permit.department_name}</p>
+                    </div>
+                </div>
+                
+                <div class="permit-details">
+                    <div class="detail-item">
+                        <span class="detail-label">رقم التصريح:</span>
+                        <span class="detail-value">${permit.permit_id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">الوقت المسموح:</span>
+                        <span class="detail-value">${permit.expected_exit_time}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">السبب:</span>
+                        <span class="detail-value">${permit.reason}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">وافق عليه:</span>
+                        <span class="detail-value">${permit.approved_by_security || 'مكتب الأمن'}</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name}')">
+                        <span>✅</span> تسجيل دخول
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    countElement.textContent = `${filteredPermits.length} ${filteredPermits.length === 1 ? 'تصريح' : 'تصريح'}`;
+    
+    // 🔥 تحديث العداد الجديد
+    const badge = document.getElementById('newPermitsBadge');
+    if (badge) {
+        if (filteredPermits.length > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = filteredPermits.length > 9 ? '9+' : filteredPermits.length;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+// 🔥 MODIFIED: دالة displayCheckedInPermits
+function displayCheckedInPermits(employees) {
+    const container = document.getElementById('checkedInPermits');
+    const countElement = document.getElementById('checkedInCount');
+    
+    console.log('🎯 عرض الموظفين الداخلين:', employees?.length || 0);
+    
+    if (!employees || employees.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
+                <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">👥</div>
+                <h3 style="margin-bottom: 10px; color: #2c3e50;">لا يوجد موظفين داخل المبنى</h3>
+                <p>لم يتم تسجيل دخول أي موظف</p>
+                <p style="margin-top: 15px; font-size: 14px; color: #95a5a6;">
+                    <span>💡</span> عند تسجيل دخول موظف، سيظهر هنا تلقائياً
+                </p>
+            </div>
+        `;
+        countElement.textContent = '0 موظف';
+        return;
+    }
+    
+    let html = '';
+    employees.forEach(employee => {
+        // حساب المدة منذ الدخول
+        const duration = calculateDuration(employee.check_in_time);
+        
+        html += `
+            <div class="permit-card" style="border-color: #2ecc71; background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%); animation: slideIn 0.5s;">
+                <div style="position: relative;">
+                    <div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px;">
+                        🟢 داخل المبنى - ${duration}
+                    </div>
+                </div>
+                
+                <div class="employee-info">
+                    <div class="employee-avatar" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
+                        ${employee.employee_name?.charAt(0) || 'م'}
+                    </div>
+                    <div class="employee-details">
+                        <h3>${employee.employee_name}</h3>
+                        <p>📋 التصريح: #${employee.permit_id}</p>
+                        <p>🏢 ${employee.department_name || 'غير محدد'}</p>
+                        <p>👮 سجل بواسطة: ${employee.check_in_by || 'الحارس'}</p>
+                        <p>🕒 وقت الدخول: ${employee.check_in_time}</p>
+                        ${employee.notes ? `
+                            <div style="margin-top: 8px; padding: 8px; background: white; border-radius: 6px; border-right: 3px solid #3498db;">
+                                <p style="color: #666; font-size: 13px; margin: 0;">
+                                    <span>📝</span> ${employee.notes}
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn btn-checkout" onclick="openCheckOutModal(${employee.permit_id}, '${employee.employee_name}')">
+                        <span>🚪</span> تسجيل خروج
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    countElement.textContent = `${employees.length} ${employees.length === 1 ? 'موظف' : 'موظف'}`;
+}
+
+// 🔥 NEW: دالة للتحميل الأولي مع تأخير
+async function loadPermitsFromSecurity() {
+    try {
+        console.log('🔄 تحميل التصاريح...');
+        
+        // 1. جلب التصاريح من localStorage
+        const localPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+        
+        if (localPermits.length > 0) {
+            approvedPermits = localPermits;
+        } else {
+            approvedPermits = getMockApprovedPermits();
+        }
+        
+        // 2. جلب الموظفين المسجل دخولهم
+        const localCheckedIn = JSON.parse(localStorage.getItem('checked_in_employees')) || [];
+        checkedInEmployees = localCheckedIn;
+        
+        console.log('📊 التصاريح المحملة:', approvedPermits.length);
+        console.log('👥 الموظفون المسجل دخولهم:', checkedInEmployees.length);
+        
+        // 3. 🔥 تصفية التصاريح التي تم تسجيل دخولها
+        approvedPermits = approvedPermits.filter(permit => {
+            const isCheckedIn = checkedInEmployees.some(emp => emp.permit_id == permit.permit_id);
+            return !isCheckedIn; // 🔥 إرجاع فقط التصاريح غير المسجلة
+        });
+        
+        console.log('🎯 التصاريح بعد التصفية:', approvedPermits.length);
+        
+        // 4. حفظ التصاريح المصفاة
+        localStorage.setItem('security_to_guard_permits', JSON.stringify(approvedPermits));
+        
+        // 5. عرض البيانات
+        displayApprovedPermits(approvedPermits);
+        displayCheckedInPermits(checkedInEmployees);
+        
+        // 6. تحديث العدادات
+        updateAllCounts();
+        
+    } catch (error) {
+        console.error('❌ خطأ في تحميل التصاريح:', error);
+    }
+}
+
+// ========== ✅ دالة جلب تصاريح الشركات ==========
+async function loadCompanyPermits() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch('/api/permits/company-entry/active', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                companyPermits = data.permits || [];
+                displayCompanyPermits(companyPermits);
+            }
+        }
+    } catch (error) {
+        console.error('❌ خطأ في جلب تصاريح الشركات:', error);
+    }
+}
+
+// ========== ✅ دالة عرض تصاريح الشركات ==========
+function displayCompanyPermits(permits) {
+    const container = document.getElementById('companyPermitsContainer');
+    const countElement = document.getElementById('companyPermitsCount');
+    
+    if (!permits || permits.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
+                <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">🏢</div>
+                <h3 style="margin-bottom: 10px; color: #2c3e50;">لا توجد تصاريح شركات</h3>
+                <p>لم يتم إرسال أي تصاريح شركات من مكتب الأمن</p>
+            </div>
+        `;
+        countElement.textContent = '0 تصريح';
+        return;
+    }
+    
+    let html = '';
+    permits.forEach(permit => {
+        const workers = permit.workers || [];
+        const isCheckedIn = permit.actual_entry_time && permit.actual_entry_time !== '';
+        
+        html += `
+            <div class="permit-card" style="max-width: 100%;">
+                <div style="position: relative; margin-bottom: 15px;">
+                    <div style="background: ${isCheckedIn ? '#d4edda' : '#e8f5e9'}; color: ${isCheckedIn ? '#155724' : '#155724'}; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block;">
+                        ${isCheckedIn ? '🟢 مسجل دخول' : '✅ معتمد من الأمن'}
+                    </div>
+                </div>
+                
+                <div class="employee-info">
+                    <div class="employee-avatar">🏢</div>
+                    <div class="employee-details">
+                        <h3>${permit.company_name || 'شركة'}</h3>
+                        <p>${permit.company_representative || ''}</p>
+                        <p>${permit.entry_purpose || ''}</p>
+                    </div>
+                </div>
+                
+                <div class="permit-details">
+                    <div class="detail-item">
+                        <span class="detail-label">رقم التصريح:</span>
+                        <span class="detail-value">${permit.permit_id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">تاريخ الدخول:</span>
+                        <span class="detail-value">${permit.expected_entry_date || ''}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">وقت الدخول:</span>
+                        <span class="detail-value">${permit.expected_entry_time || ''}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">وقت الخروج المتوقع:</span>
+                        <span class="detail-value">${permit.expected_exit_time || ''}</span>
+                    </div>
+                </div>
+                
+                <!-- ✅ جدول العمال -->
+                <div style="background: white; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: #2c3e50; font-size: 16px; margin: 0;">👷 العمال (${workers.length})</h4>
+                        ${!isCheckedIn ? `
+                            <button onclick="openAddWorkerModal(${permit.permit_id})" 
+                                    style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                ➕ إضافة عامل
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 8px; text-align: right; font-size: 12px; color: #495057;">الاسم</th>
+                                    <th style="padding: 8px; text-align: right; font-size: 12px; color: #495057;">المهنة</th>
+                                    <th style="padding: 8px; text-align: right; font-size: 12px; color: #495057;">رقم الهوية</th>
+                                    ${!isCheckedIn ? '<th style="padding: 8px; text-align: center; font-size: 12px; color: #495057;">إجراءات</th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${workers.length > 0 ? workers.map(worker => `
+                                    <tr style="border-bottom: 1px solid #dee2e6;">
+                                        <td style="padding: 8px; font-size: 13px;">${worker.worker_name || ''}</td>
+                                        <td style="padding: 8px; font-size: 13px; color: #6c757d;">${worker.worker_profession || '-'}</td>
+                                        <td style="padding: 8px; font-size: 13px; color: #6c757d;">${worker.worker_id_number || '-'}</td>
+                                        ${!isCheckedIn && !worker.is_original ? `
+                                            <td style="padding: 8px; text-align: center;">
+                                                <button onclick="deleteWorker(${permit.permit_id}, ${worker.worker_id})" 
+                                                        style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                                    🗑️ حذف
+                                                </button>
+                                            </td>
+                                        ` : '<td></td>'}
+                                    </tr>
+                                `).join('') : `
+                                    <tr>
+                                        <td colspan="4" style="padding: 15px; text-align: center; color: #6c757d;">لا يوجد عمال</td>
+                                    </tr>
+                                `}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    ${!isCheckedIn ? `
+                        <button class="action-btn btn-checkin" onclick="openCompanyCheckInModal(${permit.permit_id}, '${permit.company_name}')">
+                            <span>✅</span> تسجيل دخول
+                        </button>
+                    ` : `
+                        <button class="action-btn btn-checkout" onclick="openCompanyCheckOutModal(${permit.permit_id}, '${permit.company_name}')">
+                            <span>🚪</span> تسجيل خروج
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    countElement.textContent = `${permits.length} ${permits.length === 1 ? 'تصريح' : 'تصريح'}`;
+}
+
+// ========== ✅ دالة فتح modal إضافة عامل ==========
+function openAddWorkerModal(permitId) {
+    const modal = document.getElementById('actionModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const modalConfirm = document.getElementById('modalConfirm');
+    const modalCancel = document.getElementById('modalCancel');
+    
+    modalTitle.textContent = '➕ إضافة عامل جديد';
+    modalContent.innerHTML = `
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">اسم العامل *</label>
+                <input type="text" id="workerName" placeholder="أدخل اسم العامل" 
+                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">المهنة</label>
+                <input type="text" id="workerProfession" placeholder="مثال: مهندس، فني، إلخ" 
+                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">رقم الهوية</label>
+                <input type="text" id="workerIdNumber" placeholder="رقم الهوية الوطنية" 
+                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">رقم الهاتف</label>
+                <input type="text" id="workerPhone" placeholder="05xxxxxxxx" 
+                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'flex';
+    
+    modalConfirm.onclick = async () => {
+        const workerName = document.getElementById('workerName').value.trim();
+        if (!workerName) {
+            showNotification('❌ اسم العامل مطلوب', 'error');
+            return;
+        }
+        
+        const workerData = {
+            worker_name: workerName,
+            worker_profession: document.getElementById('workerProfession').value.trim() || null,
+            worker_id_number: document.getElementById('workerIdNumber').value.trim() || null,
+            worker_phone: document.getElementById('workerPhone').value.trim() || null,
+            added_by: JSON.parse(localStorage.getItem('user'))?.username || 'guard'
+        };
+        
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/permits/company-entry/${permitId}/workers`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(workerData)
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showNotification('✅ تم إضافة العامل بنجاح', 'success');
+                modal.style.display = 'none';
+                loadCompanyPermits(); // إعادة تحميل التصاريح
+            } else {
+                showNotification('❌ ' + (data.message || 'حدث خطأ'), 'error');
+            }
+        } catch (error) {
+            console.error('❌ خطأ في إضافة العامل:', error);
+            showNotification('❌ حدث خطأ في الاتصال', 'error');
+        }
+    };
+    
+    modalCancel.onclick = () => {
+        modal.style.display = 'none';
+    };
+}
+
+// ========== ✅ دالة حذف عامل ==========
+async function deleteWorker(permitId, workerId) {
+    if (!confirm('هل أنت متأكد من حذف هذا العامل؟')) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/permits/company-entry/${permitId}/workers/${workerId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showNotification('✅ تم حذف العامل بنجاح', 'success');
+            loadCompanyPermits(); // إعادة تحميل التصاريح
+        } else {
+            showNotification('❌ ' + (data.message || 'حدث خطأ'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في حذف العامل:', error);
+        showNotification('❌ حدث خطأ في الاتصال', 'error');
+    }
+}
+
+// ========== ✅ دالة فتح modal تسجيل دخول شركة ==========
+function openCompanyCheckInModal(permitId, companyName) {
+    // يمكن استخدام نفس modal تسجيل الدخول العادي مع تعديلات بسيطة
+    openCheckInModal(permitId, companyName, 'company');
+}
+
+// ========== ✅ دالة فتح modal تسجيل خروج شركة ==========
+function openCompanyCheckOutModal(permitId, companyName) {
+    // يمكن استخدام نفس modal تسجيل الخروج العادي مع تعديلات بسيطة
+    openCheckOutModal(permitId, companyName, 'company');
+}
+
+// 🔥 MODIFIED: إعادة تحميل الصفحة عند بدء التحميل
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 بدء تحميل صفحة الحارس...');
+    
+    // تأخير بسيط لضمان تحميل كل شيء
+    setTimeout(() => {
+        loadGuardName();
+        loadPermitsFromSecurity();
+        loadCompanyPermits(); // ✅ جلب تصاريح الشركات
+        setupModalListeners();
+        
+        // تحديث تلقائي
+        setInterval(loadPermitsFromSecurity, 5000);
+        setInterval(loadCompanyPermits, 5000); // ✅ تحديث تصاريح الشركات
+        
+        // استمع للتحديثات
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'security_to_guard_permits') {
+                console.log('📢 حدث جديد من مكتب الأمن');
+                setTimeout(loadPermitsFromSecurity, 100);
+            }
+        });
+    }, 500);
+});
+        
+        async function processCheckOut(permitId, employeeName, notes = '') {
+            const guardName = localStorage.getItem('guard_name');
+            if (!guardName) {
+                showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
+                return;
+            }
+            
+            const now = new Date().toLocaleTimeString('ar-SA', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            // 1. إرسال البيانات للخادم لتسجيل الخروج
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/permits/guard-checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        permit_id: permitId,
+                        guard_username: guardName,
+                        actual_exit_time: now,
+                        exit_notes: notes
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    console.error('خطأ في تسجيل الخروج:', data.message);
+                    showNotification('❌ ' + (data.message || 'حدث خطأ في تسجيل الخروج'), 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('خطأ في الاتصال بالخادم:', error);
+                // الاستمرار في العملية حتى لو فشل الاتصال بالخادم
+            }
+            
+            // 2. إزالة الموظف من قائمة الموجودين
+            checkedInEmployees = checkedInEmployees.filter(emp => emp.permit_id !== permitId);
+            localStorage.setItem('checked_in_employees', JSON.stringify(checkedInEmployees));
+            
+            // 3. إرسال إشعار لمكتب الأمن (محلياً أيضاً)
+            const notificationData = {
+                type: 'employee_checkout',
+                guard_name: guardName,
+                data: {
+                    message: `غادر الموظف ${employeeName} الساعة ${now}`,
+                    employee_name: employeeName,
+                    permit_id: permitId,
+                    check_out_time: now,
+                    guard_notes: notes,
+                    guard_name: guardName
+                }
+            };
+            
+            sendNotificationToSecurity(notificationData);
+            
+            showNotification(`✅ تم تسجيل خروج ${employeeName} الساعة ${now}`, 'success');
+            
+            // 4. تحديث العرض
+            setTimeout(() => {
+                displayApprovedPermits(approvedPermits);
+                displayCheckedInPermits(checkedInEmployees);
+            }, 1000);
+        }
+        
+        // ========== NOTIFICATION TO SECURITY ==========
+        function sendNotificationToSecurity(notificationData) {
+            try {
+                // حفظ الإشعار في localStorage (سيتم جلبها من صفحة مكتب الأمن)
+                const currentNotifications = JSON.parse(localStorage.getItem('security_guard_notifications')) || [];
+                
+                const newNotification = {
+                    id: Date.now(),
+                    ...notificationData,
+                    timestamp: new Date().toISOString(),
+                    is_read: false
+                };
+                
+                currentNotifications.unshift(newNotification);
+                
+                // الاحتفاظ فقط بآخر 50 إشعار
+                const trimmedNotifications = currentNotifications.slice(0, 50);
+                localStorage.setItem('security_guard_notifications', JSON.stringify(trimmedNotifications));
+                
+                console.log('📢 تم إرسال إشعار لمكتب الأمن:', newNotification);
+                
+                // محاولة إرسال الإشعار للخادم
+                try {
+                    fetch('/api/notifications/guard', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')
+                        },
+                        body: JSON.stringify(notificationData)
+                    }).catch(error => {
+                        console.log('⚠️ ملاحظة: لم يتم إرسال الإشعار للخادم:', error);
+                    });
+                } catch (error) {
+                    console.log('⚠️ ملاحظة: تعذر الاتصال بالخادم');
+                }
+                
+            } catch (error) {
+                console.error('❌ خطأ في إرسال إشعار الحارس:', error);
+            }
+        }
+        
+        // ========== HELPER FUNCTIONS ==========
+        function showNotification(message, type = 'success') {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = `notification notification-${type}`;
+            
+            const icon = type === 'success' ? '✅' : '❌';
+            
+            notificationDiv.innerHTML = `
+                <span style="font-size: 20px;">${icon}</span>
+                <span style="flex: 1;">${message}</span>
+                <button onclick="this.parentElement.remove()" 
+                        style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px;">
+                    ✕
+                </button>
+            `;
+            
+            document.body.appendChild(notificationDiv);
+            
+            setTimeout(() => {
+                if (notificationDiv.parentNode) {
+                    notificationDiv.style.opacity = '0';
+                    notificationDiv.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (notificationDiv.parentNode) {
+                            notificationDiv.parentNode.removeChild(notificationDiv);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

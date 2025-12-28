@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - نظام تصاريح العمل</title>
+    <style>
+        /* ========== RESET & BASE STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        /* ========== LOGIN CONTAINER ========== */
+        .login-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            position: relative;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* ========== LOGIN HEADER ========== */
+        .login-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            padding: 50px 40px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #3498db;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .login-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .login-header p {
+            opacity: 0.9;
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        /* ========== LOGIN FORM ========== */
+        .login-form {
+            padding: 50px 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e8f4ff;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* ========== LOGIN BUTTON ========== */
+        .login-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(46, 204, 113, 0.4);
+        }
+        
+        .login-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ========== MESSAGES ========== */
+        .message-container {
+            margin-bottom: 25px;
+        }
+        
+        .message {
+            padding: 18px 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            animation: slideInDown 0.3s ease;
+            display: none;
+        }
+        
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .message.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        /* ========== BACK LINK ========== */
+        .back-link {
+            text-align: center;
+            margin-top: 25px;
+        }
+        
+        .back-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link a:hover {
+            background: #e8f4ff;
+            text-decoration: none;
+        }
+        
+        /* ========== DEMO ACCOUNTS ========== */
+        .demo-accounts {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 1px solid #e8f4ff;
+        }
+        
+        .demo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .demo-title {
+            color: #2c3e50;
+            font-size: 17px;
+            font-weight: 700;
+        }
+        
+        .demo-item {
+            background: white;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-right: 4px solid #3498db;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .demo-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .demo-item:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.15);
+            background: #f8fafc;
+        }
+        
+        .demo-role {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .demo-credentials {
+            flex: 1;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        
+        /* ========== LOGIN FOOTER ========== */
+        .login-footer {
+            text-align: center;
+            padding: 25px;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            background: #f8f9fa;
+        }
+        
+        .footer-text {
+            margin-bottom: 5px;
+        }
+        
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 768px) {
+            .login-container {
+                border-radius: 20px;
+            }
+            
+            .login-header {
+                padding: 40px 30px;
+            }
+            
+            .login-form {
+                padding: 40px 30px;
+            }
+            
+            .login-header h1 {
+                font-size: 28px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .login-container {
+                border-radius: 18px;
+            }
+            
+            .login-header {
+                padding: 35px 25px;
+            }
+            
+            .login-form {
+                padding: 35px 25px;
+            }
+            
+            .logo-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 22px;
+            }
+            
+            .login-header h1 {
+                font-size: 24px;
+            }
+            
+            .demo-accounts {
+                padding: 20px;
+            }
+            
+            .demo-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .demo-credentials {
+                font-size: 13px;
+            }
+        }
+        
+        /* ========== KEYBOARD SHORTCUT HINT ========== */
+        .shortcut-hint {
+            text-align: center;
+            margin-top: 15px;
+            color: #95a5a6;
+            font-size: 13px;
+        }
+        
+        .shortcut-key {
+            background: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+        
+        /* ========== DEBUG PANEL ========== */
+        .debug-panel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.85);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 9999;
+            max-width: 400px;
+            max-height: 300px;
+            overflow: auto;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== DEBUG PANEL ========== -->
+    <div id="debugPanel" class="debug-panel"></div>
+    
+    <div class="login-container">
+        <!-- ========== LOGIN HEADER ========== -->
+        <div class="login-header">
+            <div class="logo">
+                <div class="logo-icon">🚀</div>
+                <h1>نظام تصاريح العمل</h1>
+            </div>
+            <p>تسجيل الدخول إلى حسابك</p>
+        </div>
+
+        <!-- ========== LOGIN FORM ========== -->
+        <form id="loginForm" class="login-form">
+            <div class="message-container">
+                <div id="message" class="message"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="username" class="form-label">اسم المستخدم</label>
+                <input type="text" id="username" class="form-input" placeholder="أدخل اسم المستخدم" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">كلمة المرور</label>
+                <input type="password" id="password" class="form-input" placeholder="أدخل كلمة المرور" required>
+            </div>
+            
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span id="btnText">تسجيل الدخول</span>
+                <span id="btnLoader" class="loading-spinner" style="display: none;"></span>
+            </button>
+            
+            <div class="back-link">
+                <a href="/">🏠 العودة للرئيسية</a>
+            </div>
+            
+            <!-- ========== DEMO ACCOUNTS ========== -->
+            <div class="demo-accounts">
+                <div class="demo-header">
+                    <div class="demo-icon">👤</div>
+                    <div class="demo-title">بيانات الدخول للتجربة</div>
+                </div>
+                
+                <div class="demo-item" data-username="admin" data-password="admin123">
+                    <span class="demo-role">مسؤول</span>
+                    <span class="demo-credentials">admin / admin123</span>
+                </div>
+                
+                <div class="demo-item" data-username="manager1" data-password="admin123">
+                    <span class="demo-role">مدير</span>
+                    <span class="demo-credentials">manager1 / admin123</span>
+                </div>
+                
+                <div class="demo-item" data-username="employee1" data-password="admin123">
+                    <span class="demo-role">موظف</span>
+                    <span class="demo-credentials">employee1 / admin123</span>
+                </div>
+                
+                <div class="demo-item" data-username="security1" data-password="admin123">
+                    <span class="demo-role">أمن</span>
+                    <span class="demo-credentials">security1 / admin123</span>
+                </div>
+                <div class="demo-item" data-username="security2" data-password="admin123">
+                    <span class="demo-role">حارس الآمن</span>
+                    <span class="demo-credentials">security2 / admin123</span>
+                </div>
+            </div>
+            
+            <div class="shortcut-hint">
+                اختصار: <span class="shortcut-key">Ctrl+1</span> للمسؤول | 
+                <span class="shortcut-key">Ctrl+2</span> للموظف |
+                <span class="shortcut-key">Ctrl+D</span> لتفعيل التصحيح
+            </div>
+        </form>
+        
+        <!-- ========== LOGIN FOOTER ========== -->
+        <div class="login-footer">
+            <p class="footer-text">© 2024 نظام تصاريح العمل الإضافي</p>
+            <p>للاستخدام الداخلي فقط</p>
+        </div>
+    </div>
+
+    <script>
+        // =============== SYSTEM INITIALIZATION ===============
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 صفحة تسجيل الدخول جاهزة');
+            
+            // إضافة وسوم البيانات لحسابات التجربة
+            setupDemoAccountsData();
+            
+            // التحقق من تسجيل الدخول السابق
+            checkIfAlreadyLoggedIn();
+            
+            // إعداد نموذج تسجيل الدخول
+            setupLoginForm();
+            
+            // إعداد الاختصارات
+            setupKeyboardShortcuts();
+            
+            // التركيز على حقل اسم المستخدم
+            setTimeout(() => {
+                document.getElementById('username').focus();
+            }, 300);
+            
+            // التحقق من اتصال الخادم
+            testServerConnection();
+        });
+
+        // =============== CONNECTION TEST ===============
+        async function testServerConnection() {
+            try {
+                console.log('🔍 اختبار اتصال الخادم...');
+                const response = await fetch('/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                }).catch(() => null);
+                
+                if (response && response.ok) {
+                    console.log('✅ الخادم متصل');
+                } else {
+                    console.warn('⚠️ لا يمكن الوصول إلى /api/health، جرب نقاط نهاية أخرى');
+                    
+                    // جرب نقاط نهاية بديلة
+                    const endpoints = ['/', '/api', '/login', '/api/login'];
+                    for (const endpoint of endpoints) {
+                        try {
+                            const test = await fetch(endpoint);
+                            if (test.ok) {
+                                console.log(`✅ ${endpoint} يعمل`);
+                                break;
+                            }
+                        } catch (e) {
+                            // تجاهل الخطأ
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('❌ خطأ في اختبار الاتصال:', error);
+            }
+        }
+
+        // =============== CHECK EXISTING LOGIN ===============
+        function checkIfAlreadyLoggedIn() {
+            const token = localStorage.getItem('token');
+            const userData = localStorage.getItem('user');
+            
+            if (token && userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    console.log('👤 المستخدم مسجل بالفعل:', user.username);
+                    
+                    // إظهار رسالة التوجيه
+                    showMessage(`✅ مرحباً بعودتك ${user.name || user.username}! جاري توجيهك...`, 'success');
+                    
+                    // توجيه بعد 1 ثانية
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('خطأ في بيانات المستخدم:', error);
+                    localStorage.clear();
+                }
+            }
+        }
+
+        // =============== LOGIN FORM HANDLING ===============
+        function setupLoginForm() {
+            const loginForm = document.getElementById('loginForm');
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value.trim();
+                
+                // التحقق من المدخلات
+                if (!username || !password) {
+                    showMessage('❌ يرجى إدخال اسم المستخدم وكلمة المرور', 'error');
+                    return;
+                }
+                
+                // إظهار حالة التحميل
+                loginBtn.disabled = true;
+                btnText.textContent = 'جاري تسجيل الدخول...';
+                btnLoader.style.display = 'inline-block';
+                
+                // مسح أي رسالة سابقة
+                showMessage('', '');
+                
+                // تسجيل البيانات المرسلة
+                logDebug(`📤 إرسال بيانات:`, { username, password });
+                
+                try {
+                    // نقاط النهاية المحتملة (جربها بالترتيب)
+                    const endpoints = [
+                        '/api/login',
+                        '/login',
+                        '/auth/login',
+                        '/api/auth/login',
+                        'http://localhost:5000/api/login',
+                        'http://localhost:5000/login'
+                    ];
+                    
+                    let response = null;
+                    let lastError = null;
+                    
+                    // جرب كل نقطة نهاية حتى تنجح
+                    for (const endpoint of endpoints) {
+                        try {
+                            logDebug(`🔄 تجربة: ${endpoint}`);
+                            
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 8000);
+                            
+                            response = await fetch(endpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ 
+                                    username: username,
+                                    password: password,
+                                    action: 'login'
+                                }),
+                                credentials: 'include', // مهم لارسال الكوكيز
+                                signal: controller.signal
+                            });
+                            
+                            clearTimeout(timeoutId);
+                            
+                            logDebug(`📥 الاستجابة من ${endpoint}:`, {
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: Object.fromEntries(response.headers.entries())
+                            });
+                            
+                            // إذا كانت الاستجابة ناجحة، توقف عن التجربة
+                            if (response.ok || response.status === 200) {
+                                break;
+                            }
+                            
+                        } catch (error) {
+                            lastError = error;
+                            logDebug(`❌ فشل ${endpoint}:`, error.message);
+                            // استمر في المحاولة مع النقطة التالية
+                        }
+                    }
+                    
+                    // إذا لم تنجح أي محاولة
+                    if (!response) {
+                        throw new Error(lastError?.message || 'لا يمكن الوصول إلى الخادم');
+                    }
+                    
+                    // محاولة تحليل الاستجابة
+                    let responseText = '';
+                    try {
+                        responseText = await response.text();
+                        logDebug('📄 نص الاستجابة:', responseText);
+                        
+                        if (!responseText.trim()) {
+                            throw new Error('استجابة فارغة من الخادم');
+                        }
+                        
+                        let data;
+                        try {
+                            data = JSON.parse(responseText);
+                        } catch (parseError) {
+                            // إذا فشل الـ JSON، قد يكون نص عادي
+                            logDebug('⚠️ استجابة ليست JSON:', responseText);
+                            
+                            // تحقق من الرسائل الشائعة في النص
+                            if (responseText.includes('غير مصرح') || 
+                                responseText.includes('يرجى تسجيل الدخول')) {
+                                throw new Error('نقطة النهاية محمية بالتصريح. قد تكون بحاجة إلى تهيئة قاعدة البيانات أولاً.');
+                            }
+                            
+                            // محاولة تحليل يدوي للاستجابة
+                            data = attemptManualParse(responseText);
+                        }
+                        
+                        logDebug('📊 بيانات الاستجابة:', data);
+                        
+                        // التحقق من الاستجابة
+                        if (data.success === true) {
+                            // نجاح تسجيل الدخول
+                            handleLoginSuccess(data, username);
+                            return;
+                            
+                        } else if (data.success === false) {
+                            // فشل تسجيل الدخول مع رسالة
+                            const errorMsg = data.message || data.error || 'بيانات الدخول غير صحيحة';
+                            
+                            // إذا كانت الرسالة "غير مصرح"، قد تكون مشكلة في نقطة النهاية
+                            if (errorMsg.includes('غير مصرح') || 
+                                errorMsg.includes('يرجى تسجيل الدخول')) {
+                                showMessage('❌ نقطة النهاية محمية. جرب إعادة تشغيل الخادم أو تهيئة قاعدة البيانات.', 'error');
+                            } else {
+                                showMessage(`❌ ${errorMsg}`, 'error');
+                            }
+                            
+                            resetLoginButton();
+                            return;
+                        } else {
+                            // استجابة غير متوقعة
+                            throw new Error('استجابة غير معروفة من الخادم');
+                        }
+                        
+                    } catch (parseError) {
+                        logDebug('❌ خطأ في التحليل:', parseError.message);
+                        
+                        // تحليل يدوي للمشكلة
+                        if (responseText.includes('<!DOCTYPE') || 
+                            responseText.includes('<html')) {
+                            throw new Error('الخادم يعيد صفحة HTML بدلاً من JSON. تحقق من مسار نقطة النهاية.');
+                        }
+                        
+                        throw parseError;
+                    }
+                    
+                } catch (error) {
+                    console.error('🚨 خطأ في تسجيل الدخول:', error);
+                    logDebug('🚨 خطأ كامل:', error);
+                    
+                    let errorMessage = '❌ حدث خطأ في الاتصال بالخادم';
+                    
+                    if (error.name === 'AbortError') {
+                        errorMessage = '❌ انتهت مهلة الاتصال. تحقق من اتصال الإنترنت.';
+                    } else if (error.message.includes('JSON') || 
+                               error.message.includes('HTML')) {
+                        errorMessage = `❌ ${error.message}`;
+                    } else if (error.message.includes('لا يمكن الوصول')) {
+                        errorMessage = '❌ لا يمكن الوصول إلى الخادم. تأكد من تشغيل الخادم على المنفذ 5000.';
+                    }
+                    
+                    showMessage(errorMessage, 'error');
+                    resetLoginButton();
+                    
+                    // إظهار اقتراحات استكشاف الأخطاء
+                    setTimeout(() => {
+                        showDebugSuggestions();
+                    }, 2000);
+                }
+            });
+        }
+
+        // =============== HANDLE LOGIN SUCCESS ===============
+        function handleLoginSuccess(data, username) {
+    // حفظ البيانات في localStorage
+    if (data.token) {
+        localStorage.setItem('token', data.token);
+    }
+    
+    // ===== تحديد الدور من اسم المستخدم =====
+    let userRole = 'employee';
+    let userName = username;
+    
+    // إذا كان الخادم يُرجع دور
+    if (data.role) {
+        userRole = data.role;
+    } else {
+        // تحديد الدور من اسم المستخدم (احتياطي)
+        if (username === 'admin') {
+            userRole = 'admin';
+        } else if (username.includes('manager')) {
+            userRole = 'manager';
+        } else if (username === 'security2') {
+            userRole = 'security_guard';
+        } else if (username.includes('security')) {
+            userRole = 'security';
+        } else if (username.includes('employee')) {
+            userRole = 'employee';
+        }
+    }
+    
+    // حفظ معلومات المستخدم
+    const userData = {
+        username: username,
+        name: data.name || username,
+        role: userRole,
+        department: data.department || ''
+    };
+    
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // إظهار رسالة النجاح
+    const roleArabic = {
+        'admin': 'المسؤول',
+        'manager': 'المدير',
+        'security': 'موظف الأمن',
+        'security_guard': 'حارس الآمن',
+        'employee': 'الموظف'
+    }[userRole] || 'المستخدم';
+    
+    showMessage(`✅ تم تسجيل الدخول بنجاح! مرحباً ${userName} (${roleArabic})`, 'success');
+    
+    // ===== تحديد الصفحة المناسبة بناءً على الدور =====
+    let redirectPath = '/dashboard.html';
+    
+    switch(userRole) {
+        case 'admin':
+        case 'manager':
+            redirectPath = '/pages/manager-dashboard.html';
+            break;
+            
+        case 'security':
+            redirectPath = '/pages/security-dashboard.html';
+            break;
+            
+        case 'security_guard':
+            redirectPath = '/pages/security-guard.html'; // ✅ صفحة الحارس
+            break;
+            
+        case 'employee':
+            redirectPath = '/pages/my-permits.html';
+            break;
+            
+        default:
+            redirectPath = '/dashboard.html';
+    }
+    
+    console.log(`🔐 المستخدم: ${username} | الدور: ${userRole} | الصفحة: ${redirectPath}`);
+    
+    // توجيه بعد 1.5 ثانية
+    setTimeout(() => {
+        window.location.href = redirectPath;
+    }, 1500);
+}
+
+        // =============== MANUAL RESPONSE PARSING ===============
+        function attemptManualParse(responseText) {
+            // محاولة استخراج JSON من النص
+            const jsonMatch = responseText.match(/\{.*\}/s);
+            if (jsonMatch) {
+                try {
+                    return JSON.parse(jsonMatch[0]);
+                } catch (e) {
+                    // إذا فشل، ارجع نص الاستجابة كرسالة
+                }
+            }
+            
+            // إذا كان النص يحتوي على كلمات مفتاحية
+            const isError = responseText.includes('error') || 
+                           responseText.includes('Error') || 
+                           responseText.includes('خطأ');
+            
+            const isSuccess = responseText.includes('success') || 
+                             responseText.includes('Success') || 
+                             responseText.includes('نجاح');
+            
+            return {
+                success: isSuccess && !isError,
+                message: responseText.substring(0, 100) + (responseText.length > 100 ? '...' : '')
+            };
+        }
+
+        // =============== RESET LOGIN BUTTON ===============
+        function resetLoginButton() {
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            
+            loginBtn.disabled = false;
+            btnText.textContent = 'تسجيل الدخول';
+            btnLoader.style.display = 'none';
+        }
+
+        // =============== DEMO ACCOUNTS ===============
+        function setupDemoAccountsData() {
+            const demoItems = document.querySelectorAll('.demo-item');
+            
+            demoItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const username = this.dataset.username;
+                    const password = this.dataset.password;
+                    fillCredentials(username, password);
+                });
+            });
+        }
+
+        function fillCredentials(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            
+            const role = username === 'admin' ? 'المسؤول' :
+                        username.includes('manager') ? 'المدير' :
+                        username.includes('employee') ? 'الموظف' :
+                        username === 'security2' ? 'حارس الآمن' :
+                        username.includes('security') ? 'الأمن' :
+                        'المستخدم';
+            
+            showMessage(`✅ تم تعبئة بيانات ${role}، اضغط على زر تسجيل الدخول أو Enter`, 'success');
+            
+            // التركيز على زر تسجيل الدخول
+            setTimeout(() => {
+                document.getElementById('loginBtn').focus();
+            }, 100);
+        }
+
+        // =============== KEYBOARD SHORTCUTS ===============
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Enter في حقل كلمة المرور
+                if (e.target.id === 'password' && e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                }
+                
+                // Ctrl + 1 للمسؤول
+                if (e.ctrlKey && e.key === '1') {
+                    e.preventDefault();
+                    fillCredentials('admin', 'admin123');
+                }
+                
+                // Ctrl + 2 للموظف
+                if (e.ctrlKey && e.key === '2') {
+                    e.preventDefault();
+                    fillCredentials('employee1', 'admin123');
+                }
+                
+                // Ctrl + 3 للمدير
+                if (e.ctrlKey && e.key === '3') {
+                    e.preventDefault();
+                    fillCredentials('manager1', 'admin123');
+                }
+                
+                // Ctrl + 4 للأمن
+                if (e.ctrlKey && e.key === '4') {
+                    e.preventDefault();
+                    fillCredentials('security1', 'admin123');
+                }
+
+                // Ctrl + 5 للحارس
+                if (e.ctrlKey && e.key === '5') {
+                    e.preventDefault();
+                    fillCredentials('security2', 'admin123');
+                }
+                
+                // Ctrl + D لتفعيل/تعطيل التصحيح
+                if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+                    e.preventDefault();
+                    toggleDebugPanel();
+                }
+                
+                // Escape لمسح الحقول
+                if (e.key === 'Escape') {
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    document.getElementById('username').focus();
+                }
+            });
+        }
+
+        // =============== MESSAGE SYSTEM ===============
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            
+            if (!text) {
+                messageDiv.style.display = 'none';
+                return;
+            }
+            
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = text;
+            messageDiv.style.display = 'block';
+            
+            // إخفاء تلقائي لرسائل الخطأ بعد 5 ثوانٍ
+            if (type === 'error') {
+                setTimeout(() => {
+                    if (messageDiv.style.display === 'block') {
+                        messageDiv.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+
+        // =============== DEBUG FUNCTIONS ===============
+        let debugEnabled = localStorage.getItem('debugEnabled') === 'true';
+        
+        function toggleDebugPanel() {
+            debugEnabled = !debugEnabled;
+            localStorage.setItem('debugEnabled', debugEnabled);
+            
+            const debugPanel = document.getElementById('debugPanel');
+            debugPanel.style.display = debugEnabled ? 'block' : 'none';
+            
+            showMessage(debugEnabled ? '🔧 تم تفعيل وضع التصحيح' : '🔧 تم تعطيل وضع التصحيح', 'success');
+            
+            if (debugEnabled) {
+                logDebug('🔧 وضع التصحيح مفعل');
+            }
+        }
+        
+        function logDebug(title, data = null) {
+            if (!debugEnabled) return;
+            
+            const debugPanel = document.getElementById('debugPanel');
+            const now = new Date().toLocaleTimeString();
+            
+            let logEntry = `<div style="margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 5px;">
+                <span style="color: #ccc;">[${now}]</span> ${title}`;
+            
+            if (data) {
+                logEntry += `: ${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}`;
+            }
+            
+            logEntry += '</div>';
+            
+            debugPanel.innerHTML = logEntry + debugPanel.innerHTML;
+            
+            // حفظ فقط آخر 20 سجل
+            const entries = debugPanel.innerHTML.split('</div>');
+            if (entries.length > 20) {
+                debugPanel.innerHTML = entries.slice(0, 20).join('</div>') + '</div>';
+            }
+        }
+        
+        function showDebugSuggestions() {
+            if (!debugEnabled) return;
+            
+            const suggestions = `
+                <strong>🔧 اقتراحات استكشاف الأخطاء:</strong><br>
+                1. تحقق من تشغيل الخادم (node server.js)<br>
+                2. تأكد من نقطة النهاية /api/login موجودة<br>
+                3. جرب: <button onclick="testDirectLogin()" style="background: #666; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer;">اختبار مباشر</button><br>
+                4. افتح <a href="http://localhost:5000/api/login" target="_blank" style="color: #0f0;">/api/login</a> في متصفح جديد<br>
+                5. تحقق من سجلات الخادم (Terminal)
+            `;
+            
+            const debugPanel = document.getElementById('debugPanel');
+            debugPanel.innerHTML = `<div style="color: #ff0;">${suggestions}</div>` + debugPanel.innerHTML;
+        }
+        
+        // دالة اختبار مباشر
+        window.testDirectLogin = async function() {
+            logDebug('🧪 اختبار تسجيل دخول مباشر...');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                
+                logDebug('📊 نتيجة الاختبار:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                });
+                
+                const text = await response.text();
+                logDebug('📄 نص الاستجابة:', text);
+                
+            } catch (error) {
+                logDebug('❌ خطأ في الاختبار:', error.message);
+            }
+        };
+
+        // =============== PASSWORD VISIBILITY TOGGLE ===============
+        // إضافة زر إظهار/إخفاء كلمة المرور
+        const passwordInput = document.getElementById('password');
+        const passwordGroup = passwordInput.parentElement;
+        
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.innerHTML = '👁️';
+        toggleBtn.style.cssText = `
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #7f8c8d;
+            padding: 5px;
+            z-index: 10;
+        `;
+        
+        passwordGroup.style.position = 'relative';
+        passwordInput.style.paddingLeft = '50px';
+        passwordGroup.appendChild(toggleBtn);
+        
+        toggleBtn.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            toggleBtn.innerHTML = type === 'password' ? '👁️' : '👁️‍🗨️';
+        });
+
+        // =============== INITIAL DEBUG SETUP ===============
+        // إذا كان وضع التصحيح مفعل سابقاً
+        if (debugEnabled) {
+            document.getElementById('debugPanel').style.display = 'block';
+            logDebug('🔧 تم استعادة وضع التصحيح');
+        }
+        
+        // تفعيل وضع التصحيح تلقائياً إذا كان هناك خطأ في العنوان
+        if (window.location.search.includes('debug')) {
+            toggleDebugPanel();
+        }
+    </script>
+</body>
+</html>

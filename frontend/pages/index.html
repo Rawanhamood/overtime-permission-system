@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>نظام تصاريح العمل</title>
+    <script>
+        // هذه الدالة تُستدعى عند تحميل الصفحة
+        async function loadDashboard() {
+            try {
+                // 1. جلب معلومات المستخدم من الـ session أو localStorage
+                const userRole = localStorage.getItem('userRole') || 'guard'; // أو 'security_admin'
+                const username = localStorage.getItem('username') || 'user';
+                
+                console.log('👤 نوع المستخدم:', userRole);
+                
+                // 2. تحميل المحتوى المناسب
+                if (userRole === 'security_admin') {
+                    await loadSecurityDashboard(username);
+                } else if (userRole === 'guard') {
+                    await loadGuardDashboard(username);
+                } else if (userRole === 'manager') {
+                    await loadManagerDashboard(username);
+                } else {
+                    // إذا لم يكن مسجلاً، أذهب لتسجيل الدخول
+                    window.location.href = 'login.html';
+                }
+                
+            } catch (error) {
+                console.error('❌ خطأ في تحميل اللوحة:', error);
+                document.body.innerHTML = '<h1>حدث خطأ في تحميل النظام</h1>';
+            }
+        }
+        
+        // دالة تحميل لوحة الأمن (المكتب)
+        async function loadSecurityDashboard(username) {
+            const response = await fetch(`/api/dashboard/stats/${username}`);
+            const data = await response.json();
+            
+            // تحميل القالب الخاص بمكتب الأمن
+            const template = await fetch('templates/security-dashboard.html');
+            const html = await template.text();
+            
+            document.body.innerHTML = html;
+            
+            // ملء البيانات الديناميكية
+            if (data.success && data.stats) {
+                document.getElementById('pending-requests').textContent = data.stats.pending_requests || 0;
+                document.getElementById('today-rejected').textContent = data.stats.today_rejected || 0;
+                // ... إلخ
+            }
+        }
+        
+        // دالة تحميل لوحة الحارس
+        async function loadGuardDashboard(username) {
+            // تحميل القالب الخاص بالحارس
+            const template = await fetch('templates/guard-dashboard.html');
+            const html = await template.text();
+            
+            document.body.innerHTML = html;
+            
+            // جلب تصاريح الحارس النشطة
+            try {
+                const response = await fetch(`/api/guard/active-permits/${username}`);
+                const data = await response.json();
+                
+                if (data.success && data.permits) {
+                    // عرض التصاريح
+                    const permitsContainer = document.getElementById('active-permits');
+                    permitsContainer.innerHTML = '';
+                    
+                    data.permits.forEach(permit => {
+                        const permitItem = `
+                            <div class="permit-item">
+                                <h3>${permit.employee_name}</h3>
+                                <p>رقم التصريح: ${permit.permit_id}</p>
+                                <p>الوقت المسموح: ${permit.end_time}</p>
+                            </div>
+                        `;
+                        permitsContainer.innerHTML += permitItem;
+                    });
+                }
+            } catch (error) {
+                console.error('❌ خطأ في جلب تصاريح الحارس:', error);
+            }
+        }
+        
+        // تشغيل عند تحميل الصفحة
+        window.onload = loadDashboard;
+        
+    </script>
+</head>
+<body>
+    <!-- سيتم تعبئة هذا المحتوى ديناميكياً -->
+    <div id="loading" style="text-align: center; padding: 50px;">
+        <h2>جاري تحميل النظام...</h2>
+    </div>
+</body>
+</html>

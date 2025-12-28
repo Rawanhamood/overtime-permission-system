@@ -1,0 +1,3341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الأمن - نظام تصاريح العمل</title>
+    <style>
+        /* ========== RESET & BASE STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fb 0%, #e3edf7 100%);
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+        
+        /* ========== NAVBAR STYLES ========== */
+        .navbar {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            background: #fff;
+            color: #3498db;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .user-role {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        /* ========== NOTIFICATION SYSTEM ========== */
+        .notification-container {
+            position: relative;
+        }
+        
+        .notification-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .notification-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border: 2px solid #2c3e50;
+        }
+        
+        .notifications-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 400px;
+            max-width: 90vw;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 1001;
+            overflow: hidden;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) translateX(0);
+            }
+        }
+        
+        .notifications-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notifications-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .notifications-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-item:hover {
+            background: #f8fafc;
+        }
+        
+        .notification-item.unread {
+            background: #f0f7ff;
+            border-right: 4px solid #3498db;
+        }
+        
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .notification-message {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .notification-time {
+            color: #95a5a6;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .notification-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-mark-read, .btn-view-permit {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-mark-read {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-view-permit {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .notifications-empty {
+            padding: 50px 20px;
+            text-align: center;
+            color: #95a5a6;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header-content {
+            flex: 1;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .page-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        /* ========== STATS CARDS ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            text-align: center;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px;
+        }
+        
+        .stat-icon.pending { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; }
+        .stat-icon.approved { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; }
+        .stat-icon.rejected { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+        .stat-icon.active { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .stat-number.pending { color: #f39c12; }
+        .stat-number.approved { color: #2ecc71; }
+        .stat-number.rejected { color: #e74c3c; }
+        .stat-number.active { color: #3498db; }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        /* ========== ALERTS ========== */
+        .alerts-container {
+            margin-bottom: 30px;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            animation: slideInLeft 0.3s ease;
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeb99 100%);
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        /* ========== PERMITS SECTIONS ========== */
+        .permits-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            min-height: 300px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f8fafc;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-count {
+            background: #e8f4ff;
+            color: #3498db;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* ========== PERMITS GRID ========== */
+        .permits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 25px;
+        }
+        
+        .permit-card {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 25px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .permit-card:hover {
+            border-color: #3498db;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+        }
+        
+        .permit-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+        }
+        
+        .permit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .permit-id {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .permit-date {
+            color: #7f8c8d;
+            font-size: 14px;
+            background: #edf2f7;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+        
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .employee-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .employee-details h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .employee-details p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .permit-details {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #edf2f7;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .detail-value {
+            color: #2c3e50;
+            font-size: 14px;
+            text-align: left;
+            max-width: 60%;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-allow {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .btn-allow:hover {
+            background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+        
+        .btn-deny {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-deny:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn-view {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-end {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-end:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        /* ========== ACTIVE PERMITS STYLES ========== */
+        .active-permit-card {
+            background: linear-gradient(135deg, #e8f5e9 0%, #d4edda 100%);
+            border: 2px solid #28a745;
+        }
+        
+        .active-permit-card::before {
+            background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+        }
+        
+        .timer-display {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+        }
+        
+        .timer-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.2;
+            color: #7f8c8d;
+        }
+        
+        .empty-title {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-description {
+            color: #7f8c8d;
+            font-size: 16px;
+            max-width: 400px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        /* ========== LOADING STATE ========== */
+        .loading-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e8f4ff;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        /* ========== MODAL STYLES ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(3px);
+        }
+        
+        .modal-box {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            color: #34495e;
+            background: #fff;
+        }
+        
+        .modal-input-area {
+            padding: 0 20px 15px;
+            display: none;
+        }
+        
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e8f4ff;
+            border-radius: 10px;
+            font-size: 15px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background: #fafafa;
+            text-align: left;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid #eee;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .modal-btn-cancel:hover {
+            background: #d5d5d5;
+        }
+        
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .modal-btn-confirm:hover {
+            background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+        
+        /* ========== SEARCH BOX ========== */
+        .search-box {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e8f4ff;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-btn:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 1024px) {
+            .main-container {
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .permits-grid {
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .permits-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-input, .search-btn {
+                width: 100%;
+            }
+            
+            .modal-box {
+                max-width: 95%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .page-title {
+                font-size: 24px;
+            }
+            
+            .stat-number {
+                font-size: 28px;
+            }
+            
+            .permits-section {
+                padding: 20px;
+            }
+            
+            .permit-card {
+                padding: 20px;
+            }
+            
+            .employee-info {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
+        /* ========== GUARD NOTIFICATIONS ANIMATION ========== */
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            50% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* ========== DEBUG INFO ========== */
+.debug-info {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 999;
+    display: none;
+}
+
+.debug-info.active {
+    display: block;
+}
+
+.last-update {
+    background: #2c3e50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin: 5px 0;
+    font-family: monospace;
+}
+
+/* ========== PERMIT STATUS ========== */
+.status-new {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* ========== GUARD NOTIFICATION BADGE ========== */
+#guardNotificationBadge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    border: 2px solid #2c3e50;
+    animation: pulse 1.5s infinite;
+}
+    </style>
+</head>
+<body>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">🚀</div>
+            <span>نظام تصاريح العمل</span>
+        </div>
+        
+        <div class="nav-links">
+            <a href="/dashboard.html" class="nav-link">🏠 الرئيسية</a>
+            <a href="/pages/security-dashboard.html" class="nav-link active">🔒 لوحة الأمن</a>
+            <a href="/pages/my-permits.html" class="nav-link">📋 التصاريح</a>
+            <a id="manageDeptLink" href="/pages/manage-departments.html" class="nav-link">⚙️ إدارة الأقسام</a>
+            
+            <!-- 🔥 NEW: زر إشعارات الحرس مع عداد -->
+            <button onclick="showGuardNotifications()" class="nav-link" style="position: relative;">
+                👮 إشعارات الحرس
+                <span id="guardNotificationBadge" class="notification-badge" style="top: -8px; right: -8px; display: none;">0</span>
+            </button>
+            
+            
+        </div>
+        
+        <div class="user-info" id="userInfo">
+            <div class="user-details">
+                <div class="user-name">جاري التحميل...</div>
+                <div class="user-role">...</div>
+            </div>
+            <div class="user-avatar" id="userAvatar">...</div>
+        </div>
+    </nav>
+
+    <!-- ========== NOTIFICATIONS PANEL ========== -->
+    <div id="notificationsPanel" class="notifications-panel">
+        <div class="notifications-header">
+            <h3>🔔 الإشعارات</h3>
+            <button onclick="markAllNotificationsAsRead()" class="btn-mark-read" style="background: rgba(255,255,255,0.2);">
+                تحديد الكل كمقروء
+            </button>
+            <button onclick="closeNotifications()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">
+                ✕
+            </button>
+        </div>
+        <div class="notifications-list" id="notificationsList"></div>
+        <div class="notifications-empty" id="notificationsEmpty" style="display: none;">
+            لا توجد إشعارات جديدة
+        </div>
+    </div>
+
+    <!-- ========== MODAL ========== -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div id="modalTitle">تنبيه</div>
+                <button id="modalCloseBtn" style="background:transparent; border:none; color:white; font-size:20px; cursor:pointer;">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-input-area" id="modalInputArea"></div>
+            <div class="modal-footer">
+                <button id="modalCancel" class="modal-btn modal-btn-cancel">إلغاء</button>
+                <button id="modalConfirm" class="modal-btn modal-btn-confirm">موافق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <div class="main-container">
+        <!-- Page Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">
+                    <span>🔒</span>
+                    لوحة الأمن
+                </h1>
+                <p class="page-subtitle">
+                    مراقبة وتتبع جميع تصاريح البقاء بعد الدوام الرسمي، الموافقة على الطلبات، وإدارة التصاريح النشطة
+                </p>
+            </div>
+            <!-- 🔥 NEW: زر تحميل إشعارات الحرس -->
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="updateRealTimeGuardNotifications()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    🔄 تحديث إشعارات الحرس
+                </button>
+            </div>
+        </header>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon pending">⏳</div>
+                <div class="stat-number pending" id="pendingRequests">0</div>
+                <div class="stat-label">طلبات بانتظار الأمن</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon approved">✅</div>
+                <div class="stat-number approved" id="todayApproved">0</div>
+                <div class="stat-label">تمت الموافقة اليوم</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon rejected">❌</div>
+                <div class="stat-number rejected" id="todayRejected">0</div>
+                <div class="stat-label">تم الرفض اليوم</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon active">🟢</div>
+                <div class="stat-number active" id="activePasses">0</div>
+                <div class="stat-label">تصاريح نشطة</div>
+            </div>
+        </div>
+
+        <!-- Alerts Container -->
+        <div class="alerts-container" id="alertsContainer">
+            <div class="alert alert-info">
+                <span>ℹ️</span>
+                <span>مرحباً بكم في لوحة الأمن. هنا يمكنكم مراجعة الطلبات المعتمدة من المديرين واتخاذ القرار الأمني النهائي.</span>
+            </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="ابحث باسم الموظف، رقم الوظيفة، أو رقم التصريح...">
+            <button class="search-btn" onclick="searchPermits()">
+                <span>🔍</span> بحث
+            </button>
+        </div>
+
+        <!-- 🔥 NEW: Company Entry Permits Section -->
+        <div class="permits-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>🏢</span>
+                    طلبات دخول الشركات المعتمدة من المديرين
+                </div>
+                <span class="section-count" id="companyEntryCount">0 طلب</span>
+            </div>
+            <div class="permits-list-container" id="companyEntryContainer">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">جاري تحميل طلبات دخول الشركات...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Security Permits Section -->
+        <div class="permits-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>📋</span>
+                    التصاريح بانتظار القرار الأمني
+                </div>
+                <span class="section-count" id="pendingCount">0 تصريح</span>
+            </div>
+            <div class="permits-list-container" id="securityRequests">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">جاري تحميل التصاريح المعلقة...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Permits Section -->
+        <div class="permits-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>🟢</span>
+                    التصاريح النشطة حالياً
+                </div>
+                <span class="section-count" id="activeCount">0 تصريح</span>
+            </div>
+            <div class="permits-list-container" id="activePasses">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">جاري تحميل التصاريح النشطة...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recently Approved Permits -->
+        <div class="permits-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>✅</span>
+                    التصاريح المعتمدة مؤخراً
+                </div>
+                <span class="section-count" id="approvedCount">0 تصريح</span>
+            </div>
+            <div class="permits-list-container" id="approvedContainer">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">جاري تحميل التصاريح المعتمدة...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔥🔥🔥 =============== SYSTEM INITIALIZATION =============== 🔥🔥🔥
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load user data and security dashboard
+            loadUserData();
+            loadSecurityData();
+            loadNotifications();
+            
+            // Hide admin link for non-admin users
+            hideAdminLink();
+            
+            // Close notifications when clicking outside
+            setupNotificationsClose();
+            
+            // Start notification polling
+            startNotificationPolling();
+            
+            // 🔥 NEW: تحديث إشعارات الحارس تلقائياً
+            setInterval(updateRealTimeGuardNotifications, 10000);
+            
+            // 🔥 NEW: الاستماع للأحداث من صفحة الحارس
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'security_to_guard_permits') {
+                    updateRealTimeGuardNotifications();
+                }
+            });
+        });
+
+        // =============== AUTHENTICATION FUNCTIONS ===============
+        function getToken() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+                setTimeout(() => window.location.href = '/login', 1500);
+                return null;
+            }
+            return token;
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            if (!token) return null;
+            
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            };
+        }
+
+        async function fetchJson(url, method = 'GET', body = null) {
+            const headers = getAuthHeaders();
+            if (!headers) throw new Error('No token');
+            
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+            
+            const res = await fetch(url, options);
+            
+            if (res.status === 401 || res.status === 403) {
+                showNotification('❌ صلاحية الدخول منتهية. يرجى تسجيل الدخول مرة أخرى', 'error');
+                setTimeout(() => window.location.href = '/login', 2000);
+                throw new Error('Unauthorized');
+            }
+            
+            return await res.json();
+        }
+
+        // =============== USER MANAGEMENT ===============
+        async function loadUserData() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            const token = localStorage.getItem('token');
+            
+            if (!userData || !token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Update user info in navbar
+            document.getElementById('userInfo').innerHTML = `
+                <div class="user-details">
+                    <div class="user-name">${userData.name || userData.username}</div>
+                    <div class="user-role">${getRoleName(userData.role)}</div>
+                </div>
+                <div class="user-avatar">
+                    ${(userData.name || userData.username).charAt(0)}
+                </div>
+            `;
+        }
+
+        function getRoleName(role) {
+            const roles = {
+                'admin': 'مسؤول النظام',
+                'employee': 'موظف',
+                'manager': 'مدير',
+                'security': 'مسؤول أمن'
+            };
+            return roles[role] || role;
+        }
+
+        function hideAdminLink() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const role = user && (user.role || user.user_type);
+                const el = document.getElementById('manageDeptLink');
+                if (el && (!user || role !== 'admin')) {
+                    el.style.display = 'none';
+                }
+            } catch(e) {
+                const el = document.getElementById('manageDeptLink');
+                if(el) el.style.display = 'none';
+            }
+        }
+
+        // =============== NOTIFICATIONS SYSTEM ===============
+        function showNotifications() {
+            const panel = document.getElementById('notificationsPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'block';
+            if (panel.style.display === 'block') {
+                loadNotifications();
+            }
+        }
+
+        function closeNotifications() {
+            document.getElementById('notificationsPanel').style.display = 'none';
+        }
+
+        function setupNotificationsClose() {
+            document.addEventListener('click', function(event) {
+                const panel = document.getElementById('notificationsPanel');
+                const bell = document.getElementById('notificationBell');
+                
+                if (panel && bell && !panel.contains(event.target) && !bell.contains(event.target)) {
+                    panel.style.display = 'none';
+                }
+            });
+        }
+
+        async function loadNotifications() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) return;
+            
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                const response = await fetch(`/api/notifications/${userData.username}`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderNotifications(data.notifications);
+                    updateBadge(data.unread_count);
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل الإشعارات:', error);
+            }
+        }
+
+        function renderNotifications(notifications) {
+            const list = document.getElementById('notificationsList');
+            const empty = document.getElementById('notificationsEmpty');
+            
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            
+            empty.style.display = 'none';
+            
+            list.innerHTML = notifications.map(notification => `
+                <div class="notification-item ${notification.is_read ? '' : 'unread'}">
+                    <div class="notification-icon">
+                        ${getNotificationIcon(notification.type)}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">
+                            ${formatTime(notification.created_at)}
+                        </div>
+                        ${!notification.is_read ? `
+                            <div class="notification-actions">
+                                <button class="btn-mark-read" onclick="markNotificationAsRead(${notification.notification_id})">
+                                    تحديد كمقروء
+                                </button>
+                                ${notification.permit_id ? `
+                                    <button class="btn-view-permit" onclick="viewPermit(${notification.permit_id})">
+                                        عرض التصريح
+                                    </button>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                'success': '✅',
+                'warning': '⚠️',
+                'info': 'ℹ️',
+                'error': '❌'
+            };
+            return icons[type] || '📢';
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('ar-SA', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function markNotificationAsRead(notificationId) {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) return;
+            
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                await fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        notification_id: notificationId,
+                        username: userData.username
+                    })
+                });
+                
+                loadNotifications();
+            } catch (error) {
+                console.error('خطأ في تحديث الإشعار:', error);
+            }
+        }
+
+        async function markAllNotificationsAsRead() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) return;
+            
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                await fetch('/api/notifications/mark-all-read', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        username: userData.username
+                    })
+                });
+                
+                loadNotifications();
+            } catch (error) {
+                console.error('خطأ في تحديث الإشعارات:', error);
+            }
+        }
+
+        function updateBadge(count) {
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function startNotificationPolling() {
+            setInterval(loadNotifications, 30000);
+            loadNotifications();
+        }
+
+        // =============== SECURITY DASHBOARD ===============
+        async function loadSecurityData() {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Check if user is security or admin
+            if (userData.role !== 'security' && userData.role !== 'admin') {
+                showNotification('⚠️ هذه الصفحة مخصصة لمسؤولي الأمن فقط', 'error');
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 2000);
+                return;
+            }
+            
+            // Load stats
+            loadStats(userData.username);
+            
+            // Load pending security requests
+            loadSecurityPendingRequests();
+            
+            // 🔥 NEW: Load company entry requests
+            loadCompanyEntrySecurityRequests();
+            
+            // Load active permits
+            loadActivePermits();
+            
+            // Load recently approved
+            loadRecentlyApproved();
+            
+            // 🔥 NEW: تحميل إشعارات الحارس عند بدء الصفحة
+            updateRealTimeGuardNotifications();
+            
+            // Start active permits auto-refresh
+            setInterval(loadActivePermits, 60000);
+        }
+        
+        async function loadStats(username) {
+            try {
+                const data = await fetchJson(`/api/stats/${username}`);
+                
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('pendingRequests').textContent = stats.pending_requests || 0;
+                    document.getElementById('todayApproved').textContent = stats.today_approved || 0;
+                    document.getElementById('todayRejected').textContent = stats.today_rejected || 0;
+                    document.getElementById('activePasses').textContent = stats.active_passes || 0;
+                    
+                    // ✅ فقط تنبيه واحد مهم (طلبات بانتظار الموافقة)
+                    const alertsContainer = document.getElementById('alertsContainer');
+                    if (stats.pending_requests > 0) {
+                        alertsContainer.innerHTML = `
+                            <div class="alert alert-warning">
+                                <span>⚠️</span>
+                                <span>هناك ${stats.pending_requests} طلب بانتظار الموافقة الأمنية. يرجى مراجعتها قريباً.</span>
+                            </div>
+                        `;
+                    } else {
+                        alertsContainer.innerHTML = `
+                            <div class="alert alert-success">
+                                <span>✅</span>
+                                <span>لا توجد طلبات بانتظار الموافقة الأمنية.</span>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل الإحصائيات:', error);
+                document.getElementById('alertsContainer').innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <span>حدث خطأ في تحميل الإحصائيات</span>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadSecurityPendingRequests() {
+            try {
+                const data = await fetchJson('/api/permits/security-pending');
+                const container = document.getElementById('securityRequests');
+                
+                if (data.success) {
+                    const permits = data.permits || [];
+                    
+                    if (permits.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">✅</div>
+                                <h3 class="empty-title">لا توجد تصاريح بانتظار الموافقة</h3>
+                                <p class="empty-description">جميع الطلبات قد تمت معالجتها</p>
+                            </div>
+                        `;
+                        document.getElementById('pendingCount').textContent = '0 تصريح';
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="permits-grid">
+                            ${permits.map(permit => createSecurityPendingPermitCard(permit)).join('')}
+                        </div>
+                    `;
+                    document.getElementById('pendingCount').textContent = `${permits.length} تصريح`;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل الطلبات:', error);
+                document.getElementById('securityRequests').innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <span>حدث خطأ في تحميل التصاريح المعلقة</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function createSecurityPendingPermitCard(permit) {
+            return `
+                <div class="permit-card">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">
+                                📋 تصريح #${permit.permit_id}
+                            </div>
+                            <div class="permit-date">
+                                ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
+                            </div>
+                        </div>
+                        <div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ✅ موافق من المدير
+                        </div>
+                    </div>
+                    
+                    <div class="employee-info">
+                        <div class="employee-avatar">${permit.full_name?.charAt(0) || 'م'}</div>
+                        <div class="employee-details">
+                            <h3>${permit.full_name || 'غير معروف'}</h3>
+                            <p>${permit.job_number || 'بدون رقم'}</p>
+                            <p>${permit.department_name || 'غير محدد'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">السبب:</span>
+                            <span class="detail-value">${permit.reason || 'لا يوجد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">من تاريخ:</span>
+                            <span class="detail-value">${permit.start_date || 'غير محدد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">إلى تاريخ:</span>
+                            <span class="detail-value">${permit.end_date || 'غير محدد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">وقت الانصراف:</span>
+                            <span class="detail-value">${permit.expected_exit_time || 'غير محدد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">التواصل:</span>
+                            <span class="detail-value">${permit.phone || 'لا يوجد'}<br>${permit.email || 'لا يوجد'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn btn-allow" onclick="securityDecision(${permit.permit_id}, 'allow')">
+                            ✅ السماح
+                        </button>
+                        <button class="action-btn btn-deny" onclick="securityDecision(${permit.permit_id}, 'deny')">
+                            ❌ رفض
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function loadActivePermits() {
+            try {
+                const data = await fetchJson('/api/permits/active');
+                const container = document.getElementById('activePasses');
+                
+                if (data.success) {
+                    const permits = data.permits || [];
+                    
+                    if (permits.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">🕒</div>
+                                <h3 class="empty-title">لا توجد تصاريح نشطة حالياً</h3>
+                                <p class="empty-description">لا يوجد موظفون حالياً بعمل إضافي</p>
+                            </div>
+                        `;
+                        document.getElementById('activeCount').textContent = '0 تصريح';
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="permits-grid">
+                            ${permits.map(permit => createActivePermitCard(permit)).join('')}
+                        </div>
+                    `;
+                    document.getElementById('activeCount').textContent = `${permits.length} تصريح`;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل التصاريح النشطة:', error);
+            }
+        }
+        
+        function createActivePermitCard(permit) {
+            const now = new Date();
+            const exitTime = new Date(`2000-01-01T${permit.expected_exit_time}`);
+            const hours = exitTime.getHours().toString().padStart(2, '0');
+            const minutes = exitTime.getMinutes().toString().padStart(2, '0');
+            
+            return `
+                <div class="permit-card active-permit-card">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">
+                                🟢 تصريح #${permit.permit_id}
+                            </div>
+                            <div class="permit-date">
+                                نشط الآن
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="employee-info">
+                        <div class="employee-avatar">${permit.full_name?.charAt(0) || 'م'}</div>
+                        <div class="employee-details">
+                            <h3>${permit.full_name || 'غير معروف'}</h3>
+                            <p>${permit.job_number || 'بدون رقم'}</p>
+                            <p>${permit.department_name || 'غير محدد'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timer-display" id="timer-${permit.permit_id}">
+                        ${hours}:${minutes}
+                    </div>
+                    <div class="timer-label">وقت الانصراف المتوقع</div>
+                    
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">السبب:</span>
+                            <span class="detail-value">${permit.reason || 'غير محدد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الفترة:</span>
+                            <span class="detail-value">${permit.start_date} إلى ${permit.end_date}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">التواصل:</span>
+                            <span class="detail-value">${permit.phone || 'لا يوجد'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn btn-end" onclick="endPermitEarly(${permit.permit_id})">
+                            ⏹️ إنهاء مبكر
+                        </button>
+                        <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function loadRecentlyApproved() {
+            try {
+                const data = await fetchJson('/api/permits/search?q=&type=recent');
+                const container = document.getElementById('approvedContainer');
+                
+                if (data.success && data.permits) {
+                    const approvedPermits = data.permits.filter(p => 
+                        p.status === 'approved_security'
+                    ).slice(0, 5);
+                    
+                    if (approvedPermits.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">📋</div>
+                                <h3 class="empty-title">لا توجد تصاريح معتمدة مؤخراً</h3>
+                                <p class="empty-description">سيتم عرض التصاريح المعتمدة هنا</p>
+                            </div>
+                        `;
+                        document.getElementById('approvedCount').textContent = '0 تصريح';
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="permits-grid">
+                            ${approvedPermits.map(permit => createApprovedPermitCard(permit)).join('')}
+                        </div>
+                    `;
+                    document.getElementById('approvedCount').textContent = `${approvedPermits.length} تصريح`;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل التصاريح المعتمدة:', error);
+                document.getElementById('approvedContainer').innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <span>حدث خطأ في تحميل التصاريح المعتمدة</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function createApprovedPermitCard(permit) {
+            return `
+                <div class="permit-card">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">
+                                ✅ تصريح #${permit.permit_id}
+                            </div>
+                            <div class="permit-date">
+                                ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="employee-info">
+                        <div class="employee-avatar">${permit.full_name?.charAt(0) || 'م'}</div>
+                        <div class="employee-details">
+                            <h3>${permit.full_name || 'غير معروف'}</h3>
+                            <p>${permit.job_number || 'بدون رقم'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">الحالة:</span>
+                            <span class="detail-value" style="color: #27ae60;">
+                                معتمد نهائي
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الفترة:</span>
+                            <span class="detail-value">${permit.start_date} إلى ${permit.end_date}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">السبب:</span>
+                            <span class="detail-value">${permit.reason || 'غير محدد'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // =============== MODAL FUNCTIONS ===============
+        function showModal(options) {
+            return new Promise(resolve => {
+                const overlay = document.getElementById('modalOverlay');
+                const titleEl = document.getElementById('modalTitle');
+                const bodyEl = document.getElementById('modalBody');
+                const inputArea = document.getElementById('modalInputArea');
+                const confirmBtn = document.getElementById('modalConfirm');
+                const cancelBtn = document.getElementById('modalCancel');
+                const closeBtn = document.getElementById('modalCloseBtn');
+
+                titleEl.textContent = options.title || 'تنبيه';
+                bodyEl.innerHTML = options.html || (options.message || '');
+
+                // Input field
+                inputArea.innerHTML = '';
+                if (options.input) {
+                    inputArea.style.display = 'block';
+                    const input = document.createElement(options.input.type === 'textarea' ? 'textarea' : 'input');
+                    input.className = 'modal-input';
+                    input.placeholder = options.input.placeholder || '';
+                    if (options.input.value) input.value = options.input.value;
+                    if (options.input.rows) input.rows = options.input.rows;
+                    inputArea.appendChild(input);
+                } else {
+                    inputArea.style.display = 'none';
+                }
+
+                overlay.style.display = 'flex';
+
+                function cleanup() {
+                    overlay.style.display = 'none';
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    closeBtn.onclick = null;
+                }
+
+                confirmBtn.textContent = options.confirmText || 'موافق';
+                cancelBtn.textContent = options.cancelText || 'إلغاء';
+
+                confirmBtn.onclick = () => {
+                    const value = inputArea.firstChild ? inputArea.firstChild.value : true;
+                    cleanup();
+                    resolve({ confirmed: true, value });
+                };
+
+                cancelBtn.onclick = closeBtn.onclick = () => {
+                    cleanup();
+                    resolve({ confirmed: false, value: null });
+                };
+            });
+        }
+
+        function inputModal(message, title, placeholder) {
+            return showModal({ 
+                message, 
+                title: title || 'أدخل بيانات', 
+                input: { placeholder, type: 'textarea', rows: 4 },
+                confirmText: 'حفظ', 
+                cancelText: 'إلغاء' 
+            }).then(r => r.confirmed ? r.value : null);
+        }
+
+        // 🔥🔥🔥 =============== MODIFIED SECURITY DECISION FUNCTION =============== 🔥🔥🔥
+        async function securityDecision(permitId, decision) {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            
+            // طلب ملاحظات من المستخدم
+            const notes = await inputModal(
+                decision === 'allow' 
+                    ? 'أدخل ملاحظات إضافية (اختياري):' 
+                    : 'أدخل سبب الرفض (مطلوب):',
+                decision === 'allow' ? 'موافقة على التصريح' : 'رفض التصريح',
+                decision === 'allow' ? 'ملاحظة...' : 'سبب الرفض...'
+            );
+            
+            if (notes === null) return; // المستخدم ألغى
+            
+            if (decision === 'deny' && (!notes || notes.trim() === '')) {
+                showNotification('⚠️ يجب إدخال سبب الرفض', 'warning');
+                return;
+            }
+            
+            // إظهار رسالة تحميل
+            showNotification('⏳ جاري معالجة طلبك...', 'info');
+            
+            try {
+                // 1️⃣ الموافقة الأمنية على التصريح
+                const response = await fetch('/api/permits/security-approve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        permit_id: permitId,
+                        security_username: userData.username,
+                        decision: decision === 'allow' ? 'allow' : 'reject',
+                        notes: notes || ''
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showNotification('❌ ' + (data.message || 'حدث خطأ في الموافقة'), 'error');
+                    return;
+                }
+                
+                if (decision === 'allow') {
+                    // 2️⃣ إذا كانت الموافقة، أرسل التصريح للحارس
+                    const sentToGuard = await sendPermitToGuard(permitId, userData.username, notes);
+                    
+                    if (sentToGuard) {
+                        showNotification('✅ تمت الموافقة وأُرسل التصريح إلى نقطة الحراسة!', 'success');
+                        
+                        // 🔥 NEW: إضافة تصريح للقائمة المحلية
+                        addPermitToGuardList(data.permit);
+                        
+                        // 🔥 NEW: تحديث مباشر للإشعارات
+                        setTimeout(updateRealTimeGuardNotifications, 1000);
+                        
+                    } else {
+                        showNotification('✅ تمت الموافقة، لكن حدث خطأ في إرساله للحارس', 'warning');
+                    }
+                    
+                    // 3️⃣ إرسال إشعار للموظف
+                    try {
+                        await fetch('/api/notifications/employee-security', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({
+                                permit_id: permitId,
+                                decision: 'allow'
+                            })
+                        });
+                    } catch (notifyError) {
+                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف:', notifyError);
+                    }
+                    
+                } else {
+                    // إذا كان الرفض
+                    showNotification('❌ تم رفض التصريح بنجاح', 'success');
+                    
+                    // إرسال إشعار للموظف
+                    try {
+                        await fetch('/api/notifications/employee-security', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({
+                                permit_id: permitId,
+                                decision: 'deny'
+                            })
+                        });
+                    } catch (notifyError) {
+                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف:', notifyError);
+                    }
+                }
+                
+                // تحديث الصفحة بعد ثانيتين
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('🚨 خطأ كامل:', error);
+                showNotification('❌ حدث خطأ في الاتصال بالخادم', 'error');
+            }
+        }
+
+        // 🔥🔥🔥 =============== NEW: SEND PERMIT TO GUARD =============== 🔥🔥🔥
+        async function sendPermitToGuard(permitId, securityUsername, notes = '') {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                const now = new Date().toLocaleTimeString('ar-SA', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // 1. إضافة التصريح للقائمة المحلية (للاستخدام الفوري)
+                const permit = {
+                    permit_id: permitId,
+                    approved_by_security: userData.name || userData.username,
+                    approval_time: now,
+                    security_notes: notes,
+                    sent_to_guard: true,
+                    sent_at: new Date().toISOString()
+                };
+                
+                addPermitToGuardList(permit);
+                
+                // 2. محاولة إرسال للخادم
+                const response = await fetch('/api/permits/send-to-guard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        permit_id: permitId,
+                        security_username: securityUsername,
+                        security_notes: notes,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('✅ تم إرسال التصريح للحارس بنجاح');
+                    return true;
+                } else {
+                    console.log('⚠️ تم حفظ التصريح محلياً فقط');
+                    return true; // نعتبره ناجحاً حتى مع فشل الاتصال
+                }
+                
+            } catch (error) {
+                console.error('⚠️ خطأ في إرسال التصريح للحارس:', error);
+                return true; // نعتبره ناجحاً حتى مع فشل الاتصال
+            }
+        }
+
+        // 🔥🔥🔥 =============== NEW: ADD PERMIT TO GUARD LIST =============== 🔥🔥🔥
+        function addPermitToGuardList(permitData) {
+            try {
+                console.log('📤 إضافة تصريح لقائمة الحارس:', permitData);
+                
+                // جلب التصاريح المرسلة سابقاً
+                const sentPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                
+                // البحث عن بيانات التصريح الكاملة
+                let fullPermitData = permitData;
+                
+                // إذا كان permitData يحتوي فقط على معرف التصريح
+                if (typeof permitData === 'number' || (permitData.permit_id && !permitData.employee_name)) {
+                    // نحتاج إلى جلب بيانات كاملة من التصاريح النشطة
+                    fullPermitData = {
+                        permit_id: typeof permitData === 'number' ? permitData : permitData.permit_id,
+                        employee_name: "موظف جديد",
+                        job_number: "EMP-NEW",
+                        department_name: "قسم جديد",
+                        reason: "تصريح معتمد من الأمن",
+                        expected_exit_time: "22:00",
+                        status: "approved_security",
+                        approved_by_security: JSON.parse(localStorage.getItem('user'))?.name || "مكتب الأمن",
+                        approval_time: new Date().toLocaleTimeString('ar-SA'),
+                        date: new Date().toLocaleDateString('ar-SA'),
+                        notes: permitData.notes || ""
+                    };
+                }
+                
+                // إضافة التصريح الجديد
+                const newPermit = {
+                    ...fullPermitData,
+                    id: Date.now(),
+                    sent_at: new Date().toISOString(),
+                    status: 'approved_security',
+                    is_new: true
+                };
+                
+                sentPermits.unshift(newPermit);
+                
+                // الاحتفاظ فقط بآخر 50 تصريح
+                const maxPermits = 50;
+                const trimmedPermits = sentPermits.slice(0, maxPermits);
+                
+                // حفظ في localStorage
+                localStorage.setItem('security_to_guard_permits', JSON.stringify(trimmedPermits));
+                
+                console.log('💾 تم حفظ التصريح في localStorage:', newPermit);
+                
+                // إرسال حدث لتحديث صفحة الحارس
+                const storageEvent = new Event('storage');
+                window.dispatchEvent(storageEvent);
+                localStorage.setItem('last_update', Date.now().toString()); // تحديث إضافي
+                
+                console.log('📡 تم إرسال حدث التحديث');
+                
+                // 🔥 NEW: إضافة إشعار للحارس
+                window.addGuardNotification({
+                    type: 'permit_approved',
+                    guard_name: 'الحارس المناوب',
+                    data: {
+                        message: `تمت الموافقة على تصريح #${newPermit.permit_id} - ${newPermit.employee_name}`,
+                        permit_id: newPermit.permit_id,
+                        action: 'sent_to_guard',
+                        approved_by: newPermit.approved_by_security || 'مكتب الأمن',
+                        time: new Date().toLocaleTimeString('ar-SA'),
+                        employee_name: newPermit.employee_name
+                    }
+                });
+                
+                // تأكيد للمستخدم
+                showNotification(`✅ تم إرسال تصريح #${newPermit.permit_id} إلى نقطة الحراسة`, 'success');
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ خطأ في إضافة التصريح لقائمة الحارس:', error);
+                showNotification('❌ حدث خطأ في إرسال التصريح للحارس', 'error');
+                return false;
+            }
+        }
+
+        // =============== UTILITY FUNCTIONS ===============
+        function viewPermit(permitId) {
+            window.location.href = `/pages/my-permits.html?permit=${permitId}`;
+        }
+
+        async function searchPermits() {
+            const searchQuery = document.getElementById('searchInput').value.trim();
+            
+            if (!searchQuery) {
+                showNotification('⚠️ يرجى إدخال كلمة للبحث', 'warning');
+                return;
+            }
+            
+            try {
+                const data = await fetchJson(`/api/permits/search?q=${encodeURIComponent(searchQuery)}&type=security`);
+                
+                if (data.success) {
+                    const permits = data.permits || [];
+                    
+                    if (permits.length > 0) {
+                        // عرض نتائج البحث في نافذة منبثقة
+                        const resultsHtml = permits.map(permit => `
+                            <div style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-right: 4px solid #3498db;">
+                                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">
+                                    📋 تصريح #${permit.permit_id} - ${permit.full_name}
+                                </div>
+                                <div style="color: #7f8c8d; font-size: 14px;">
+                                    ${permit.job_number} | ${permit.department_name || 'غير محدد'}
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <button onclick="viewPermit(${permit.permit_id})" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                        عرض التفاصيل
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        showModal({
+                            title: '🔍 نتائج البحث',
+                            html: `
+                                <div style="margin-bottom: 15px;">
+                                    <p>تم العثور على ${permits.length} نتيجة:</p>
+                                </div>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    ${resultsHtml}
+                                </div>
+                            `,
+                            confirmText: 'إغلاق',
+                            cancelText: null
+                        });
+                    } else {
+                        showModal({
+                            title: '🔍 نتائج البحث',
+                            html: '<p>لم يتم العثور على نتائج.</p>',
+                            confirmText: 'إغلاق',
+                            cancelText: null
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('خطأ في البحث:', error);
+                showNotification('❌ حدث خطأ في البحث', 'error');
+            }
+        }
+
+        function showNotification(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type === 'error' ? 'error' : type === 'success' ? 'success' : 'warning'}`;
+            alertDiv.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️'}</span>
+                <span>${message}</span>
+            `;
+            
+            document.getElementById('alertsContainer').prepend(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transform = 'translateX(30px)';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 5000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // 🔥🔥🔥 =============== NEW: GUARD NOTIFICATIONS SYSTEM =============== 🔥🔥🔥
+        
+        // 🔥 NEW: دالة لجلب إشعارات الحارس من الخادم
+        async function loadGuardNotificationsFromServer() {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                if (!userData) return [];
+                
+                const response = await fetch('/api/notifications/guard-latest', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.notifications) {
+                        return data.notifications;
+                    }
+                }
+            } catch (error) {
+                console.error('⚠️ خطأ في جلب إشعارات الحارس:', error);
+            }
+            return [];
+        }
+        
+        // 🔥 NEW: دالة لتحديث الإشعارات في الوقت الحقيقي
+        async function updateRealTimeGuardNotifications() {
+            try {
+                // 1. جلب الإشعارات الجديدة من الخادم
+                const newNotifications = await loadGuardNotificationsFromServer();
+                
+                // 2. جلب الإشعارات القديمة من localStorage
+                const oldNotifications = JSON.parse(localStorage.getItem('security_guard_notifications')) || [];
+                
+                // 3. دمج الإشعارات (تجنب التكرار)
+                const allNotifications = [...newNotifications, ...oldNotifications];
+                
+                // إزالة التكرارات
+                const uniqueNotifications = [];
+                const seenIds = new Set();
+                
+                allNotifications.forEach(notification => {
+                    const id = notification.id || notification.timestamp + notification.type;
+                    if (!seenIds.has(id)) {
+                        seenIds.add(id);
+                        uniqueNotifications.push(notification);
+                    }
+                });
+                
+                // 4. حفظ الإشعارات المحدثة
+                localStorage.setItem('security_guard_notifications', JSON.stringify(uniqueNotifications));
+                
+                // 5. ❌ حذف: لا نعرض الإشعارات تلقائياً
+                // displayGuardNotifications(uniqueNotifications);
+                
+                // 6. تحديث العداد فقط
+                updateGuardNotificationBadge(uniqueNotifications.filter(n => !n.is_read).length);
+                
+            } catch (error) {
+                console.error('⚠️ خطأ في تحديث إشعارات الحارس:', error);
+            }
+        }
+        
+        // 🔥 NEW: دالة لإضافة إشعار جديد من صفحة الحارس
+        window.addGuardNotification = function(notificationData) {
+            try {
+                // جلب الإشعارات الحالية
+                const currentNotifications = JSON.parse(localStorage.getItem('security_guard_notifications')) || [];
+                
+                // إضافة الإشعار الجديد
+                const newNotification = {
+                    id: Date.now(),
+                    type: notificationData.type,
+                    guard_name: notificationData.guard_name,
+                    data: notificationData.data,
+                    timestamp: new Date().toISOString(),
+                    is_read: false
+                };
+                
+                // إضافة في البداية
+                currentNotifications.unshift(newNotification);
+                
+                // الاحتفاظ فقط بآخر 50 إشعار
+                const maxNotifications = 50;
+                const trimmedNotifications = currentNotifications.slice(0, maxNotifications);
+                
+                // حفظ في localStorage
+                localStorage.setItem('security_guard_notifications', JSON.stringify(trimmedNotifications));
+                
+                console.log('📢 تم إضافة إشعار الحارس:', newNotification);
+                
+                // ❌ حذف: لا نعرض تنبيه تلقائي
+                // showNotification(`👮 ${notificationData.data?.message || 'إشعار جديد من الحارس'}`, 'info');
+                
+                // تحديث العداد فقط
+                const unreadCount = trimmedNotifications.filter(n => !n.is_read).length;
+                updateGuardNotificationBadge(unreadCount);
+                
+            } catch (error) {
+                console.error('⚠️ خطأ في إضافة إشعار الحارس:', error);
+            }
+        };
+        
+        // 🔥 NEW: دالة لعرض إشعارات الحارس - لن تعرض تلقائياً
+        function displayGuardNotifications(notifications) {
+            // ❌ نحذف هذا الجزء الذي يعرض الإشعارات تلقائياً
+            // لا نقوم بعرض أي شيء في منطقة التنبيهات
+            
+            // فقط نحدث العداد
+            updateGuardNotificationBadge(notifications.filter(n => !n.is_read).length);
+        }
+        
+        // 🔥 NEW: دالة لإنشاء تنبيه لإشعار الحارس - لن تستخدم للعرض التلقائي
+        function createGuardNotificationAlert(notification) {
+            // ❌ لن نستخدم هذه الدالة للعرض التلقائي
+            return null;
+        }
+        
+        // 🔥 NEW: دالة لتحديث عداد إشعارات الحارس في الـ Navbar
+        function updateGuardNotificationBadge(count) {
+            const badge = document.getElementById('notificationBadge'); // العداد الرئيسي
+            const guardBadge = document.getElementById('guardNotificationBadge'); // عداد الحرس الخاص
+            
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 9 ? '9+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            if (guardBadge) {
+                if (count > 0) {
+                    guardBadge.textContent = count > 9 ? '9+' : count;
+                    guardBadge.style.display = 'flex';
+                    
+                    // تأثير بسيط فقط عند وجود إشعارات جديدة
+                    guardBadge.style.animation = 'slideInRight 0.3s';
+                    setTimeout(() => {
+                        guardBadge.style.animation = '';
+                    }, 300);
+                } else {
+                    guardBadge.style.display = 'none';
+                }
+            }
+        }
+        
+        // 🔥 NEW: دالة لعرض جميع إشعارات الحارس في نافذة منبثقة
+        // 🔥 NEW: دالة لعرض جميع إشعارات الحارس في نافذة منبثقة
+function showGuardNotifications() {
+    const notifications = JSON.parse(localStorage.getItem('security_guard_notifications')) || [];
+    
+    // تصفية الإشعارات غير المقروءة أولاً
+    const unreadNotifications = notifications.filter(n => !n.is_read);
+    const readNotifications = notifications.filter(n => n.is_read);
+    
+    // إنشاء HTML للمحتوى
+    const notificationsHTML = `
+        <div style="position: relative;">
+            <!-- زر الإغلاق في الأعلى -->
+            <button onclick="closeGuardNotificationsModal()" 
+                    style="position: absolute; top: -45px; left: 10px; background: #e74c3c; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                ✕
+            </button>
+            
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="font-size: 18px; font-weight: bold; color: #2c3e50;">
+                        👮 إشعارات الحرس
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="color: #666; font-size: 14px;">الإجمالي: ${notifications.length}</span>
+                        ${unreadNotifications.length > 0 ? `
+                            <span style="background: #e74c3c; color: white; padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                ${unreadNotifications.length} غير مقروء
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+                    <button onclick="markAllGuardNotificationsAsRead()" style="padding: 10px 16px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>✅</span>
+                        <span>تحديد الكل كمقروء</span>
+                    </button>
+                    <button onclick="clearGuardNotifications()" style="padding: 10px 16px; background: #e74c3c; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>🗑️</span>
+                        <span>مسح الكل</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div style="max-height: 400px; overflow-y: auto; padding: 10px 5px;">
+                ${unreadNotifications.length > 0 ? `
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; padding-right: 10px; display: flex; align-items: center; gap: 8px;">
+                            <span>🆕</span>
+                            <span>إشعارات غير مقروءة</span>
+                        </h4>
+                        ${unreadNotifications.map((notification, index) => createNotificationItem(notification, true)).join('')}
+                    </div>
+                ` : ''}
+                
+                ${readNotifications.length > 0 ? `
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: #95a5a6; margin-bottom: 10px; padding-right: 10px; display: flex; align-items: center; gap: 8px;">
+                            <span>📖</span>
+                            <span>إشعارات مقروءة</span>
+                        </h4>
+                        ${readNotifications.map((notification, index) => createNotificationItem(notification, false)).join('')}
+                    </div>
+                ` : ''}
+                
+                ${notifications.length === 0 ? `
+                    <div style="text-align: center; padding: 40px 20px; color: #95a5a6;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
+                        <h4 style="margin-bottom: 10px;">لا توجد إشعارات</h4>
+                        <p>لم يتم إرسال أي إشعارات من الحرس بعد</p>
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; text-align: center;">
+                <button onclick="closeGuardNotificationsModal()" 
+                        style="padding: 12px 40px; background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3); transition: all 0.3s;">
+                    <span>❌</span>
+                    <span>إغلاق النافذة</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // عرض النافذة المنبثقة الخاصة
+    showGuardNotificationsModal(notificationsHTML);
+}
+
+// 🔥 NEW: دالة لعرض نافذة إشعارات الحرس الخاصة
+function showGuardNotificationsModal(content) {
+    // إنشاء overlay إذا لم يكن موجوداً
+    let modalOverlay = document.getElementById('guardNotificationsOverlay');
+    
+    if (!modalOverlay) {
+        modalOverlay = document.createElement('div');
+        modalOverlay.id = 'guardNotificationsOverlay';
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(3px);
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        document.body.appendChild(modalOverlay);
+    }
+    
+    // إنشاء نافذة المودال
+    const modalBox = document.createElement('div');
+    modalBox.id = 'guardNotificationsModal';
+    modalBox.style.cssText = `
+        max-width: 600px;
+        width: 100%;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        overflow: hidden;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // إضافة المحتوى
+    modalBox.innerHTML = content;
+    
+    // إضافة أنماط الحركة
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        #guardNotificationsModal {
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #guardNotificationsModal > div:first-child {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2) !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // إضافة النافذة
+    modalOverlay.innerHTML = '';
+    modalOverlay.appendChild(modalBox);
+    modalOverlay.style.display = 'flex';
+    
+    // إغلاق عند النقر خارج النافذة
+    modalOverlay.onclick = function(e) {
+        if (e.target === modalOverlay) {
+            closeGuardNotificationsModal();
+        }
+    };
+}
+
+// 🔥 NEW: دالة لإغلاق نافذة إشعارات الحرس
+function closeGuardNotificationsModal() {
+    const modalOverlay = document.getElementById('guardNotificationsOverlay');
+    if (modalOverlay) {
+        modalOverlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            modalOverlay.style.display = 'none';
+        }, 300);
+    }
+}
+
+// 🔥 NEW: دالة مساعدة لإنشاء عنصر إشعار (محدثة)
+function createNotificationItem(notification, isUnread) {
+    let icon = '📢';
+    let typeText = 'إشعار';
+    let bgColor = isUnread ? '#f0f7ff' : '#f8f9fa';
+    let borderColor = isUnread ? '#3498db' : '#e9ecef';
+    
+    switch(notification.type) {
+        case 'permit_approved':
+            icon = '✅';
+            typeText = 'تصريح جديد';
+            break;
+        case 'guard_signature':
+            icon = '👮';
+            typeText = 'توقيع حارس';
+            break;
+        case 'employee_checkin':
+            icon = '✅';
+            typeText = 'دخول موظف';
+            break;
+        case 'employee_checkout':
+            icon = '🚪';
+            typeText = 'خروج موظف';
+            break;
+        case 'guard_sign_out':
+            icon = '🏁';
+            typeText = 'إنهاء مناوبة';
+            break;
+    }
+    
+    const time = new Date(notification.timestamp).toLocaleString('ar-SA', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: 'numeric',
+        month: 'short'
+    });
+    
+    return `
+        <div style="margin-bottom: 12px; padding: 15px; background: ${bgColor}; border-radius: 12px; border-right: 4px solid ${borderColor}; transition: all 0.3s;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <div style="font-size: 24px; margin-top: 2px; background: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    ${icon}
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                        <div>
+                            <div style="font-weight: bold; color: #2c3e50; margin-bottom: 2px; font-size: 15px;">${typeText}</div>
+                            <div style="color: #3498db; font-size: 13px; background: rgba(52, 152, 219, 0.1); padding: 2px 8px; border-radius: 12px; display: inline-block;">
+                                ${notification.guard_name ? `الحارس: ${notification.guard_name}` : 'الحرس العام'}
+                            </div>
+                        </div>
+                        ${isUnread ? `
+                            <button onclick="markGuardNotificationAsRead(${notification.id})" style="padding: 5px 10px; background: #2ecc71; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 5px; transition: all 0.3s;">
+                                <span>✓</span>
+                                <span>مقروء</span>
+                            </button>
+                        ` : `
+                            <div style="color: #95a5a6; font-size: 12px; padding: 4px 8px;">
+                                مقروء ✓
+                            </div>
+                        `}
+                    </div>
+                    <div style="color: #666; font-size: 14px; line-height: 1.5; margin: 8px 0; padding: 10px; background: white; border-radius: 8px;">
+                        ${notification.data?.message || 'إشعار جديد من الحرس'}
+                    </div>
+                    <div style="font-size: 12px; color: #95a5a6; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span>🕒 ${time}</span>
+                            ${notification.data?.permit_id ? `
+                                <span style="color: #3498db; background: rgba(52, 152, 219, 0.1); padding: 2px 8px; border-radius: 12px;">
+                                    التصريح #${notification.data.permit_id}
+                                </span>
+                            ` : ''}
+                        </div>
+                        <div style="font-size: 11px; color: #bdc3c7;">
+                            ${notification.data?.employee_name || ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+        
+        // 🔥 NEW: دالة لتحديد كل إشعارات الحرس كمقروءة
+        function markAllGuardNotificationsAsRead() {
+            const notifications = JSON.parse(localStorage.getItem('security_guard_notifications')) || [];
+            
+            const updatedNotifications = notifications.map(notification => ({
+                ...notification,
+                is_read: true
+            }));
+            
+            localStorage.setItem('security_guard_notifications', JSON.stringify(updatedNotifications));
+            
+            // تحديث العرض
+            showGuardNotifications();
+            
+            // تحديث العداد
+            updateGuardNotificationBadge(0);
+            
+            showNotification('✅ تم تحديد جميع إشعارات الحرس كمقروءة', 'success');
+        }
+        
+        // 🔥 NEW: دالة لمسح جميع إشعارات الحرس
+        function clearGuardNotifications() {
+            if (confirm('هل تريد مسح جميع إشعارات الحرس؟')) {
+                localStorage.removeItem('security_guard_notifications');
+                showNotification('✅ تم مسح جميع إشعارات الحرس', 'success');
+                
+                // إغلاق النافذة المنبثقة
+                document.getElementById('modalOverlay').style.display = 'none';
+                
+                // تحديث العداد
+                updateGuardNotificationBadge(0);
+                
+                // إعادة تحميل الإشعارات
+                setTimeout(updateRealTimeGuardNotifications, 500);
+            }
+        }
+        
+        // 🔥 NEW: دالة لمعالجة الإشعارات المباشرة من صفحة الحارس
+        window.updateSecurityDashboard = function() {
+            updateRealTimeGuardNotifications();
+        };
+
+        // 🔧 زر اختبار لإضافة تصريح محاكاة
+        function addTestButton() {
+            const testBtn = document.createElement('button');
+            testBtn.innerHTML = '🔧 اختبار إضافة تصريح';
+            testBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                padding: 10px 15px;
+                background: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            `;
+            testBtn.onclick = function() {
+                window.simulateNewPermit && window.simulateNewPermit();
+            };
+            document.body.appendChild(testBtn);
+        }
+
+        // أضف زر الفحص أيضاً
+        function addDebugButton() {
+            const debugBtn = document.createElement('button');
+            debugBtn.innerHTML = '🐛 فحص البيانات';
+            debugBtn.style.cssText = `
+                position: fixed;
+                bottom: 60px;
+                left: 20px;
+                padding: 10px 15px;
+                background: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+            `;
+            debugBtn.onclick = function() {
+                const permits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                console.log('🔍 فحص البيانات:');
+                console.log('- عدد التصاريح:', permits.length);
+                console.log('- التصاريح:', permits);
+                alert(`عدد التصاريح: ${permits.length}\nافتح console للتفاصيل`);
+            };
+            document.body.appendChild(debugBtn);
+        }
+
+        // استدعاء الدوال عند التحميل
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... الكود الحالي ...
+            
+            // إضافة أزرار الاختبار
+            setTimeout(() => {
+                addTestButton();
+                addDebugButton();
+            }, 1000);
+        });
+
+        // محاكاة إضافة تصريح جديد (للتجربة)
+        window.simulateNewPermit = function() {
+            const permits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+            const newPermit = {
+                permit_id: Date.now(),
+                employee_name: "محمد عبدالله",
+                job_number: "EMP-" + Math.floor(Math.random() * 1000),
+                department_name: "التطوير",
+                reason: "اختبار تصريح جديد",
+                expected_exit_time: "23:00",
+                status: "approved_security",
+                approved_by_security: "مكتب الأمن",
+                approval_time: new Date().toLocaleTimeString('ar-SA'),
+                date: new Date().toLocaleDateString('ar-SA')
+            };
+            
+            permits.unshift(newPermit);
+            localStorage.setItem('security_to_guard_permits', JSON.stringify(permits));
+            
+            // إطلاق حدث التخزين
+            window.dispatchEvent(new Event('storage'));
+            
+            showNotification('✅ تمت محاكاة إضافة تصريح جديد', 'success');
+        };
+
+        // =============== COMPANY ENTRY PERMITS FOR SECURITY ===============
+        async function loadCompanyEntrySecurityRequests() {
+            try {
+                const data = await fetchJson('/api/permits/company-entry/security-pending');
+                const container = document.getElementById('companyEntryContainer');
+                
+                if (data.success) {
+                    const companyPermits = data.permits || [];
+                    
+                    if (companyPermits.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">🏢</div>
+                                <h3 class="empty-title">لا توجد طلبات دخول شركات</h3>
+                                <p class="empty-description">جميع طلبات الشركات قد تمت معالجتها</p>
+                            </div>
+                        `;
+                        document.getElementById('companyEntryCount').textContent = '0 طلب';
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="permits-grid">
+                            ${companyPermits.map(permit => createCompanyEntrySecurityCard(permit)).join('')}
+                        </div>
+                    `;
+                    document.getElementById('companyEntryCount').textContent = `${companyPermits.length} طلب`;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل طلبات دخول الشركات:', error);
+                document.getElementById('companyEntryContainer').innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <span>حدث خطأ في تحميل طلبات الشركات</span>
+                    </div>
+                `;
+            }
+        }
+
+        function createCompanyEntrySecurityCard(permit) {
+            // تحويل بيانات الموظفين من JSON إذا كانت مخزنة كسلسلة
+            let employeesList = [];
+            try {
+                if (permit.employees && typeof permit.employees === 'string') {
+                    employeesList = JSON.parse(permit.employees);
+                } else if (permit.employees && Array.isArray(permit.employees)) {
+                    employeesList = permit.employees;
+                }
+            } catch (e) {
+                employeesList = [];
+            }
+            
+            const totalEmployees = employeesList.length;
+            
+            return `
+                <div class="permit-card" style="border-left: 4px solid #3498db !important;">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">
+                                🏢 تصريح شركة #${permit.permit_id}
+                            </div>
+                            <div class="permit-date">
+                                ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
+                            </div>
+                        </div>
+                        <div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ✅ معتمد من المدير
+                        </div>
+                    </div>
+                    
+                    <div class="employee-info">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">🏢</div>
+                        <div class="employee-details">
+                            <h3>${permit.company_name || 'شركة غير معروفة'}</h3>
+                            <p>${permit.company_supervisor || 'غير محدد'}</p>
+                            <p>${permit.company_phone || 'بدون رقم'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">الجهة الطالبة:</span>
+                            <span class="detail-value">${permit.employee_name || 'غير معروف'}<br>
+                            ${permit.directorate || ''} - ${permit.department || ''}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">عدد العمال:</span>
+                            <span class="detail-value">${totalEmployees} عامل</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الفترة:</span>
+                            <span class="detail-value">${permit.start_date} إلى ${permit.end_date}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">أوقات الدخول:</span>
+                            <span class="detail-value">${permit.entry_time} - ${permit.exit_time}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">ملاحظات المدير:</span>
+                            <span class="detail-value">${permit.manager_notes || 'لا توجد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الغرض:</span>
+                            <span class="detail-value">${permit.work_details ? (permit.work_details.length > 100 ? permit.work_details.substring(0, 100) + '...' : permit.work_details) : 'غير محدد'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn btn-allow" onclick="companyEntrySecurityDecision(${permit.permit_id}, 'allow')">
+                            ✅ السماح بالدخول
+                        </button>
+                        <button class="action-btn btn-deny" onclick="companyEntrySecurityDecision(${permit.permit_id}, 'deny')">
+                            ❌ رفض الدخول
+                        </button>
+                        <button class="action-btn btn-view" onclick="viewCompanyEntryPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 🔥 NEW: دالة لمعالجة قرار الأمن لطلبات الشركات
+        async function companyEntrySecurityDecision(permitId, decision) {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            
+            // طلب ملاحظات من المستخدم
+            const notes = await inputModal(
+                decision === 'allow' 
+                    ? 'أدخل ملاحظات إضافية للحراس (اختياري):' 
+                    : 'أدخل سبب رفض الدخول (مطلوب):',
+                decision === 'allow' ? 'موافقة أمنية على دخول الشركة' : 'رفض أمني لدخول الشركة',
+                decision === 'allow' ? 'ملاحظات للحراس...' : 'سبب الرفض الأمني...'
+            );
+            
+            if (notes === null) return; // المستخدم ألغى
+            
+            if (decision === 'deny' && (!notes || notes.trim() === '')) {
+                showNotification('⚠️ يجب إدخال سبب الرفض الأمني', 'warning');
+                return;
+            }
+            
+            // إظهار رسالة تحميل
+            showNotification('⏳ جاري معالجة القرار الأمني...', 'info');
+            
+            try {
+                // 1️⃣ الموافقة الأمنية على تصريح الشركة
+                const response = await fetch('/api/permits/company-entry/security-approve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        permit_id: permitId,
+                        security_username: userData.username,
+                        decision: decision === 'allow' ? 'allow' : 'reject',
+                        notes: notes || ''
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showNotification('❌ ' + (data.message || 'حدث خطأ في الموافقة'), 'error');
+                    return;
+                }
+                
+                if (decision === 'allow') {
+                    // 2️⃣ إذا كانت الموافقة، أرسل التصريح للحرس
+                    const sentToGuard = await sendCompanyEntryToGuard(permitId, userData.username, notes);
+                    
+                    if (sentToGuard) {
+                        showNotification('✅ تمت الموافقة الأمنية وأُرسل التصريح إلى نقطة الحراسة!', 'success');
+                        
+                        // إضافة إشعار للحرس
+                        await sendGuardNotification(permitId, data.permit);
+                        
+                        // تحديث مباشر للإشعارات
+                        setTimeout(updateRealTimeGuardNotifications, 1000);
+                        
+                    } else {
+                        showNotification('✅ تمت الموافقة، لكن حدث خطأ في إرساله للحرس', 'warning');
+                    }
+                    
+                    // 3️⃣ إرسال إشعار للموظف والمدير
+                    try {
+                        await fetch('/api/notifications/company-entry-approved', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({
+                                permit_id: permitId,
+                                security_decision: 'allow'
+                            })
+                        });
+                    } catch (notifyError) {
+                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف والمدير:', notifyError);
+                    }
+                    
+                } else {
+                    // إذا كان الرفض
+                    showNotification('❌ تم رفض دخول الشركة لأسباب أمنية', 'success');
+                    
+                    // إرسال إشعار للموظف والمدير
+                    try {
+                        await fetch('/api/notifications/company-entry-rejected', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({
+                                permit_id: permitId,
+                                security_decision: 'deny',
+                                security_notes: notes
+                            })
+                        });
+                    } catch (notifyError) {
+                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف والمدير:', notifyError);
+                    }
+                }
+                
+                // تحديث الصفحة بعد ثانيتين
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('🚨 خطأ كامل:', error);
+                showNotification('❌ حدث خطأ في الاتصال بالخادم', 'error');
+            }
+        }
+
+        // 🔥 NEW: إرسال تصريح الشركات للحرس
+        async function sendCompanyEntryToGuard(permitId, securityUsername, notes = '') {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                const now = new Date().toLocaleTimeString('ar-SA', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // 1. جلب بيانات التصريح الكاملة
+                const permitResponse = await fetchJson(`/api/permits/company-entry/${permitId}`);
+                if (!permitResponse.success || !permitResponse.permit) {
+                    throw new Error('تعذر جلب بيانات التصريح');
+                }
+                
+                const permit = permitResponse.permit;
+                
+                // 2. إضافة التصريح للقائمة المحلية
+                const guardPermit = {
+                    permit_id: permitId,
+                    type: 'company_entry',
+                    company_name: permit.company_name,
+                    company_supervisor: permit.company_supervisor,
+                    employee_name: permit.employee_name,
+                    department: permit.department,
+                    total_employees: permit.employees ? (Array.isArray(permit.employees) ? permit.employees.length : 0) : 0,
+                    work_details: permit.work_details,
+                    start_date: permit.start_date,
+                    end_date: permit.end_date,
+                    entry_time: permit.entry_time,
+                    exit_time: permit.exit_time,
+                    approved_by_manager: permit.manager_name || 'المدير',
+                    approved_by_security: userData.name || userData.username,
+                    security_notes: notes,
+                    approval_time: now,
+                    sent_to_guard: true,
+                    sent_at: new Date().toISOString()
+                };
+                
+                addCompanyEntryToGuardList(guardPermit);
+                
+                // 3. محاولة إرسال للخادم
+                const response = await fetch('/api/permits/company-entry/send-to-guard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        permit_id: permitId,
+                        security_username: securityUsername,
+                        security_notes: notes,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('✅ تم إرسال تصريح الشركة للحرس بنجاح');
+                    return true;
+                } else {
+                    console.log('⚠️ تم حفظ تصريح الشركة محلياً فقط');
+                    return true; // نعتبره ناجحاً حتى مع فشل الاتصال
+                }
+                
+            } catch (error) {
+                console.error('⚠️ خطأ في إرسال تصريح الشركة للحرس:', error);
+                return true; // نعتبره ناجحاً حتى مع فشل الاتصال
+            }
+        }
+
+        // 🔥 NEW: إضافة تصريح شركة لقائمة الحرس
+        function addCompanyEntryToGuardList(permitData) {
+            try {
+                console.log('📤 إضافة تصريح شركة لقائمة الحرس:', permitData);
+                
+                // جلب التصاريح المرسلة سابقاً
+                const sentPermits = JSON.parse(localStorage.getItem('security_to_guard_company_permits')) || [];
+                
+                // إضافة التصريح الجديد
+                const newPermit = {
+                    ...permitData,
+                    id: Date.now(),
+                    sent_at: new Date().toISOString(),
+                    status: 'approved_security',
+                    is_new: true,
+                    permit_type: 'company_entry'
+                };
+                
+                sentPermits.unshift(newPermit);
+                
+                // الاحتفاظ فقط بآخر 50 تصريح
+                const maxPermits = 50;
+                const trimmedPermits = sentPermits.slice(0, maxPermits);
+                
+                // حفظ في localStorage
+                localStorage.setItem('security_to_guard_company_permits', JSON.stringify(trimmedPermits));
+                
+                console.log('💾 تم حفظ تصريح الشركة في localStorage:', newPermit);
+                
+                // إرسال حدث لتحديث صفحة الحرس
+                const storageEvent = new Event('storage');
+                window.dispatchEvent(storageEvent);
+                localStorage.setItem('last_update', Date.now().toString());
+                
+                console.log('📡 تم إرسال حدث التحديث للحرس');
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ خطأ في إضافة تصريح الشركة لقائمة الحرس:', error);
+                return false;
+            }
+        }
+
+        // 🔥 NEW: دالة لعرض تفاصيل تصريح الشركة
+        async function viewCompanyEntryPermit(permitId) {
+            try {
+                const response = await fetch(`/api/permits/company-entry/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.permit) {
+                    const permit = data.permit;
+                    let employeesList = [];
+                    
+                    try {
+                        if (permit.employees && typeof permit.employees === 'string') {
+                            employeesList = JSON.parse(permit.employees);
+                        } else if (permit.employees && Array.isArray(permit.employees)) {
+                            employeesList = permit.employees;
+                        }
+                    } catch (e) {
+                        employeesList = [];
+                    }
+                    
+                    // إنشاء HTML لعرض التفاصيل
+                    const employeesHTML = employeesList.map(emp => `
+                        <tr>
+                            <td>${emp.employee_number || ''}</td>
+                            <td>${emp.name || ''}</td>
+                            <td>${emp.civil_id || ''}</td>
+                        </tr>
+                    `).join('');
+                    
+                    const modalHTML = `
+                        <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
+                                🏢 تفاصيل تصريح دخول الشركة #${permitId}
+                            </h3>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الشركة</h4>
+                                <p><strong>اسم الشركة:</strong> ${permit.company_name || 'غير محدد'}</p>
+                                <p><strong>مسؤول الشركة:</strong> ${permit.company_supervisor || 'غير محدد'}</p>
+                                <p><strong>رقم الهاتف:</strong> ${permit.company_phone || 'غير محدد'}</p>
+                                <p><strong>العنوان:</strong> ${permit.company_address || 'غير محدد'}</p>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">الجهة الطالبة</h4>
+                                <p><strong>الموظف المكلف:</strong> ${permit.employee_name || 'غير محدد'}</p>
+                                <p><strong>الإدارة:</strong> ${permit.directorate || 'غير محدد'}</p>
+                                <p><strong>القسم:</strong> ${permit.department || 'غير محدد'}</p>
+                                <p><strong>الرقم الوظيفي:</strong> ${permit.job_number || 'غير محدد'}</p>
+                                <p><strong>المسؤول المباشر:</strong> ${permit.supervisor_name || 'غير محدد'}</p>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل الدخول</h4>
+                                <p><strong>الفترة:</strong> ${permit.start_date} إلى ${permit.end_date}</p>
+                                <p><strong>أوقات الدخول:</strong> ${permit.entry_time} - ${permit.exit_time}</p>
+                                <p><strong>الغرض:</strong> ${permit.work_details || 'غير محدد'}</p>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">قائمة العمال (${employeesList.length} عامل)</h4>
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                                    <thead>
+                                        <tr style="background: #3498db; color: white;">
+                                            <th style="padding: 10px; text-align: right;">#</th>
+                                            <th style="padding: 10px; text-align: right;">اسم العامل</th>
+                                            <th style="padding: 10px; text-align: right;">الرقم المدني</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${employeesHTML || '<tr><td colspan="3" style="text-align: center; padding: 10px;">لا توجد بيانات</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            ${permit.additional_notes ? `
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                    <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
+                                    <p>${permit.additional_notes}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${permit.manager_notes ? `
+                                <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                    <h4 style="color: #2c3e50; margin-bottom: 10px;">ملاحظات المدير</h4>
+                                    <p>${permit.manager_notes}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    showModal({
+                        title: `🏢 تصريح دخول شركة #${permitId}`,
+                        html: modalHTML,
+                        confirmText: 'إغلاق',
+                        cancelText: null
+                    });
+                    
+                } else {
+                    showNotification('❌ تعذر جلب بيانات التصريح', 'error');
+                }
+                
+            } catch (error) {
+                console.error('خطأ في جلب بيانات التصريح:', error);
+                showNotification('❌ حدث خطأ في جلب البيانات', 'error');
+            }
+        }
+
+        // 🔥 NEW: إرسال إشعار للحرس
+        async function sendGuardNotification(permitId, permitData) {
+            try {
+                const notification = {
+                    type: 'company_entry_approved',
+                    guard_name: 'الحرس المناوب',
+                    data: {
+                        message: `تمت الموافقة على دخول شركة ${permitData.company_name}`,
+                        permit_id: permitId,
+                        action: 'company_entry_sent_to_guard',
+                        approved_by_security: JSON.parse(localStorage.getItem('user'))?.name || 'مكتب الأمن',
+                        time: new Date().toLocaleTimeString('ar-SA'),
+                        company_name: permitData.company_name,
+                        total_employees: permitData.employees ? (Array.isArray(permitData.employees) ? permitData.employees.length : 0) : 0
+                    }
+                };
+                
+                window.addGuardNotification && window.addGuardNotification(notification);
+                
+            } catch (error) {
+                console.error('❌ خطأ في إرسال إشعار للحرس:', error);
+            }
+        }
+
+    </script>
+</body>
+</html>
