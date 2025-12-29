@@ -1257,17 +1257,55 @@
             let employeesList = [];
             
             try {
+                // محاولة تحليل requesting_department إذا كان موجوداً
+                if (permit.requesting_department) {
+                    try {
+                        const deptData = typeof permit.requesting_department === 'string' 
+                            ? JSON.parse(permit.requesting_department) 
+                            : permit.requesting_department;
+                        additionalData = deptData || {};
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+                
+                // محاولة تحليل employees إذا كان موجوداً
+                if (permit.employees) {
+                    try {
+                        employeesList = typeof permit.employees === 'string' 
+                            ? JSON.parse(permit.employees) 
+                            : permit.employees;
+                        if (!Array.isArray(employeesList)) {
+                            employeesList = [];
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+                
+                // محاولة تحليل additional_notes إذا كان JSON
                 if (permit.additional_notes) {
+                    try {
                     const notesObj = typeof permit.additional_notes === 'string' 
                         ? JSON.parse(permit.additional_notes) 
                         : permit.additional_notes;
                     
-                    additionalData = notesObj.requesting_department || {};
-                    employeesList = notesObj.employees || [];
+                        if (notesObj.requesting_department) {
+                            additionalData = { ...additionalData, ...notesObj.requesting_department };
+                        }
+                        if (notesObj.employees && Array.isArray(notesObj.employees)) {
+                            employeesList = [...employeesList, ...notesObj.employees];
+                        }
+                    } catch (e) {
+                        // إذا فشل التحليل، يعني أنه نص عادي وليس JSON - نتجاهله
+                    }
                 }
             } catch (e) {
                 console.warn('⚠️ خطأ في تحليل البيانات:', e);
             }
+            
+            // استخدام created_at إذا كان request_date غير موجود
+            const permitDate = permit.request_date || permit.created_at || new Date().toISOString();
             
             return `
                 <div class="permit-card company-entry">
@@ -1277,7 +1315,7 @@
                                 🏢 تصريح شركة #${permit.permit_id}
                             </div>
                             <div class="permit-date">
-                                ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
+                                ${new Date(permitDate).toLocaleDateString('ar-SA')}
                             </div>
                         </div>
                         <span class="permit-status" style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
@@ -1477,16 +1515,12 @@
                 if (data.success) {
                     showNotification('✅ تم قبول طلب دخول الشركة وسيتم إرساله إلى مكتب الأمن للمراجعة!', 'success');
                     
-                    // إرسال التصريح لمكتب الأمن
-                    await sendCompanyEntryToSecurity(permitId, managerUsername, result.notes);
-                    
-                    setTimeout(() => {
+                    // تحديث الصفحة مباشرة
                         if (currentTab === 'company-permits') {
-                            loadCompanyPendingRequests(userData.username);
-                            loadRecentlyApprovedCompanyPermits(userData.username);
+                        await loadCompanyPendingRequests(userData.username);
+                        await loadRecentlyApprovedCompanyPermits(userData.username);
                         }
-                        loadStats(userData.username);
-                    }, 1500);
+                    await loadStats(userData.username);
                 } else {
                     showNotification(`❌ ${data.message || 'حدث خطأ في الموافقة'}`, 'error');
                 }
@@ -1518,6 +1552,13 @@
 
                 if (data.success) {
                     showNotification('❌ تم رفض طلب دخول الشركة!', 'success');
+                    
+                    // تحديث الصفحة مباشرة
+                    if (currentTab === 'company-permits') {
+                        await loadCompanyPendingRequests(userData.username);
+                        await loadRecentlyApprovedCompanyPermits(userData.username);
+                    }
+                    await loadStats(userData.username);
                     
                     // إرسال إشعار للموظف
                     try {
@@ -1742,9 +1783,20 @@
             }
             
             if (!response.ok) {
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
                 const errorText = await response.text();
                 console.error('❌ خطأ في الاستجابة:', errorText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch (e) {
+                    console.error('❌ خطأ في قراءة رسالة الخطأ:', e);
+                }
+                throw new Error(errorMessage);
             }
             
             const data = await response.json();
@@ -2095,18 +2147,30 @@
         // =============== باقي الدوال (لم تتغير) ===============
         async function loadStats(username) {
             try {
-                const data = await fetchJson(`/api/stats/${username}`);
+                // جلب إحصائيات تصاريح الموظفين
+                const employeeStatsData = await fetchJson(`/api/stats/${username}`);
                 
-                if (data.success) {
-                    const stats = data.stats;
+                // جلب إحصائيات تصاريح الشركات
+                const companyStatsData = await fetchJson('/api/permits/company-entry/stats');
+                
+                if (employeeStatsData.success) {
+                    const employeeStats = employeeStatsData.stats;
                     
                     // إحصائيات التصاريح العادية
-                    document.getElementById('pendingRequests').textContent = stats.pending_requests || 0;
-                    document.getElementById('todayApproved').textContent = stats.today_approved || 0;
-                    document.getElementById('todayRejected').textContent = stats.today_rejected || 0;
+                    document.getElementById('pendingRequests').textContent = employeeStats.pending_requests || 0;
                     
-                    // تحميل إحصائيات تصاريح الشركات بشكل منفصل
-                    await loadCompanyStats();
+                    // دمج إحصائيات الموافقات والرفوض اليوم من تصاريح الموظفين وتصاريح الشركات
+                    const todayApproved = (employeeStats.today_approved || 0) + (companyStatsData.success ? (companyStatsData.stats.today_approved || 0) : 0);
+                    const todayRejected = (employeeStats.today_rejected || 0) + (companyStatsData.success ? (companyStatsData.stats.today_rejected || 0) : 0);
+                    
+                    document.getElementById('todayApproved').textContent = todayApproved;
+                    document.getElementById('todayRejected').textContent = todayRejected;
+                }
+                
+                // تحميل إحصائيات تصاريح الشركات
+                if (companyStatsData.success) {
+                    const companyStats = companyStatsData.stats;
+                    document.getElementById('companyPending').textContent = companyStats.pending || 0;
                 }
                 
             } catch (error) {

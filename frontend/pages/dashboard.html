@@ -1044,20 +1044,40 @@
 
         // =============== DASHBOARD INITIALIZATION ===============
         function initDashboard() {
-            const userData = JSON.parse(localStorage.getItem('user'));
-            
-            if (!userData) {
-                // User is not logged in - show login section
-                showLoginSection();
-                return;
+            try {
+                const userDataStr = localStorage.getItem('user');
+                if (!userDataStr) {
+                    // User is not logged in - show login section
+                    showLoginSection();
+                    return;
+                }
+                
+                const userData = JSON.parse(userDataStr);
+                
+                if (!userData) {
+                    showLoginSection();
+                    return;
+                }
+                
+                // User is logged in - update UI
+                updateUserInfo(userData);
+                createNavigationLinks(userData.role);
+                showWelcomeSection(userData);
+                createNewButtonsSection(userData.role);
+                createDashboardCards(userData.role);
+            } catch (error) {
+                console.error('❌ خطأ في تهيئة Dashboard:', error);
+                // إظهار رسالة خطأ بسيطة
+                document.getElementById('welcomeSection').innerHTML = `
+                    <div class="error-section" style="text-align: center; padding: 50px;">
+                        <h2>حدث خطأ في تحميل الصفحة</h2>
+                        <p>يرجى تحديث الصفحة أو تسجيل الدخول مرة أخرى</p>
+                        <button onclick="window.location.href='/login'" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            تسجيل الدخول
+                        </button>
+                    </div>
+                `;
             }
-            
-            // User is logged in - update UI
-            updateUserInfo(userData);
-            createNavigationLinks(userData.role);
-            showWelcomeSection(userData);
-            createNewButtonsSection(userData.role);
-            createDashboardCards(userData.role);
         }
 
         function createNavigationLinks(role) {
@@ -1067,9 +1087,13 @@
             // رابط الرئيسية للجميع
             linksHTML += '<a href="/dashboard.html" class="nav-link active">🏠 الرئيسية</a>';
             
-            // إزالة "طلب جديد" من القائمة العلوية (كما طلبت)
-            
-            linksHTML += '<a href="/pages/my-permits.html" class="nav-link">📋 تصاريحي</a>';
+            // رابط نقطة الحراسة للحارس
+            if (role === 'guard' || role === 'security_guard') {
+                linksHTML += '<a href="/pages/security-guard.html" class="nav-link">👮 نقطة الحراسة</a>';
+            } else {
+                // رابط تصاريحي للجميع ما عدا الحارس
+                linksHTML += '<a href="/pages/my-permits.html" class="nav-link">📋 تصاريحي</a>';
+            }
             
             // روابط خاصة بالمديرين
             if (role === 'manager' || role === 'admin') {
@@ -1203,15 +1227,34 @@
         }
 
         function createDashboardCards(role) {
-            let cardsHTML = '';
-            
-            // Common cards for all users
-            cardsHTML += createCard(
-                '📋 تصاريحي',
-                'عرض جميع تصاريحك السابقة والحالية وتتبع حالة الطلبات الجديدة.',
-                '/pages/my-permits.html',
-                'تصاريح'
-            );
+            try {
+                const cardsGrid = document.getElementById('cardsGrid');
+                if (!cardsGrid) {
+                    console.error('❌ عنصر cardsGrid غير موجود');
+                    return;
+                }
+                
+                let cardsHTML = '';
+                
+                // Common cards for all users (ما عدا الحارس)
+                if (role !== 'guard' && role !== 'security_guard') {
+                    cardsHTML += createCard(
+                        '📋 تصاريحي',
+                        'عرض جميع تصاريحك السابقة والحالية وتتبع حالة الطلبات الجديدة.',
+                        '/pages/my-permits.html',
+                        'تصاريح'
+                    );
+                }
+                
+                // بطاقة نقطة الحراسة للحارس
+                if (role === 'guard' || role === 'security_guard') {
+                    cardsHTML += createCard(
+                        '👮 نقطة الحراسة',
+                        'تسجيل دخول وخروج الموظفين والشركات وإدارة التصاريح النشطة.',
+                        '/pages/security-guard.html',
+                        'الدخول للنقطة'
+                    );
+                }
             
             // Role-specific cards
             if (role === 'employee') {
@@ -1268,15 +1311,22 @@
             }
             
             
-            // Add click handlers to all cards
-            document.querySelectorAll('.dashboard-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    const link = this.getAttribute('data-link');
-                    if (link && link !== '#') {
-                        window.location.href = link;
-                    }
-                });
-            });
+                cardsGrid.innerHTML = cardsHTML;
+                
+                // Add click handlers to all cards
+                setTimeout(() => {
+                    document.querySelectorAll('.dashboard-card').forEach(card => {
+                        card.addEventListener('click', function() {
+                            const link = this.getAttribute('data-link');
+                            if (link && link !== '#') {
+                                window.location.href = link;
+                            }
+                        });
+                    });
+                }, 100);
+            } catch (error) {
+                console.error('❌ خطأ في إنشاء بطاقات Dashboard:', error);
+            }
         }
 
         function createCard(title, description, link, buttonText) {

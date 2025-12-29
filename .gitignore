@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+*.tmp
+*.temp
+
+# Lock files (optional - uncomment if you don't want to track them)
+# package-lock.json
+# yarn.lock
+
+# Server lock files
+*.lock
+server.lock
+
+# Port files (optional - uncomment if you don't want to track them)
+# port.txt
+
+# Uploads directory (optional - uncomment if you don't want to track uploads)
+# uploads/
+
+# Database backup files (but keep actual database files)
+*.db.backup-*
+*.backup
+
+# Keep database files - explicitly track them
+!*.db
+!**/*.db
+!*.db-journal
+!**/*.db-journal
+

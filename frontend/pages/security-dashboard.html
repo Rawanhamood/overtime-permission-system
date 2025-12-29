@@ -1578,22 +1578,38 @@
         
         async function loadStats(username) {
             try {
-                const data = await fetchJson(`/api/stats/${username}`);
+                // جلب إحصائيات تصاريح الموظفين
+                const employeeStatsData = await fetchJson(`/api/stats/${username}`);
                 
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('pendingRequests').textContent = stats.pending_requests || 0;
+                // جلب إحصائيات تصاريح الشركات
+                let companyPendingCount = 0;
+                try {
+                    const companyData = await fetchJson('/api/permits/company-entry/security-pending');
+                    if (companyData.success) {
+                        companyPendingCount = (companyData.permits || []).length;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ خطأ في جلب تصاريح الشركات:', e);
+                }
+                
+                if (employeeStatsData.success) {
+                    const stats = employeeStatsData.stats;
+                    
+                    // دمج عدد تصاريح الموظفين وتصاريح الشركات
+                    const totalPending = (stats.pending_requests || 0) + companyPendingCount;
+                    
+                    document.getElementById('pendingRequests').textContent = totalPending;
                     document.getElementById('todayApproved').textContent = stats.today_approved || 0;
                     document.getElementById('todayRejected').textContent = stats.today_rejected || 0;
                     document.getElementById('activePasses').textContent = stats.active_passes || 0;
                     
                     // ✅ فقط تنبيه واحد مهم (طلبات بانتظار الموافقة)
                     const alertsContainer = document.getElementById('alertsContainer');
-                    if (stats.pending_requests > 0) {
+                    if (totalPending > 0) {
                         alertsContainer.innerHTML = `
                             <div class="alert alert-warning">
                                 <span>⚠️</span>
-                                <span>هناك ${stats.pending_requests} طلب بانتظار الموافقة الأمنية. يرجى مراجعتها قريباً.</span>
+                                <span>هناك ${totalPending} طلب بانتظار الموافقة الأمنية. يرجى مراجعتها قريباً.</span>
                             </div>
                         `;
                     } else {
@@ -1624,6 +1640,15 @@
                 if (data.success) {
                     const permits = data.permits || [];
                     
+                    // تحديث العدد في البطاقة العلوية
+                    document.getElementById('pendingCount').textContent = `${permits.length} تصريح`;
+                    
+                    // تحديث العدد في الإحصائيات العلوية (بعد دمج تصاريح الشركات)
+                    const userData = JSON.parse(localStorage.getItem('user'));
+                    if (userData) {
+                        await loadStats(userData.username);
+                    }
+                    
                     if (permits.length === 0) {
                         container.innerHTML = `
                             <div class="empty-state">
@@ -1632,23 +1657,35 @@
                                 <p class="empty-description">جميع الطلبات قد تمت معالجتها</p>
                             </div>
                         `;
-                        document.getElementById('pendingCount').textContent = '0 تصريح';
                         return;
                     }
                     
+                    // ترتيب التصاريح حسب التاريخ (الأحدث أولاً)
+                    const sortedPermits = permits.sort((a, b) => {
+                        const dateA = new Date(a.request_date || a.created_at || 0);
+                        const dateB = new Date(b.request_date || b.created_at || 0);
+                        return dateB - dateA; // الأحدث أولاً
+                    });
+                    
                     container.innerHTML = `
                         <div class="permits-grid">
-                            ${permits.map(permit => createSecurityPendingPermitCard(permit)).join('')}
+                            ${sortedPermits.map(permit => createSecurityPendingPermitCard(permit)).join('')}
                         </div>
                     `;
-                    document.getElementById('pendingCount').textContent = `${permits.length} تصريح`;
+                } else {
+                    container.innerHTML = `
+                        <div class="alert alert-error">
+                            <span>❌</span>
+                            <span>${data.message || 'حدث خطأ في تحميل التصاريح المعلقة'}</span>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 console.error('خطأ في تحميل الطلبات:', error);
                 document.getElementById('securityRequests').innerHTML = `
                     <div class="alert alert-error">
                         <span>❌</span>
-                        <span>حدث خطأ في تحميل التصاريح المعلقة</span>
+                        <span>حدث خطأ في تحميل التصاريح المعلقة: ${error.message}</span>
                     </div>
                 `;
             }
@@ -2301,7 +2338,8 @@
                 const userData = JSON.parse(localStorage.getItem('user'));
                 if (!userData) return [];
                 
-                const response = await fetch('/api/notifications/guard-latest', {
+                // استخدام endpoint موجود بدلاً من guard-latest
+                const response = await fetch(`/api/notifications/${userData.username}`, {
                     method: 'GET',
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -2312,11 +2350,13 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.notifications) {
-                        return data.notifications;
+                        // فلترة الإشعارات للحارس فقط (آخر 10)
+                        return data.notifications.slice(0, 10);
                     }
                 }
             } catch (error) {
-                console.error('⚠️ خطأ في جلب إشعارات الحارس:', error);
+                // تجاهل الخطأ بصمت لتجنب إزعاج المستخدم
+                console.warn('⚠️ خطأ في جلب إشعارات الحارس:', error);
             }
             return [];
         }
@@ -2855,6 +2895,15 @@ function createNotificationItem(notification, isUnread) {
                 if (data.success) {
                     const companyPermits = data.permits || [];
                     
+                    // تحديث العدد
+                    document.getElementById('companyEntryCount').textContent = `${companyPermits.length} طلب`;
+                    
+                    // تحديث العدد في الإحصائيات العلوية
+                    const userData = JSON.parse(localStorage.getItem('user'));
+                    if (userData) {
+                        await loadStats(userData.username);
+                    }
+                    
                     if (companyPermits.length === 0) {
                         container.innerHTML = `
                             <div class="empty-state">
@@ -2863,23 +2912,35 @@ function createNotificationItem(notification, isUnread) {
                                 <p class="empty-description">جميع طلبات الشركات قد تمت معالجتها</p>
                             </div>
                         `;
-                        document.getElementById('companyEntryCount').textContent = '0 طلب';
                         return;
                     }
                     
+                    // ترتيب التصاريح حسب التاريخ (الأحدث أولاً)
+                    const sortedPermits = companyPermits.sort((a, b) => {
+                        const dateA = new Date(a.created_at || a.request_date || 0);
+                        const dateB = new Date(b.created_at || b.request_date || 0);
+                        return dateB - dateA; // الأحدث أولاً
+                    });
+                    
                     container.innerHTML = `
                         <div class="permits-grid">
-                            ${companyPermits.map(permit => createCompanyEntrySecurityCard(permit)).join('')}
+                            ${sortedPermits.map(permit => createCompanyEntrySecurityCard(permit)).join('')}
                         </div>
                     `;
-                    document.getElementById('companyEntryCount').textContent = `${companyPermits.length} طلب`;
+                } else {
+                    container.innerHTML = `
+                        <div class="alert alert-error">
+                            <span>❌</span>
+                            <span>${data.message || 'حدث خطأ في تحميل طلبات الشركات'}</span>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 console.error('خطأ في تحميل طلبات دخول الشركات:', error);
                 document.getElementById('companyEntryContainer').innerHTML = `
                     <div class="alert alert-error">
                         <span>❌</span>
-                        <span>حدث خطأ في تحميل طلبات الشركات</span>
+                        <span>حدث خطأ في تحميل طلبات الشركات: ${error.message}</span>
                     </div>
                 `;
             }
@@ -3032,22 +3093,8 @@ function createNotificationItem(notification, isUnread) {
                         showNotification('✅ تمت الموافقة، لكن حدث خطأ في إرساله للحرس', 'warning');
                     }
                     
-                    // 3️⃣ إرسال إشعار للموظف والمدير
-                    try {
-                        await fetch('/api/notifications/company-entry-approved', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + localStorage.getItem('token')
-                            },
-                            body: JSON.stringify({
-                                permit_id: permitId,
-                                security_decision: 'allow'
-                            })
-                        });
-                    } catch (notifyError) {
-                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف والمدير:', notifyError);
-                    }
+                    // 3️⃣ الإشعارات يتم إرسالها تلقائياً من الخادم عند الموافقة
+                    // لا حاجة لإرسال إشعار إضافي هنا
                     
                 } else {
                     // إذا كان الرفض

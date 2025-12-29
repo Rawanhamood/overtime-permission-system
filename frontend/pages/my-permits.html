@@ -1590,31 +1590,58 @@ let currentFilteredPermits = [];
 
 async function loadPermits() {
     const userData = JSON.parse(localStorage.getItem('user'));
-    if (!userData) return;
+    if (!userData) {
+        console.warn('⚠️ لا توجد بيانات مستخدم');
+        return;
+    }
     
     try {
+        console.log('📋 بدء تحميل التصاريح للموظف:', userData.username);
+        
         // جلب جميع أنواع التصاريح (الشخصية + الشركات)
-        const [personalPermitsResponse, companyPermitsResponse] = await Promise.all([
-            fetchJson(`/api/permits/my/${userData.username}`),
-            fetchJson(`/api/permits/company-entry/my/${userData.username}`)
+        const [personalPermitsResponse, companyPermitsResponse] = await Promise.allSettled([
+            fetchJson(`/api/permits/my/${userData.username}`).catch(err => {
+                console.error('❌ خطأ في جلب التصاريح الشخصية:', err);
+                return { success: false, permits: [] };
+            }),
+            fetchJson(`/api/permits/company-entry/my/${userData.username}`).catch(err => {
+                console.error('❌ خطأ في جلب تصاريح الشركات:', err);
+                return { success: false, permits: [] };
+            })
         ]);
         
         allPermits = [];
         
         // إضافة التصاريح الشخصية (بعد ساعات الدوام)
-        if (personalPermitsResponse.success && personalPermitsResponse.permits) {
-            personalPermitsResponse.permits.forEach(p => {
+        const personalResult = personalPermitsResponse.status === 'fulfilled' 
+            ? personalPermitsResponse.value 
+            : { success: false, permits: [] };
+            
+        if (personalResult.success && personalResult.permits) {
+            personalResult.permits.forEach(p => {
                 p.permit_type = 'personal';
             });
-            allPermits = [...allPermits, ...personalPermitsResponse.permits];
+            allPermits = [...allPermits, ...personalResult.permits];
+            console.log(`✅ تم جلب ${personalResult.permits.length} تصريح شخصي`);
         }
         
         // إضافة تصاريح الشركات
-        if (companyPermitsResponse.success && companyPermitsResponse.permits) {
-            companyPermitsResponse.permits.forEach(p => {
+        const companyResult = companyPermitsResponse.status === 'fulfilled' 
+            ? companyPermitsResponse.value 
+            : { success: false, permits: [] };
+            
+        if (companyResult.success && companyResult.permits) {
+            companyResult.permits.forEach(p => {
                 p.permit_type = 'company_entry';
+                // إضافة request_date إذا لم يكن موجوداً
+                if (!p.request_date && p.created_at) {
+                    p.request_date = p.created_at;
+                }
             });
-            allPermits = [...allPermits, ...companyPermitsResponse.permits];
+            allPermits = [...allPermits, ...companyResult.permits];
+            console.log(`✅ تم جلب ${companyResult.permits.length} تصريح شركة`);
+        } else {
+            console.warn('⚠️ تحذير: فشل في جلب تصاريح الشركات:', companyResult.message || 'خطأ غير معروف');
         }
         
         // ترتيب حسب التاريخ (الأحدث أولاً)
