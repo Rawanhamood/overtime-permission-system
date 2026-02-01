@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // مسار قاعدة البيانات
-const dbPath = path.join(__dirname, '../database/overtime.db');
+const dbPath = path.join(__dirname, 'overtime.db');
 
 console.log('🚀 بدء إعادة بناء قاعدة البيانات من الصفر...');
 console.log(`📁 المسار: ${dbPath}`);

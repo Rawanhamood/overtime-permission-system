@@ -2,8 +2,9 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-const dbFile = path.join(__dirname, 'overtime.db');
-const backupFile = path.join(__dirname, `overtime.db.bak_${Date.now()}`);
+const dbFile = path.join(__dirname, '../backend/database/overtime.db');
+const backupFileDir = path.join(__dirname, '../backend/database');
+const backupFile = path.join(backupFileDir, `overtime.db.bak_${Date.now()}`);
 
 if (!fs.existsSync(dbFile)) {
     console.error('❌ ملف قاعدة البيانات غير موجود:', dbFile);

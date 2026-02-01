@@ -337,7 +337,7 @@
         /* ========== NEW BUTTONS SECTION ========== */
         .new-buttons-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 25px;
             margin-bottom: 40px;
         }
@@ -371,6 +371,11 @@
             border-left: 5px solid #3498db;
         }
         
+        .new-permit-card.material {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+            border-left: 5px solid #e74c3c;
+        }
+        
         .new-permit-icon {
             width: 80px;
             height: 80px;
@@ -386,6 +391,10 @@
         
         .new-permit-card.building .new-permit-icon {
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+        
+        .new-permit-card.material .new-permit-icon {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
         }
         
         .new-permit-title {
@@ -423,6 +432,11 @@
         .new-permit-card.building .new-permit-btn {
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
             box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .new-permit-card.material .new-permit-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
         }
         
         .new-permit-btn:hover {
@@ -1090,8 +1104,8 @@
             // رابط نقطة الحراسة للحارس
             if (role === 'guard' || role === 'security_guard') {
                 linksHTML += '<a href="/pages/security-guard.html" class="nav-link">👮 نقطة الحراسة</a>';
-            } else {
-                // رابط تصاريحي للجميع ما عدا الحارس
+            } else if (role !== 'manager') {
+                // رابط تصاريحي للجميع ما عدا الحارس والمدير
                 linksHTML += '<a href="/pages/my-permits.html" class="nav-link">📋 تصاريحي</a>';
             }
             
@@ -1220,6 +1234,22 @@
                             تقديم طلب دخول
                         </button>
                     </div>
+                    
+                    <div class="new-permit-card material" onclick="window.location.href='/pages/material-exit-permit.html'">
+                        <div class="new-permit-icon">📦</div>
+                        <h3 class="new-permit-title">طلب إخراج مواد وأجهزة</h3>
+                        <p class="new-permit-description">
+                            تقديم طلب لإخراج مواد وأجهزة من مبنى محافظة الداخلية والنشآت التابعة لها.
+                            <br>
+                            <small style="font-size: 14px; color: #7f8c8d;">
+                                لإخراج المواد والأجهزة من المبنى بعد الحصول على الموافقات المطلوبة
+                            </small>
+                        </p>
+                        <button class="new-permit-btn" onclick="event.stopPropagation(); window.location.href='/pages/material-exit-permit.html'">
+                            <span>📦</span>
+                            تقديم طلب إخراج
+                        </button>
+                    </div>
                 `;
             } else {
                 document.getElementById('newButtonsSection').innerHTML = '';
@@ -1236,16 +1266,6 @@
                 
                 let cardsHTML = '';
                 
-                // Common cards for all users (ما عدا الحارس)
-                if (role !== 'guard' && role !== 'security_guard') {
-                    cardsHTML += createCard(
-                        '📋 تصاريحي',
-                        'عرض جميع تصاريحك السابقة والحالية وتتبع حالة الطلبات الجديدة.',
-                        '/pages/my-permits.html',
-                        'تصاريح'
-                    );
-                }
-                
                 // بطاقة نقطة الحراسة للحارس
                 if (role === 'guard' || role === 'security_guard') {
                     cardsHTML += createCard(
@@ -1260,6 +1280,14 @@
             if (role === 'employee') {
                 // تم نقل بطاقة "طلب تصريح جديد" إلى القسم العلوي
                 // وبطاقة "طلب دخول المبنى" تم نقلها أيضاً
+                
+                // إضافة كرت تصاريحي للموظفين فقط
+                cardsHTML += createCard(
+                    '📋 تصاريحي',
+                    'عرض جميع تصاريحك السابقة والحالية وتتبع حالة الطلبات الجديدة.',
+                    '/pages/my-permits.html',
+                    'تصاريح'
+                );
             }
             
             if (role === 'manager') {
@@ -1268,13 +1296,6 @@
                     'الموافقة على طلبات الموظفين وإدارة تصاريح فريقك.',
                     '/pages/manager-dashboard.html',
                     'الدخول للوحة'
-                );
-                
-                cardsHTML += createCard(
-                    '👥 فريق العمل',
-                    'عرض تصاريح فريقك والتحقق من الحضور والانصراف.',
-                    '/pages/my-permits.html?team=true',
-                    'عرض الفريق'
                 );
             }
             

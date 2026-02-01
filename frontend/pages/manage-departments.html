@@ -119,9 +119,10 @@
         
         /* ========== MAIN CONTENT ========== */
         .main-container {
-            max-width: 1400px;
+            max-width: 95%;
+            width: 100%;
             margin: 0 auto;
-            padding: 30px 20px;
+            padding: 30px 25px;
         }
         
         .page-header {
@@ -157,11 +158,12 @@
         .auto-assign-card {
             background: white;
             border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
+            padding: 35px;
+            margin-bottom: 35px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             border: 1px solid rgba(52, 152, 219, 0.1);
             border-right: 4px solid #667eea;
+            width: 100%;
         }
         
         .card-header {
@@ -235,57 +237,63 @@
         .data-containers {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 35px;
+            margin-bottom: 35px;
         }
         
         .data-container {
             background: white;
             border-radius: 16px;
-            padding: 25px;
+            padding: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             border: 1px solid rgba(52, 152, 219, 0.1);
             min-height: 400px;
+            width: 100%;
         }
         
         .container-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 18px;
             border-bottom: 2px solid #f8fafc;
         }
         
         .container-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             color: #2c3e50;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         
         /* ========== TABLES ========== */
         .table-container {
             overflow-x: auto;
+            overflow-y: auto;
             border-radius: 10px;
             border: 1px solid #edf2f7;
+            max-height: 70vh;
+            width: 100%;
         }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 800px;
         }
         
         .data-table th {
             background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
             color: white;
-            padding: 15px;
+            padding: 18px 20px;
             text-align: right;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
             border: none;
+            white-space: nowrap;
         }
         
         .data-table th:first-child {
@@ -297,10 +305,10 @@
         }
         
         .data-table td {
-            padding: 15px;
+            padding: 18px 20px;
             border-bottom: 1px solid #edf2f7;
             color: #2c3e50;
-            font-size: 14px;
+            font-size: 15px;
         }
         
         .data-table tr:hover {
@@ -314,13 +322,14 @@
         /* ========== FORM ELEMENTS ========== */
         .form-select {
             width: 100%;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border: 2px solid #e8f4ff;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 15px;
             background: white;
             transition: all 0.3s ease;
             cursor: pointer;
+            min-width: 200px;
         }
         
         .form-select:focus {

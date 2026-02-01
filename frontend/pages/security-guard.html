@@ -37,6 +37,11 @@
             gap: 15px;
         }
         
+        .home-btn-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
         .home-btn {
             background: rgba(255,255,255,0.2);
             color: white;
@@ -72,8 +77,11 @@
         }
         
         .main-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            width: 100%;
+            padding: 0 20px;
+            box-sizing: border-box;
         }
         
         /* ========== GUARD NAME SECTION ========== */
@@ -179,15 +187,31 @@
         
         .permits-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 25px;
+        }
+        
+        /* توسيع قسم تصاريح الشركات بشكل خاص */
+        .company-entry-section {
+            max-width: 100% !important;
+            width: 100%;
+        }
+        
+        .company-entry-grid {
+            grid-template-columns: repeat(auto-fill, minmax(650px, 1fr)) !important;
+            gap: 30px !important;
+        }
+        
+        .company-entry-section .permit-card {
+            min-width: 100%;
+            width: 100%;
         }
         
         /* ========== PERMIT CARD ========== */
         .permit-card {
             background: #f8fafc;
             border-radius: 12px;
-            padding: 20px;
+            padding: 30px;
             border: 2px solid #e3f2fd;
             transition: all 0.3s;
         }
@@ -239,11 +263,31 @@
             margin-bottom: 15px;
         }
         
+        .permit-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .details-grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .permit-details-grid,
+            .details-grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         .detail-item {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
             border-bottom: 1px solid #edf2f7;
         }
         
@@ -254,12 +298,26 @@
         .detail-label {
             font-weight: 600;
             color: #3498db;
-            font-size: 14px;
+            font-size: 16px;
+            margin-bottom: 5px;
+            min-width: fit-content;
+        }
+        
+        .detail-value {
+            text-align: right;
+            color: #2c3e50;
+            font-weight: 500;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.6;
+            max-width: 100%;
         }
         
         .detail-value {
             color: #2c3e50;
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: 500;
         }
         
         /* ========== ACTION BUTTONS ========== */
@@ -320,25 +378,34 @@
         }
         
         .modal-box {
+            max-width: 700px;
+            max-height: 90vh;
             background: white;
             border-radius: 15px;
-            padding: 25px;
-            max-width: 450px;
+            padding: 30px;
             width: 100%;
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow-y: auto;
         }
         
         .modal-header {
             font-size: 18px;
             font-weight: 700;
             color: #2c3e50;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
         }
         
         .modal-body {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            padding: 15px 0;
+        }
+        
+        .modal-body input:focus {
+            outline: none;
+            border-color: #3498db !important;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
         }
         
         .modal-footer {
@@ -411,16 +478,18 @@
             background: #e74c3c;
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 26px;
+            height: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
+            font-size: 13px;
+            font-weight: 700;
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -6px;
+            right: -6px;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
         
         /* ========== RESPONSIVE ========== */
@@ -449,10 +518,13 @@
     <!-- ========== NAVBAR ========== -->
     <nav class="navbar">
         <div class="logo-section">
-            <!-- زر العودة للصفحة الرئيسية -->
-            <a href="/dashboard.html" class="home-btn" title="العودة للصفحة الرئيسية">
-                🏠
-            </a>
+            <!-- زر العودة للصفحة الرئيسية مع شارة التنبيهات -->
+            <div class="home-btn-wrapper">
+                <a href="/dashboard.html" class="home-btn" title="العودة للصفحة الرئيسية">
+                    🏠
+                </a>
+                <span id="newPermitsBadge" class="new-badge" style="display: none;"></span>
+            </div>
             <div class="logo">
                 <span>👮</span>
                 <span>نقطة الحراسة</span>
@@ -483,7 +555,6 @@
                 <div class="section-title">
                     <span>👤</span>
                     تصاريح الموظفين (بعد الدوام الرسمي)
-                    <span id="newPermitsBadge" class="new-badge" style="display: none;"></span>
                 </div>
                 <span id="approvedCount">0 تصريح</span>
             </div>
@@ -497,7 +568,7 @@
         </div>
         
         <!-- ========== ✅ COMPANY ENTRY PERMITS SECTION (منفصلة) ========== -->
-        <div class="section" style="border-left: 4px solid #e74c3c;">
+        <div class="section company-entry-section" style="border-left: 4px solid #e74c3c; max-width: 100%; width: 100%;">
             <div class="section-header">
                 <div class="section-title">
                     <span>🏢</span>
@@ -505,7 +576,7 @@
                 </div>
                 <span id="companyPermitsCount">0 تصريح</span>
             </div>
-            <div class="permits-grid" id="companyPermitsContainer">
+            <div class="permits-grid company-entry-grid" id="companyPermitsContainer">
                 <div style="text-align: center; padding: 40px; color: #7f8c8d;">
                     <div style="font-size: 50px; margin-bottom: 15px;">🏢</div>
                     <h3>لا توجد تصاريح شركات</h3>
@@ -1010,7 +1081,7 @@ window.simulateNewPermit = function() {
                         
                         <div class="action-buttons">
                             ${!isAlreadyCheckedIn ? `
-                                <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name || permit.full_name || 'غير معروف'}')">
+                                <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name || permit.full_name || 'غير معروف'}', 'employee')">
                                     <span>✅</span> تسجيل دخول
                                 </button>
                             ` : `
@@ -1197,7 +1268,7 @@ function updatePermitsCount(count) {
             });
         }
         
-        function openCheckInModal(permitId, employeeName) {
+        function openCheckInModal(permitId, employeeName, permitType = 'employee') {
             const guardName = localStorage.getItem('guard_name');
             if (!guardName) {
                 showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
@@ -1205,22 +1276,24 @@ function updatePermitsCount(count) {
             }
             
             const modal = document.getElementById('actionModal');
-            const now = new Date().toLocaleTimeString('ar-SA', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
             
-            document.getElementById('modalTitle').textContent = 'تسجيل دخول الموظف';
+            const titleText = permitType === 'company' ? 'تسجيل دخول الشركة' : 'تسجيل دخول الموظف';
+            const nameLabel = permitType === 'company' ? 'اسم الشركة:' : 'الموظف:';
+            
+            document.getElementById('modalTitle').textContent = titleText;
             document.getElementById('modalContent').innerHTML = `
                 <div style="margin-bottom: 20px;">
-                    <p style="margin-bottom: 10px; color: #666;">الموظف: <strong>${employeeName}</strong></p>
+                    <p style="margin-bottom: 10px; color: #666;">${nameLabel} <strong>${employeeName}</strong></p>
                     <p style="margin-bottom: 10px; color: #666;">رقم التصريح: <strong>${permitId}</strong></p>
                     <p style="margin-bottom: 10px; color: #666;">الحارس المسجل: <strong>${guardName}</strong></p>
                 </div>
                 
-                <div style="background: #f0f7ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                    <p style="color: #3498db; font-weight: 600; margin-bottom: 5px;">الوقت الحالي:</p>
-                    <p style="font-size: 18px; color: #2c3e50;">${now}</p>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 6px; color: #2c3e50; font-weight: 600;">
+                        وقت الدخول (يُكتب بواسطة الحارس):
+                    </label>
+                    <input type="time" id="checkInTimeInput" 
+                           style="width: 200px; padding: 10px 12px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 15px; direction: ltr;">
                 </div>
                 
                 <div style="margin-bottom: 15px;">
@@ -1236,6 +1309,7 @@ function updatePermitsCount(count) {
             modal.setAttribute('data-permit-id', permitId);
             modal.setAttribute('data-action', 'checkin');
             modal.setAttribute('data-employee-name', employeeName);
+            modal.setAttribute('data-permit-type', permitType);
             modal.style.display = 'flex';
         }
         
@@ -1295,11 +1369,13 @@ async function processCheckIn(permitId, employeeName) {
         return;
     }
     
-    // ✅ تنسيق الوقت بصيغة HH:MM
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const nowFormatted = `${hours}:${minutes}`;
+    // وقت الدخول يحدده الحارس
+    const checkInTimeInput = document.getElementById('checkInTimeInput');
+    const manualTime = checkInTimeInput ? checkInTimeInput.value.trim() : '';
+    if (!manualTime) {
+        showNotification('يرجى إدخال وقت الدخول (الحارس يحدد)', 'error');
+        return;
+    }
     const notes = document.getElementById('checkInNotes')?.value || '';
     
     console.log('🔄 بدء تسجيل دخول لـ:', employeeName, 'رقم التصريح:', permitId);
@@ -1343,7 +1419,7 @@ async function processCheckIn(permitId, employeeName) {
             body: JSON.stringify({
                 permit_id: permitId,
                 guard_username: guardName,
-                actual_entry_time: nowFormatted,
+                actual_entry_time: manualTime,
                 entry_notes: notes
             })
         });
@@ -1366,7 +1442,7 @@ async function processCheckIn(permitId, employeeName) {
         employee_name: employeeName,
         job_number: removedPermit?.job_number || '',
         department_name: removedPermit?.department_name || '',
-        check_in_time: now,
+        check_in_time: manualTime,
         check_in_by: guardName,
         status: 'checked_in',
         notes: notes,
@@ -1388,10 +1464,10 @@ async function processCheckIn(permitId, employeeName) {
         type: 'employee_checkin',
         guard_name: guardName,
         data: {
-            message: `دخل الموظف ${employeeName} الساعة ${now}`,
+            message: `دخل الموظف ${employeeName} الساعة ${manualTime}`,
             employee_name: employeeName,
             permit_id: permitId,
-            check_in_time: now,
+            check_in_time: manualTime,
             guard_notes: notes,
             guard_name: guardName
         }
@@ -1539,7 +1615,7 @@ function displayApprovedPermits(permits) {
                 </div>
                 
                 <div class="action-buttons">
-                    <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name}')">
+                    <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name}', 'employee')">
                         <span>✅</span> تسجيل دخول
                     </button>
                 </div>
@@ -1799,106 +1875,126 @@ function displayCompanyPermits(permits) {
         }
         
         html += `
-            <div class="permit-card" style="max-width: 100%;">
+            <div class="permit-card" style="max-width: 100%; width: 100%; min-width: 100%;">
                 <div style="position: relative; margin-bottom: 15px;">
                     <div style="background: ${isCheckedIn ? '#d4edda' : '#e8f5e9'}; color: ${isCheckedIn ? '#155724' : '#155724'}; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block;">
                         ${isCheckedIn ? '🟢 مسجل دخول' : '✅ معتمد من الأمن'}
                     </div>
                 </div>
                 
-                <div class="employee-info">
-                    <div class="employee-avatar">🏢</div>
+                <div class="employee-info" style="margin-bottom: 25px;">
+                    <div class="employee-avatar" style="width: 70px; height: 70px; font-size: 35px;">🏢</div>
                     <div class="employee-details">
-                        <h3>${permit.company_name || 'شركة'}</h3>
-                        <p>${permit.company_representative || ''}</p>
-                        <p>${permit.entry_purpose || ''}</p>
+                        <h3 style="font-size: 22px; margin-bottom: 10px;">${permit.company_name || 'شركة'}</h3>
+                        <p style="font-size: 16px; margin-bottom: 8px; color: #495057;">${permit.company_representative || ''}</p>
+                        <p style="font-size: 15px; color: #6c757d;">${permit.entry_purpose || ''}</p>
                     </div>
                 </div>
                 
-                <div class="permit-details">
-                    <div class="detail-item">
-                        <span class="detail-label">رقم التصريح:</span>
-                        <span class="detail-value">${permit.permit_id}</span>
+                <div class="permit-details" style="padding: 25px; background: #f8f9fa; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div class="details-grid-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; align-items: start;">
+                        <!-- العمود الأول -->
+                        <div style="display: flex; flex-direction: column;">
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">رقم التصريح:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.permit_id}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">اسم الشركة:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.company_name || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">الممثل:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.company_representative || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">هاتف الممثل:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.representative_phone || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">الغرض:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; line-height: 1.6; max-width: 100%; white-space: normal;">${permit.entry_purpose || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">عدد الزوار:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.number_of_visitors || workers.length || 0}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- العمود الثاني -->
+                        <div style="display: flex; flex-direction: column; gap: 0;">
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">تاريخ الدخول:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_entry_date || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">وقت الدخول:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_entry_time || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">تاريخ الخروج:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_exit_date || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">وقت الخروج المتوقع:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_exit_time || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">الموظف الطالب:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.employee_full_name || permit.employee_name || ''}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="detail-item">
-                        <span class="detail-label">اسم الشركة:</span>
-                        <span class="detail-value">${permit.company_name || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">الممثل:</span>
-                        <span class="detail-value">${permit.company_representative || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">هاتف الممثل:</span>
-                        <span class="detail-value">${permit.representative_phone || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">الغرض:</span>
-                        <span class="detail-value">${permit.entry_purpose || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">تاريخ الدخول:</span>
-                        <span class="detail-value">${permit.expected_entry_date || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">وقت الدخول:</span>
-                        <span class="detail-value">${permit.expected_entry_time || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">تاريخ الخروج:</span>
-                        <span class="detail-value">${permit.expected_exit_date || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">وقت الخروج المتوقع:</span>
-                        <span class="detail-value">${permit.expected_exit_time || ''}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">عدد الزوار:</span>
-                        <span class="detail-value">${permit.number_of_visitors || workers.length || 0}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">الموظف الطالب:</span>
-                        <span class="detail-value">${permit.employee_full_name || permit.employee_name || ''}</span>
-                    </div>
-                    ${permit.manager_notes ? `
-                    <div class="detail-item">
-                        <span class="detail-label">ملاحظات المدير:</span>
-                        <span class="detail-value">${permit.manager_notes}</span>
-                    </div>
-                    ` : ''}
-                    ${permit.security_notes ? `
-                    <div class="detail-item">
-                        <span class="detail-label">ملاحظات الأمن:</span>
-                        <span class="detail-value">${permit.security_notes}</span>
+                    
+                    <!-- الملاحظات (عرض كامل العرض) -->
+                    ${permit.manager_notes || permit.security_notes ? `
+                    <div style="margin-top: 25px; padding-top: 25px; border-top: 2px solid #dee2e6;">
+                        ${permit.manager_notes ? `
+                        <div class="detail-item" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #dee2e6;">
+                            <span class="detail-label" style="font-size: 17px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">ملاحظات المدير:</span>
+                            <span class="detail-value" style="font-size: 16px; color: #2c3e50; line-height: 1.6; display: block;">${permit.manager_notes}</span>
+                        </div>
+                        ` : ''}
+                        ${permit.security_notes ? `
+                        <div class="detail-item" style="margin-bottom: 0; padding-bottom: 0;">
+                            <span class="detail-label" style="font-size: 17px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">ملاحظات الأمن:</span>
+                            <span class="detail-value" style="font-size: 16px; color: #2c3e50; line-height: 1.6; display: block;">${permit.security_notes}</span>
+                        </div>
+                        ` : ''}
                     </div>
                     ` : ''}
                     ${additionalNotesHtml}
                 </div>
                 
                 <!-- ✅ جدول العمال المحسّن -->
-                <div style="background: white; padding: 20px; border-radius: 10px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e9ecef;">
-                        <h4 style="color: #2c3e50; font-size: 18px; margin: 0; font-weight: 600;">
+                <div style="background: white; padding: 35px; border-radius: 10px; margin: 30px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 25px; border-bottom: 2px solid #e9ecef;">
+                        <h4 style="color: #2c3e50; font-size: 20px; margin: 0; font-weight: 600;">
                             👷 جدول العمال (${workers.length})
                         </h4>
                         ${!isCheckedIn ? `
                             <button onclick="openAddWorkerModal(${permit.permit_id})" 
-                                    style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);">
+                                    style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3); display: flex; align-items: center; gap: 6px;"
+                                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(46, 204, 113, 0.4)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(46, 204, 113, 0.3)'">
                                 ➕ إضافة عامل جديد
                             </button>
-                        ` : ''}
+                        ` : `
+                            <span style="color: #95a5a6; font-size: 12px; font-style: italic;">(تم تسجيل الدخول - لا يمكن التعديل)</span>
+                        `}
                     </div>
                     
-                    <div style="max-height: 400px; overflow-y: auto; overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                    <div style="width: 100%; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; table-layout: auto; min-width: 800px;">
                             <thead>
                                 <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                    <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">#</th>
-                                    <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">اسم العامل</th>
-                                    <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">المهنة</th>
-                                    <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">رقم الهوية</th>
-                                    <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">الهاتف</th>
-                                    ${!isCheckedIn ? '<th style="padding: 12px; text-align: center; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2);">إجراءات</th>' : ''}
+                                    <th style="padding: 15px 12px; text-align: center; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 50px;">#</th>
+                                    <th style="padding: 15px 12px; text-align: right; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 150px;">اسم العامل</th>
+                                    <th style="padding: 15px 12px; text-align: right; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 120px;">المهنة</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 130px;">رقم الهوية</th>
+                                    <th style="padding: 15px 12px; text-align: left; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 120px;">الهاتف</th>
+                                    <th style="padding: 15px 12px; text-align: center; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 150px;">بطاقة الهوية</th>
+                                    ${!isCheckedIn ? '<th style="padding: 15px 12px; text-align: center; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); min-width: 150px;">إجراءات</th>' : ''}
                                 </tr>
                             </thead>
                             <tbody>
@@ -1906,27 +2002,52 @@ function displayCompanyPermits(permits) {
                                     <tr style="border-bottom: 1px solid #dee2e6; transition: background 0.2s;" 
                                         onmouseover="this.style.background='#f8f9fa'" 
                                         onmouseout="this.style.background='white'">
-                                        <td style="padding: 10px; font-size: 13px; color: #6c757d; text-align: center; font-weight: 600;">${index + 1}</td>
-                                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; font-weight: 500;">${worker.worker_name || '-'}</td>
-                                        <td style="padding: 10px; font-size: 13px; color: #6c757d;">${worker.worker_profession || '-'}</td>
-                                        <td style="padding: 10px; font-size: 13px; color: #495057; font-family: 'Courier New', monospace;">${worker.worker_id_number || '-'}</td>
-                                        <td style="padding: 10px; font-size: 13px; color: #6c757d;">${worker.worker_phone || '-'}</td>
-                                        ${!isCheckedIn && !worker.is_original ? `
-                                            <td style="padding: 10px; text-align: center;">
-                                                <button onclick="deleteWorker(${permit.permit_id}, ${worker.worker_id})" 
-                                                        style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);"
-                                                        onmouseover="this.style.transform='scale(1.05)'" 
-                                                        onmouseout="this.style.transform='scale(1)'">
-                                                    🗑️ حذف
-                                                </button>
+                                        <td style="padding: 15px 12px; font-size: 14px; color: #6c757d; text-align: center; font-weight: 600; white-space: nowrap;">${index + 1}</td>
+                                        <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; font-weight: 500; text-align: right; word-wrap: break-word; overflow-wrap: break-word;">${worker.worker_name || '-'}</td>
+                                        <td style="padding: 15px 12px; font-size: 14px; color: #6c757d; text-align: right; word-wrap: break-word; overflow-wrap: break-word;">${worker.worker_profession || '-'}</td>
+                                        <td style="padding: 15px 12px; font-size: 14px; color: #495057; font-family: 'Courier New', monospace; white-space: nowrap; text-align: left;">${worker.worker_id_number || '-'}</td>
+                                        <td style="padding: 15px 12px; font-size: 14px; color: #6c757d; white-space: nowrap; text-align: left;">${worker.worker_phone || '-'}</td>
+                                        <td style="padding: 15px 12px; text-align: center; word-wrap: break-word; overflow-wrap: break-word;">
+                                            ${worker.id_card_file_name ? `
+                                                <a href="/api/permits/company-entry/${permit.permit_id}/workers/${parseInt(worker.worker_id) || worker.worker_id}/id-card" 
+                                                   target="_blank"
+                                                   style="color: #3498db; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; white-space: nowrap;"
+                                                   title="عرض بطاقة الهوية">
+                                                    📄 ${worker.id_card_file_name}
+                                                </a>
+                                            ` : `
+                                                <span style="color: #e74c3c; font-size: 13px; font-weight: 500;">❌ غير مرفوعة</span>
+                                            `}
+                                        </td>
+                                        ${!isCheckedIn ? `
+                                            <td style="padding: 15px 12px; text-align: center; white-space: nowrap;">
+                                                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                                    <button onclick="openEditWorkerModal(${permit.permit_id}, ${parseInt(worker.worker_id) || worker.worker_id})" 
+                                                            style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);"
+                                                            onmouseover="this.style.transform='scale(1.05)'" 
+                                                            onmouseout="this.style.transform='scale(1)'"
+                                                            title="تعديل بيانات العامل">
+                                                        ✏️ تعديل
+                                                    </button>
+                                                    ${worker.is_original ? `
+                                                        <span style="color: #27ae60; font-size: 12px; font-weight: 600; padding: 6px 10px; background: #d4edda; border-radius: 4px;">✅ أصلي</span>
+                                                    ` : ''}
+                                                    <button onclick="deleteWorker(${permit.permit_id}, ${parseInt(worker.worker_id) || worker.worker_id})" 
+                                                            style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);"
+                                                            onmouseover="this.style.transform='scale(1.05)'" 
+                                                            onmouseout="this.style.transform='scale(1)'"
+                                                            title="حذف العامل">
+                                                        🗑️ حذف
+                                                    </button>
+                                                </div>
                                             </td>
-                                        ` : worker.is_original ? '<td style="padding: 10px; text-align: center; color: #27ae60; font-size: 12px;">✅ أصلي</td>' : '<td></td>'}
+                                        ` : worker.is_original ? '<td style="padding: 14px; text-align: center; color: #27ae60; font-size: 14px; font-weight: 600;">✅ أصلي</td>' : '<td style="padding: 14px; text-align: center; color: #95a5a6; font-size: 14px;">-</td>'}
                                     </tr>
                                 `).join('') : `
                                     <tr>
-                                        <td colspan="${!isCheckedIn ? '6' : '5'}" style="padding: 30px; text-align: center; color: #6c757d;">
-                                            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">👷</div>
-                                            <p style="font-size: 16px; margin: 0;">لا يوجد عمال مسجلين</p>
+                                        <td colspan="${!isCheckedIn ? '7' : '6'}" style="padding: 40px; text-align: center; color: #6c757d;">
+                                            <div style="font-size: 64px; margin-bottom: 15px; opacity: 0.3;">👷</div>
+                                            <p style="font-size: 18px; margin: 0; font-weight: 500;">لا يوجد عمال مسجلين</p>
                                         </td>
                                     </tr>
                                 `}
@@ -1964,26 +2085,34 @@ function openAddWorkerModal(permitId) {
     
     modalTitle.textContent = '➕ إضافة عامل جديد';
     modalContent.innerHTML = `
-        <div style="padding: 20px;">
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">اسم العامل *</label>
+        <div style="padding: 10px 0;">
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">اسم العامل *</label>
                 <input type="text" id="workerName" placeholder="أدخل اسم العامل" 
-                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
             </div>
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">المهنة</label>
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">المهنة</label>
                 <input type="text" id="workerProfession" placeholder="مثال: مهندس، فني، إلخ" 
-                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
             </div>
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">رقم الهوية</label>
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">رقم الهوية</label>
                 <input type="text" id="workerIdNumber" placeholder="رقم الهوية الوطنية" 
-                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
             </div>
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600;">رقم الهاتف</label>
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">رقم الهاتف</label>
                 <input type="text" id="workerPhone" placeholder="05xxxxxxxx" 
-                       style="width: 100%; padding: 10px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+            </div>
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية الشخصية</label>
+                <input type="file" id="workerIdCard" accept="image/*,.pdf" 
+                       style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
+                <small style="display: block; color: #666; font-size: 12px; margin-top: 6px;">
+                    صورة أو PDF لبطاقة الهوية
+                </small>
             </div>
         </div>
     `;
@@ -1997,23 +2126,29 @@ function openAddWorkerModal(permitId) {
             return;
         }
         
-        const workerData = {
-            worker_name: workerName,
-            worker_profession: document.getElementById('workerProfession').value.trim() || null,
-            worker_id_number: document.getElementById('workerIdNumber').value.trim() || null,
-            worker_phone: document.getElementById('workerPhone').value.trim() || null,
-            added_by: JSON.parse(localStorage.getItem('user'))?.username || 'guard'
-        };
+        const idCardFile = document.getElementById('workerIdCard')?.files[0];
+        
+        // إرسال البيانات باستخدام FormData إذا كان هناك ملف
+        const formData = new FormData();
+        formData.append('worker_name', workerName);
+        formData.append('worker_profession', document.getElementById('workerProfession').value.trim() || '');
+        formData.append('worker_id_number', document.getElementById('workerIdNumber').value.trim() || '');
+        formData.append('worker_phone', document.getElementById('workerPhone').value.trim() || '');
+        formData.append('added_by', JSON.parse(localStorage.getItem('user'))?.username || 'guard');
+        
+        if (idCardFile) {
+            formData.append('id_card', idCardFile);
+        }
         
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`/api/permits/company-entry/${permitId}/workers`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + token
+                    // لا نضع Content-Type عند استخدام FormData
                 },
-                body: JSON.stringify(workerData)
+                body: formData
             });
             
             const data = await response.json();
@@ -2037,8 +2172,16 @@ function openAddWorkerModal(permitId) {
 
 // ========== ✅ دالة حذف عامل ==========
 async function deleteWorker(permitId, workerId) {
-    if (!confirm('هل أنت متأكد من حذف هذا العامل؟')) {
-        return;
+    // التحقق من حالة التصريح
+    const permit = companyPermits.find(p => p.permit_id == permitId);
+    if (permit && permit.status === 'checked_in') {
+        if (!confirm('⚠️ هذا التصريح تم تسجيل دخوله بالفعل.\nهل أنت متأكد من حذف هذا العامل؟\n\nملاحظة: قد تحتاج إلى تحديث سجل الدخول.')) {
+            return;
+        }
+    } else {
+        if (!confirm('هل أنت متأكد من حذف هذا العامل؟')) {
+            return;
+        }
     }
     
     try {
@@ -2060,6 +2203,158 @@ async function deleteWorker(permitId, workerId) {
     } catch (error) {
         console.error('❌ خطأ في حذف العامل:', error);
         showNotification('❌ حدث خطأ في الاتصال', 'error');
+    }
+}
+
+// ========== ✅ دالة فتح modal تعديل عامل ==========
+async function openEditWorkerModal(permitId, workerId) {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+            return;
+        }
+        
+        console.log(`🔍 جلب بيانات العامل: permitId=${permitId}, workerId=${workerId}`);
+        
+        const response = await fetch(`/api/permits/company-entry/${permitId}/workers/${workerId}`, {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        
+        // التحقق من حالة الاستجابة أولاً
+        if (!response.ok) {
+            let errorMessage = 'فشل في جلب بيانات العامل';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                errorMessage = `خطأ في الاتصال: ${response.status} ${response.statusText}`;
+            }
+            console.error('❌ خطأ في الاستجابة:', response.status, errorMessage);
+            showNotification(`❌ ${errorMessage}`, 'error');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('📋 بيانات الاستجابة:', data);
+        
+        if (!data.success || !data.worker) {
+            const errorMsg = data.message || 'فشل في جلب بيانات العامل';
+            console.error('❌ بيانات غير صحيحة:', data);
+            showNotification(`❌ ${errorMsg}`, 'error');
+            return;
+        }
+        
+        const worker = data.worker;
+        const modal = document.getElementById('actionModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        const modalConfirm = document.getElementById('modalConfirm');
+        const modalCancel = document.getElementById('modalCancel');
+        
+        modalTitle.textContent = '✏️ تعديل بيانات العامل';
+        modalContent.innerHTML = `
+            <div style="padding: 10px 0;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">اسم العامل *</label>
+                    <input type="text" id="editWorkerName" value="${(worker.worker_name || '').replace(/"/g, '&quot;')}" placeholder="أدخل اسم العامل" 
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                </div>
+                <div style="margin-bottom: 22px;">
+                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">المهنة</label>
+                    <input type="text" id="editWorkerProfession" value="${(worker.worker_profession || '').replace(/"/g, '&quot;')}" placeholder="مثال: مهندس، فني، إلخ" 
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                </div>
+                <div style="margin-bottom: 22px;">
+                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">رقم الهوية</label>
+                    <input type="text" id="editWorkerIdNumber" value="${(worker.worker_id_number || '').replace(/"/g, '&quot;')}" placeholder="رقم الهوية الوطنية" 
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                </div>
+                <div style="margin-bottom: 22px;">
+                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">رقم الهاتف</label>
+                    <input type="text" id="editWorkerPhone" value="${(worker.worker_phone || '').replace(/"/g, '&quot;')}" placeholder="05xxxxxxxx" 
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                </div>
+                <div style="margin-bottom: 22px;">
+                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية الشخصية</label>
+                    ${worker.id_card_file_name ? `
+                        <div style="margin-bottom: 10px; padding: 12px; background: #e8f5e9; border-radius: 8px; font-size: 14px; color: #2e7d32; border: 1px solid #c3e6cb;">
+                            📄 الملف الحالي: ${worker.id_card_file_name}
+                        </div>
+                    ` : `
+                        <div style="margin-bottom: 10px; padding: 12px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; border: 1px solid #ffeaa7;">
+                            ⚠️ لا توجد بطاقة هوية مرفوعة
+                        </div>
+                    `}
+                    <input type="file" id="editWorkerIdCard" accept="image/*,.pdf" 
+                           style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                    <small style="display: block; color: #666; font-size: 13px; margin-top: 6px; line-height: 1.5;">
+                        ${worker.id_card_file_name ? 'اختر ملف جديد لاستبدال الملف الحالي' : 'صورة أو PDF لبطاقة الهوية'}
+                    </small>
+                </div>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+        
+        modalConfirm.onclick = async () => {
+            const workerName = document.getElementById('editWorkerName').value.trim();
+            if (!workerName) {
+                showNotification('❌ اسم العامل مطلوب', 'error');
+                return;
+            }
+            
+            const idCardFile = document.getElementById('editWorkerIdCard')?.files[0];
+            
+            // إرسال البيانات باستخدام FormData
+            const formData = new FormData();
+            formData.append('worker_name', workerName);
+            formData.append('worker_profession', document.getElementById('editWorkerProfession').value.trim() || '');
+            formData.append('worker_id_number', document.getElementById('editWorkerIdNumber').value.trim() || '');
+            formData.append('worker_phone', document.getElementById('editWorkerPhone').value.trim() || '');
+            
+            if (idCardFile) {
+                formData.append('id_card', idCardFile);
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/permits/company-entry/${permitId}/workers/${workerId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('✅ تم تحديث بيانات العامل بنجاح', 'success');
+                    modal.style.display = 'none';
+                    loadCompanyPermits(); // إعادة تحميل التصاريح
+                } else {
+                    showNotification('❌ ' + (data.message || 'حدث خطأ'), 'error');
+                }
+            } catch (error) {
+                console.error('❌ خطأ في تحديث بيانات العامل:', error);
+                showNotification('❌ حدث خطأ في الاتصال', 'error');
+            }
+        };
+        
+        modalCancel.onclick = () => {
+            modal.style.display = 'none';
+        };
+    } catch (error) {
+        console.error('❌ خطأ في جلب بيانات العامل:', error);
+        let errorMessage = 'حدث خطأ في الاتصال';
+        if (error.message) {
+            errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'فشل الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت';
+        }
+        showNotification(`❌ ${errorMessage}`, 'error');
     }
 }
 

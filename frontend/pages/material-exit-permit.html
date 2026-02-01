@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طلب إخراج مواد وأجهزة - نظام تصاريح العمل</title>
+    <style>
+        /* ========== RESET & BASE STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fb 0%, #e3edf7 100%);
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+        
+        /* ========== NAVBAR STYLES ========== */
+        .navbar {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            background: #fff;
+            color: #3498db;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .user-role {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* ========== FORM CARD ========== */
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #f8fafc;
+        }
+        
+        .form-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .form-header-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        /* ========== USER INFO BOX ========== */
+        .user-info-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 35px;
+            border-right: 5px solid #2196f3;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.15);
+        }
+        
+        .user-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .user-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-info-icon {
+            width: 40px;
+            height: 40px;
+            background: #2196f3;
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .user-info-content h3 {
+            font-size: 14px;
+            color: #0d47a1;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .user-info-content p {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1565c0;
+        }
+        
+        /* ========== FORM STYLES ========== */
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 12px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-label.required::after {
+            content: '*';
+            color: #e74c3c;
+            font-size: 18px;
+            margin-right: 5px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e8f4ff;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+            color: #2c3e50;
+        }
+        
+        input:read-only {
+            background: #f8f9fa;
+            cursor: not-allowed;
+            border-color: #dfe6e9;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .form-divider {
+            height: 1px;
+            background: #f8fafc;
+            margin: 40px 0;
+            position: relative;
+        }
+        
+        .form-divider::before {
+            content: 'معلومات الطلب';
+            position: absolute;
+            top: -10px;
+            right: 0;
+            background: white;
+            padding: 0 20px;
+            color: #3498db;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        /* ========== BUTTON STYLES ========== */
+        .form-actions {
+            margin-top: 40px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ========== MESSAGE STYLES ========== */
+        .message-container {
+            margin-top: 30px;
+        }
+        
+        .message {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border-right: 4px solid #28a745;
+        }
+        
+        .message.error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border-right: 4px solid #dc3545;
+        }
+        
+        .message.warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+            border-right: 4px solid #ffc107;
+        }
+        
+        /* ========== INSTRUCTIONS BOX ========== */
+        .instructions-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .instructions-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .instructions-header h3 {
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .instructions-list {
+            list-style: none;
+            padding-right: 0;
+        }
+        
+        .instructions-list li {
+            padding: 12px 0;
+            padding-right: 40px;
+            color: #666;
+            font-size: 15px;
+            line-height: 1.7;
+            position: relative;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        
+        .instructions-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .instructions-list li::before {
+            content: '📌';
+            position: absolute;
+            right: 0;
+            top: 12px;
+        }
+        
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .user-info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">📦</div>
+            <span>نظام تصاريح العمل</span>
+        </div>
+        
+        <div class="nav-links">
+            <a href="/dashboard.html" class="nav-link">🏠 الرئيسية</a>
+            <a href="/pages/material-exit-permit.html" class="nav-link active">📦 طلب إخراج مواد</a>
+            
+            <div class="user-info" id="userInfo">
+                <div class="user-details">
+                    <div class="user-name">جاري التحميل...</div>
+                    <div class="user-role">...</div>
+                </div>
+                <div class="user-avatar" id="userAvatar">...</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <div class="main-container">
+        <div class="form-card">
+            <!-- Form Header -->
+            <div class="form-header">
+                <h1>
+                    📦 طلب إخراج مواد وأجهزة
+                    <div class="form-header-subtitle">
+                        من مبنى محافظة الداخلية والمنشآت التابعة لها
+                    </div>
+                </h1>
+            </div>
+
+            <!-- User Information Box -->
+            <div class="user-info-box" id="userDetails">
+                <div class="user-info-grid">
+                    <div class="user-info-item">
+                        <div class="user-info-icon">👤</div>
+                        <div class="user-info-content">
+                            <h3>الموظف</h3>
+                            <p id="employeeNameDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                    <div class="user-info-item">
+                        <div class="user-info-icon">🔢</div>
+                        <div class="user-info-content">
+                            <h3>الرقم الوظيفي</h3>
+                            <p id="jobNumberDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                    <div class="user-info-item">
+                        <div class="user-info-icon">🏢</div>
+                        <div class="user-info-content">
+                            <h3>المديرية</h3>
+                            <p id="directorateDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                    <div class="user-info-item">
+                        <div class="user-info-icon">📍</div>
+                        <div class="user-info-content">
+                            <h3>الدائرة</h3>
+                            <p id="departmentDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Content -->
+            <form id="materialExitForm">
+                <!-- معلومات الموظف (للقراءة فقط) -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">
+                            <span>👤</span>
+                            اسم الموظف
+                        </label>
+                        <input type="text" id="employeeName" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">
+                            <span>🔢</span>
+                            الرقم الوظيفي
+                        </label>
+                        <input type="text" id="jobNumber" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">
+                            <span>🏢</span>
+                            المديرية
+                        </label>
+                        <input type="text" id="directorate" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">
+                            <span>📍</span>
+                            الدائرة
+                        </label>
+                        <input type="text" id="department" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-divider"></div>
+                
+                <!-- معلومات الطلب -->
+                <div class="form-group">
+                    <label for="materialType" class="form-label required">
+                        <span>📦</span>
+                        نوع المادة المراد إخراجها
+                    </label>
+                    <input type="text" id="materialType" 
+                           placeholder="مثال: جهاز كمبيوتر، طابعة، ملفات، معدات مكتبية..."
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="exitReason" class="form-label required">
+                        <span>📝</span>
+                        أسباب إخراجها
+                    </label>
+                    <textarea id="exitReason" 
+                              placeholder="أدخل سبب إخراج المادة من المبنى..."
+                              required></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="permitDate" class="form-label required">
+                            <span>📅</span>
+                            التاريخ
+                        </label>
+                        <input type="date" id="permitDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="permitTime" class="form-label required">
+                            <span>⏰</span>
+                            الوقت
+                        </label>
+                        <input type="time" id="permitTime" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="supervisorName" class="form-label required">
+                        <span>👔</span>
+                        اسم المسؤول المباشر
+                    </label>
+                    <input type="text" id="supervisorName" 
+                           placeholder="اسم المسؤول المباشر..."
+                           required>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span id="btnText">📤 تقديم الطلب</span>
+                        <span id="btnLoader" class="loading-spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Message Container -->
+            <div class="message-container">
+                <div id="message" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Instructions Box -->
+        <div class="instructions-box">
+            <div class="instructions-header">
+                <span>📋</span>
+                <h3>تعليمات وتوضيحات</h3>
+            </div>
+            <ul class="instructions-list">
+                <li>جميع الحقول المميزة بـ (*) إجبارية للتعميم</li>
+                <li>سيتم إرسال الطلب تلقائياً إلى مديرك المباشر للموافقة</li>
+                <li>بعد موافقة المدير، سيتم إرساله إلى مكتب الأمن للمراجعة</li>
+                <li>بعد موافقة الأمن، سيتم إرساله إلى الحارس للموافقة النهائية</li>
+                <li>يمكنك تتبع حالة الطلب من صفحة "تصاريحي" في أي وقت</li>
+                <li>الرجاء تقديم الطلب قبل 24 ساعة على الأقل من الموعد المطلوب</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // =============== SYSTEM INITIALIZATION ===============
+        document.addEventListener('DOMContentLoaded', function() {
+            initMaterialExitPage();
+        });
+
+        // =============== AUTHENTICATION FUNCTIONS ===============
+        function getToken() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showMessage('❌ يرجى تسجيل الدخول أولاً', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+                return null;
+            }
+            return token;
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            if (!token) return null;
+            
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            };
+        }
+
+        // =============== PAGE INITIALIZATION ===============
+        function initMaterialExitPage() {
+            // Load user data from localStorage
+            const userData = JSON.parse(localStorage.getItem('user'));
+            const token = localStorage.getItem('token');
+            
+            if (!userData || !token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Update user info in navbar
+            updateUserInfo(userData);
+            
+            // Fill user details
+            fillUserDetails(userData);
+            
+            // Set up form
+            setupForm(userData);
+            
+            // Check user role and permissions
+            checkUserRole(userData);
+        }
+
+        function updateUserInfo(userData) {
+            document.getElementById('userInfo').innerHTML = `
+                <div class="user-details">
+                    <div class="user-name">${userData.name || userData.username}</div>
+                    <div class="user-role">${getRoleName(userData.role || userData.user_type)}</div>
+                </div>
+                <div class="user-avatar">
+                    ${(userData.name || userData.username).charAt(0)}
+                </div>
+            `;
+        }
+
+        function fillUserDetails(userData) {
+            // Update display boxes
+            document.getElementById('employeeNameDisplay').textContent = userData.name || userData.full_name || userData.username;
+            document.getElementById('jobNumberDisplay').textContent = userData.job_number || 'غير محدد';
+            document.getElementById('directorateDisplay').textContent = userData.directorate || 'غير محدد';
+            document.getElementById('departmentDisplay').textContent = userData.department || userData.department_name || 'غير محدد';
+            
+            // Fill read-only fields
+            document.getElementById('employeeName').value = userData.name || userData.full_name || userData.username;
+            document.getElementById('jobNumber').value = userData.job_number || '';
+            document.getElementById('directorate').value = userData.directorate || '';
+            document.getElementById('department').value = userData.department || userData.department_name || 'غير محدد';
+        }
+
+        function setupForm(userData) {
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('permitDate').value = today;
+            document.getElementById('permitDate').min = today;
+            
+            // Set default time to current time
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('permitTime').value = `${hours}:${minutes}`;
+            
+            // Form submission handler
+            document.getElementById('materialExitForm').addEventListener('submit', handleFormSubmit);
+        }
+
+        function checkUserRole(userData) {
+            // Only employees can submit permits
+            const role = userData.role || userData.user_type;
+            if (role !== 'employee') {
+                restrictFormAccess(userData);
+            }
+        }
+
+        function restrictFormAccess(userData) {
+            const submitBtn = document.getElementById('submitBtn');
+            const permitForm = document.getElementById('materialExitForm');
+            const messageDiv = document.getElementById('message');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '❌ هذه الصفحة للموظفين فقط';
+            
+            showMessage(
+                `⚠️ هذه الصفحة مخصصة للموظفين فقط.<br>صلاحياتك الحالية: <strong>${getRoleName(userData.role || userData.user_type)}</strong>`,
+                'warning'
+            );
+            
+            // Dim the form
+            permitForm.style.opacity = '0.6';
+            permitForm.style.pointerEvents = 'none';
+        }
+
+        // =============== FORM SUBMISSION ===============
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const userData = JSON.parse(localStorage.getItem('user'));
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            
+            // Collect form data
+            const permitData = {
+                employee_username: userData.username,
+                employee_name: document.getElementById('employeeName').value,
+                job_number: document.getElementById('jobNumber').value,
+                directorate: document.getElementById('directorate').value,
+                department: document.getElementById('department').value,
+                material_type: document.getElementById('materialType').value.trim(),
+                exit_reason: document.getElementById('exitReason').value.trim(),
+                permit_date: document.getElementById('permitDate').value,
+                permit_time: document.getElementById('permitTime').value,
+                supervisor_name: document.getElementById('supervisorName').value.trim()
+            };
+            
+            // Validate form data
+            if (!permitData.material_type || !permitData.exit_reason || !permitData.supervisor_name) {
+                showMessage('❌ يرجى ملء جميع الحقول المطلوبة', 'error');
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.textContent = 'جاري إرسال الطلب...';
+            btnLoader.style.display = 'inline-block';
+            
+            try {
+                // Send request to API
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                
+                const response = await fetch('/api/permits/material-exit', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(permitData)
+                });
+                
+                const responseText = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    showMessage('❌ استجابة غير صالحة من الخادم', 'error');
+                    return;
+                }
+                
+                if (data.success) {
+                    showMessage('✅ تم تقديم طلب إخراج المواد بنجاح!<br>سيتم مراجعته من قبل المدير.', 'success');
+                    resetForm();
+                    
+                    // Redirect to dashboard after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 3000);
+                    
+                } else {
+                    // Handle authentication errors
+                    if (response.status === 401 || response.status === 403) {
+                        showMessage('❌ صلاحية الدخول منتهية. يرجى تسجيل الدخول مرة أخرى.', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                    } else {
+                        showMessage(`❌ ${data.message || 'حدث خطأ غير معروف'}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('خطأ في الاتصال:', error);
+                showMessage('❌ حدث خطأ في الاتصال بالخادم.<br>تحقق من اتصال الإنترنت وحاول مرة أخرى.', 'error');
+                
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.textContent = '📤 تقديم الطلب';
+                btnLoader.style.display = 'none';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('materialType').value = '';
+            document.getElementById('exitReason').value = '';
+            document.getElementById('supervisorName').value = '';
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('permitDate').value = today;
+            
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('permitTime').value = `${hours}:${minutes}`;
+        }
+
+        // =============== UTILITY FUNCTIONS ===============
+        function getRoleName(role) {
+            const roles = {
+                'admin': 'مسؤول النظام',
+                'employee': 'موظف',
+                'manager': 'مدير',
+                'security': 'مسؤول أمن',
+                'guard': 'حارس'
+            };
+            return roles[role] || role;
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = text;
+            messageDiv.style.display = 'block';
+            
+            // Hide message after 5 seconds for success, 7 seconds for error
+            const hideTime = type === 'success' ? 5000 : 7000;
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, hideTime);
+        }
+    </script>
+</body>
+</html>
+

@@ -1376,6 +1376,11 @@
                                 onclick="viewCompanyPermit(${permit.permit_id})">
                             👁️ تفاصيل
                         </button>
+                        ${permit.status === 'approved_security' ? `
+                        <button class="action-btn btn-print" onclick="printCompanyPermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            🖨️ طباعة
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1383,8 +1388,8 @@
 
         async function loadRecentlyApprovedCompanyPermits(username) {
             try {
-                console.log('🏢 تحميل تصاريح الشركات المعتمدة...');
-                const data = await fetchJson('/api/permits/company-entry/approved');
+                console.log('🏢 تحميل تصاريح الشركات المعتمدة/المرفوضة...');
+                const data = await fetchJson(`/api/permits/company-entry/approved?username=${encodeURIComponent(username)}`);
                 const container = document.getElementById('companyApprovedContainer');
                 
                 if (data.success && data.permits) {
@@ -1657,12 +1662,204 @@
             }
         }
 
-        function viewCompanyPermit(permitId) {
-            window.location.href = `/pages/company-entry-details.html?permit=${permitId}`;
+        async function viewCompanyPermit(permitId) {
+            try {
+                const response = await fetch(`/api/permits/company-entry/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.permit) {
+                    const permit = data.permit;
+                    const workers = data.workers || [];
+                    
+                    // إنشاء HTML لعرض العمال مع البطاقات الشخصية
+                    const workersHTML = workers.length > 0 ? workers.map((worker, index) => {
+                        const hasIdCard = worker.id_card_file_name;
+                        return `
+                            <tr>
+                                <td style="padding: 10px; text-align: center;">${index + 1}</td>
+                                <td style="padding: 10px;">${worker.worker_name || 'غير محدد'}</td>
+                                <td style="padding: 10px;">${worker.worker_id_number || 'غير محدد'}</td>
+                                <td style="padding: 10px;">${worker.worker_profession || 'غير محدد'}</td>
+                                <td style="padding: 10px; text-align: center;">
+                                    ${hasIdCard ? `
+                                        <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+                                            <button onclick="viewWorkerIdCard(${permitId}, ${worker.worker_id})" 
+                                                    style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                                                👁️ عرض
+                                            </button>
+                                            <button onclick="downloadWorkerIdCard(${permitId}, ${worker.worker_id})" 
+                                                    style="background: #2ecc71; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                                                📥 تحميل
+                                            </button>
+                                            <button onclick="printWorkerIdCard(${permitId}, ${worker.worker_id})" 
+                                                    style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                                                🖨️ طباعة
+                                            </button>
+                                        </div>
+                                    ` : '<span style="color: #95a5a6;">لا توجد بطاقة</span>'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 10px;">لا توجد بيانات</td></tr>';
+                    
+                    const modalHTML = `
+                        <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
+                                🏢 تفاصيل تصريح دخول الشركة #${permitId}
+                            </h3>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الشركة</h4>
+                                <p><strong>اسم الشركة:</strong> ${permit.company_name || 'غير محدد'}</p>
+                                <p><strong>مسؤول الشركة:</strong> ${permit.company_supervisor || 'غير محدد'}</p>
+                                <p><strong>رقم الهاتف:</strong> ${permit.company_phone || 'غير محدد'}</p>
+                                <p><strong>العنوان:</strong> ${permit.company_address || 'غير محدد'}</p>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">الجهة الطالبة</h4>
+                                <p><strong>الموظف المكلف:</strong> ${permit.employee_name || 'غير محدد'}</p>
+                                <p><strong>الإدارة:</strong> ${permit.directorate || 'غير محدد'}</p>
+                                <p><strong>القسم:</strong> ${permit.department || 'غير محدد'}</p>
+                                <p><strong>الرقم الوظيفي:</strong> ${permit.job_number || 'غير محدد'}</p>
+                                <p><strong>المسؤول المباشر:</strong> ${permit.supervisor_name || 'غير محدد'}</p>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل الدخول</h4>
+                                <p><strong>الفترة:</strong> ${permit.start_date} إلى ${permit.end_date}</p>
+                                <p><strong>أوقات الدخول:</strong> ${permit.entry_time} - ${permit.exit_time}</p>
+                                <p><strong>الغرض:</strong> ${permit.work_details || 'غير محدد'}</p>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">قائمة العمال (${workers.length} عامل)</h4>
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                                    <thead>
+                                        <tr style="background: #3498db; color: white;">
+                                            <th style="padding: 10px; text-align: center;">#</th>
+                                            <th style="padding: 10px; text-align: right;">اسم العامل</th>
+                                            <th style="padding: 10px; text-align: right;">الرقم المدني</th>
+                                            <th style="padding: 10px; text-align: right;">المهنة</th>
+                                            <th style="padding: 10px; text-align: center;">بطاقة الهوية</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${workersHTML}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            ${permit.additional_notes ? `
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                    <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
+                                    <p>${permit.additional_notes}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${permit.manager_notes ? `
+                                <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                    <h4 style="color: #2c3e50; margin-bottom: 10px;">ملاحظات المدير</h4>
+                                    <p>${permit.manager_notes}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div style="text-align: center; margin-top: 20px;">
+                                <button onclick="printCompanyPermit(${permitId})" 
+                                        style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                                    🖨️ طباعة التصريح
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    showModal({
+                        title: `🏢 تصريح دخول شركة #${permitId}`,
+                        html: modalHTML,
+                        confirmText: 'إغلاق',
+                        cancelText: null
+                    });
+                    
+                } else {
+                    showNotification('❌ تعذر جلب بيانات التصريح', 'error');
+                }
+                
+            } catch (error) {
+                console.error('خطأ في جلب بيانات التصريح:', error);
+                showNotification('❌ حدث خطأ في جلب البيانات', 'error');
+            }
+        }
+        
+        // دوال لعرض وتحميل وطباعة بطاقات الهوية
+        function viewWorkerIdCard(permitId, workerId) {
+            const url = `/api/permits/company-entry/${permitId}/workers/${workerId}/id-card`;
+            window.open(url, '_blank');
+        }
+        
+        function downloadWorkerIdCard(permitId, workerId) {
+            const url = `/api/permits/company-entry/${permitId}/workers/${workerId}/id-card`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `id-card-${permitId}-${workerId}`;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function printWorkerIdCard(permitId, workerId) {
+            const url = `/api/permits/company-entry/${permitId}/workers/${workerId}/id-card`;
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = function() {
+                printWindow.print();
+            };
         }
 
-        function printCompanyPermit(permitId) {
-            window.open(`/api/permits/company-entry/print/${permitId}`, '_blank');
+        async function printCompanyPermit(permitId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`/api/permits/company-entry/print/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'حدث خطأ في جلب البيانات' }));
+                    showNotification('❌ ' + (errorData.message || 'حدث خطأ في الطباعة'), 'error');
+                    return;
+                }
+                
+                const htmlContent = await response.text();
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url, '_blank');
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => {
+                            printWindow.print();
+                            URL.revokeObjectURL(url);
+                        }, 500);
+                    };
+                } else {
+                    showNotification('⚠️ يرجى السماح للنوافذ المنبثقة', 'warning');
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('خطأ في الطباعة:', error);
+                showNotification('❌ حدث خطأ في الطباعة', 'error');
+            }
         }
 
         // =============== MODAL FUNCTIONS محسنة للشركات ===============
@@ -1883,6 +2080,9 @@
                 
                 // تحميل تصاريح الشركات المعلقة
                 await loadCompanyPendingRequests(username);
+                
+                // تحميل تصاريح الشركات المعتمدة
+                await loadRecentlyApprovedCompanyPermits(username);
                 
             } catch (error) {
                 console.error('❌ خطأ في تحميل بيانات المدير:', error);
@@ -2133,15 +2333,187 @@
         
         // =============== NOTIFICATIONS ===============
         async function loadNotifications() {
-            // يمكن إضافة منطق تحميل الإشعارات هنا
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                if (!userData || !userData.username) return;
+                
+                const response = await fetch(`/api/notifications/${userData.username}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const notifications = data.notifications || [];
+                    const unreadCount = data.unread_count || 0;
+                    
+                    // تحديث العداد
+                    const badge = document.getElementById('notificationBadge');
+                    if (badge) {
+                        if (unreadCount > 0) {
+                            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                    
+                    // تحديث قائمة الإشعارات
+                    updateNotificationsList(notifications);
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل الإشعارات:', error);
+            }
+        }
+        
+        function updateNotificationsList(notifications, listContainer) {
+            if (!listContainer) return;
+            
+            if (notifications.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="notifications-empty">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🔔</div>
+                        <p>لا توجد إشعارات</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            listContainer.innerHTML = notifications.map(notif => {
+                const icon = notif.type === 'success' ? '✅' : 
+                           notif.type === 'error' ? '❌' : 
+                           notif.type === 'warning' ? '⚠️' : 'ℹ️';
+                const timeAgo = formatTimeAgo(new Date(notif.created_at));
+                const unreadClass = notif.is_read === 0 ? 'unread' : '';
+                
+                return `
+                    <div class="notification-item ${unreadClass}" data-id="${notif.notification_id}">
+                        <div class="notification-icon">${icon}</div>
+                        <div class="notification-content">
+                            <div class="notification-title">${notif.title || 'إشعار جديد'}</div>
+                            <div class="notification-message">${notif.message || ''}</div>
+                            <div class="notification-time">${timeAgo}</div>
+                            ${notif.permit_id || notif.company_permit_id ? `
+                            <div class="notification-actions">
+                                <button class="btn-view-permit" onclick="viewNotificationPermit(${notif.permit_id || notif.company_permit_id}, ${notif.company_permit_id ? 'true' : 'false'})">
+                                    عرض التصريح
+                                </button>
+                                ${unreadClass ? `
+                                <button class="btn-mark-read" onclick="markNotificationRead(${notif.notification_id})">
+                                    تحديد كمقروء
+                                </button>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'الآن';
+            if (minutes < 60) return `منذ ${minutes} دقيقة`;
+            if (hours < 24) return `منذ ${hours} ساعة`;
+            if (days < 7) return `منذ ${days} يوم`;
+            return date.toLocaleDateString('ar-SA');
+        }
+        
+        function showNotifications() {
+            const panel = document.getElementById('notificationsPanel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+                loadNotifications();
+            }
         }
         
         function setupNotificationsClose() {
-            // يمكن إضافة منطق إغلاق الإشعارات هنا
+            document.addEventListener('click', function(e) {
+                const panel = document.getElementById('notificationsPanel');
+                const btn = document.getElementById('notificationBell');
+                if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+                    panel.style.display = 'none';
+                }
+            });
+        }
+        
+        async function markNotificationRead(notificationId) {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                const response = await fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        notification_id: notificationId,
+                        username: userData.username
+                    })
+                });
+                
+                if (response.ok) {
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('خطأ في تحديد الإشعار كمقروء:', error);
+            }
+        }
+        
+        function viewNotificationPermit(permitId, isCompany) {
+            if (isCompany) {
+                viewCompanyPermit(permitId);
+            } else {
+                // يمكن إضافة دالة لعرض تصريح الموظف
+                showNotification('تم فتح التصريح', 'info');
+            }
+            document.getElementById('notificationsPanel').style.display = 'none';
         }
         
         function startNotificationPolling() {
-            // يمكن إضافة منطق استطلاع الإشعارات هنا
+            // تحديث الإشعارات كل 30 ثانية
+            setInterval(() => {
+                loadNotifications();
+            }, 30000);
+        }
+        
+        function closeNotifications() {
+            const panel = document.getElementById('notificationsPanel');
+            if (panel) {
+                panel.style.display = 'none';
+            }
+        }
+        
+        async function markAllNotificationsAsRead() {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user'));
+                if (!userData || !userData.username) return;
+                
+                const response = await fetch('/api/notifications/mark-all-read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        username: userData.username
+                    })
+                });
+                
+                if (response.ok) {
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('خطأ في تحديد جميع الإشعارات كمقروءة:', error);
+            }
         }
         
         // =============== باقي الدوال (لم تتغير) ===============

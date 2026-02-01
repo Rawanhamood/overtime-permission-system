@@ -22,7 +22,7 @@ for /L %%p in (3000,1,3010) do (
 )
 
 :: تنظيف المنافذ الأخرى
-set other_ports=4000 5000 8000 8080 9000
+set other_ports=4000 5000 5050 8000 8080 9000
 for %%p in (%other_ports%) do (
     for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%%p ^| findstr LISTENING 2^>nul') do (
         echo إيقاف العملية PID %%a (المنفذ %%p)

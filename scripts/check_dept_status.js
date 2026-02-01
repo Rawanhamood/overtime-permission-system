@@ -1,5 +1,7 @@
 const sqlite3 = require('sqlite3');
-const db = new sqlite3.Database('./database/overtime.db');
+const path = require('path');
+const dbPath = path.join(__dirname, '../backend/database/overtime.db');
+const db = new sqlite3.Database(dbPath);
 
 console.log('\n📊 فحص حالة الأقسام:\n');
 

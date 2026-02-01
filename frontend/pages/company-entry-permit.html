@@ -226,6 +226,60 @@
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
         
+        .form-input:read-only, .form-select:disabled {
+            background: #f8f9fa;
+            cursor: not-allowed;
+            border-color: #dfe6e9;
+        }
+        
+        /* ========== USER INFO BOX ========== */
+        .user-info-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 35px;
+            border-right: 5px solid #2196f3;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.15);
+        }
+        
+        .user-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .user-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-info-icon {
+            width: 40px;
+            height: 40px;
+            background: #2196f3;
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .user-info-content h3 {
+            font-size: 14px;
+            color: #0d47a1;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .user-info-content p {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1565c0;
+        }
+        
         .form-textarea {
             min-height: 100px;
             resize: vertical;
@@ -775,6 +829,40 @@
 
         <!-- Permit Form -->
         <div class="permit-form-container">
+            <!-- User Information Box -->
+            <div class="user-info-box" id="userDetails">
+                <div class="user-info-grid">
+                    <div class="user-info-item">
+                        <div class="user-info-icon">👤</div>
+                        <div class="user-info-content">
+                            <h3>الموظف</h3>
+                            <p id="employeeNameDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                    <div class="user-info-item">
+                        <div class="user-info-icon">🔢</div>
+                        <div class="user-info-content">
+                            <h3>الرقم الوظيفي</h3>
+                            <p id="jobNumberDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                    <div class="user-info-item">
+                        <div class="user-info-icon">🏢</div>
+                        <div class="user-info-content">
+                            <h3>المديرية</h3>
+                            <p id="directorateDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                    <div class="user-info-item">
+                        <div class="user-info-icon">📍</div>
+                        <div class="user-info-content">
+                            <h3>الدائرة</h3>
+                            <p id="departmentDisplay">جاري التحميل...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <form id="companyPermitForm">
                 <!-- Section 1: الجهة الطالبة للتصريح -->
                 <div class="form-section">
@@ -784,36 +872,25 @@
                         <div class="form-group">
                             <label class="form-label required">اسم الموظف / المكلف</label>
                             <input type="text" class="form-input" id="employeeName" 
-                                   placeholder="أدخل اسم الموظف المكلف بالتصريح" required>
+                                   placeholder="اسم الموظف" readonly required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label required">المديرية / الإدارة</label>
-                            <select class="form-select" id="directorate" required>
-                                <option value="">اختر المديرية</option>
-                                <option value="المديرية العامة">المديرية العامة</option>
-                                <option value="مديرية الشؤون الإدارية">مديرية الشؤون الإدارية</option>
-                                <option value="مديرية الشؤون المالية">مديرية الشؤون المالية</option>
-                                <option value="مديرية الشؤون الفنية">مديرية الشؤون الفنية</option>
-                                <option value="مديرية تقنية المعلومات">مديرية تقنية المعلومات</option>
-                                <option value="مديرية المشاريع">مديرية المشاريع</option>
-                                <option value="مديرية الخدمات">مديرية الخدمات</option>
-                                <option value="إدارة الموارد البشرية">إدارة الموارد البشرية</option>
-                                <option value="إدارة المشتريات">إدارة المشتريات</option>
-                                <option value="إدارة المخازن">إدارة المخازن</option>
-                            </select>
+                            <input type="text" class="form-input" id="directorate" 
+                                   placeholder="المديرية" readonly required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label required">الرقم الوظيفي</label>
                             <input type="text" class="form-input" id="jobNumber" 
-                                   placeholder="أدخل الرقم الوظيفي" required>
+                                   placeholder="الرقم الوظيفي" readonly required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label required">الدائرة / القسم</label>
                             <input type="text" class="form-input" id="department" 
-                                   placeholder="أدخل اسم الدائرة أو القسم" required>
+                                   placeholder="الدائرة" readonly required>
                         </div>
                     </div>
                     
@@ -884,9 +961,10 @@
                             <thead>
                                 <tr>
                                     <th width="5%">#</th>
-                                    <th width="45%">اسم العامل</th>
-                                    <th width="45%">الرقم المدني / الهوية</th>
-                                    <th width="5%">إجراءات</th>
+                                    <th width="25%">اسم العامل</th>
+                                    <th width="20%">الرقم المدني / الهوية</th>
+                                    <th width="40%">بطاقة الهوية *</th>
+                                    <th width="10%">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody id="employeesTableBody">
@@ -894,12 +972,21 @@
                                 <tr class="employee-row" id="employeeRow_1">
                                     <td>1</td>
                                     <td>
-                                        <input type="text" class="form-input" 
+                                        <input type="text" class="form-input employee-name" 
                                                placeholder="اسم العامل" required>
                                     </td>
                                     <td>
-                                        <input type="text" class="form-input" 
+                                        <input type="text" class="form-input employee-id" 
                                                placeholder="الرقم المدني" required>
+                                    </td>
+                                    <td>
+                                        <input type="file" class="form-input employee-id-card" 
+                                               accept="image/*,.pdf" 
+                                               required
+                                               style="padding: 8px; font-size: 13px;">
+                                        <small style="display: block; color: #666; font-size: 11px; margin-top: 4px;">
+                                            صورة أو PDF
+                                        </small>
                                     </td>
                                     <td>
                                         <button type="button" class="remove-employee-btn" 
@@ -1225,18 +1312,54 @@ function updateEmployeeNameField(userData) {
         console.warn('⚠️ لم يتم العثور على عنصر employeeName في الصفحة');
     }
     
+    // Fill user details in display boxes
+    const employeeNameDisplay = document.getElementById('employeeNameDisplay');
+    const jobNumberDisplay = document.getElementById('jobNumberDisplay');
+    const directorateDisplay = document.getElementById('directorateDisplay');
+    const departmentDisplay = document.getElementById('departmentDisplay');
+    
+    if (employeeNameDisplay) {
+        employeeNameDisplay.textContent = userData.name || userData.full_name || userData.username || 'غير محدد';
+    }
+    if (jobNumberDisplay) {
+        jobNumberDisplay.textContent = userData.job_number || 'غير محدد';
+    }
+    if (directorateDisplay) {
+        directorateDisplay.textContent = userData.directorate || 'غير محدد';
+    }
+    if (departmentDisplay) {
+        departmentDisplay.textContent = userData.department || userData.department_name || 'غير محدد';
+    }
+    
     // ✅ تحديث حقول أخرى تلقائياً إذا كانت موجودة
     const jobNumberInput = document.getElementById('jobNumber');
-    if (jobNumberInput && userData.job_number && !jobNumberInput.value) {
-        jobNumberInput.value = userData.job_number;
+    if (jobNumberInput) {
+        jobNumberInput.value = userData.job_number || '';
         jobNumberInput.readOnly = true;
-        jobNumberInput.style.backgroundColor = '#f0f0f0';
-        jobNumberInput.style.cursor = 'not-allowed';
     }
     
     const directorateInput = document.getElementById('directorate');
-    if (directorateInput && userData.directorate && !directorateInput.value) {
-        directorateInput.value = userData.directorate;
+    if (directorateInput) {
+        // Convert select to input if it's a select element
+        if (directorateInput.tagName === 'SELECT') {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-input';
+            input.id = 'directorate';
+            input.value = userData.directorate || '';
+            input.readOnly = true;
+            input.required = true;
+            directorateInput.parentNode.replaceChild(input, directorateInput);
+        } else {
+            directorateInput.value = userData.directorate || '';
+            directorateInput.readOnly = true;
+        }
+    }
+    
+    const departmentInput = document.getElementById('department');
+    if (departmentInput) {
+        departmentInput.value = userData.department || userData.department_name || '';
+        departmentInput.readOnly = true;
     }
 }
 
@@ -1492,12 +1615,21 @@ function checkUserDataInStorage() {
             row.innerHTML = `
                 <td>${rowNumber}</td>
                 <td>
-                    <input type="text" class="form-input" 
+                    <input type="text" class="form-input employee-name" 
                            placeholder="اسم العامل" required>
                 </td>
                 <td>
-                    <input type="text" class="form-input" 
+                    <input type="text" class="form-input employee-id" 
                            placeholder="الرقم المدني" required>
+                </td>
+                <td>
+                    <input type="file" class="form-input employee-id-card" 
+                           accept="image/*,.pdf" 
+                           required
+                           style="padding: 8px; font-size: 13px;">
+                    <small style="display: block; color: #666; font-size: 11px; margin-top: 4px;">
+                        صورة أو PDF
+                    </small>
                 </td>
                 <td>
                     <button type="button" class="remove-employee-btn" 
@@ -1616,18 +1748,26 @@ function checkUserDataInStorage() {
                 console.log(`👥 عدد صفوف العمال: ${rows.length}`);
                 
                 rows.forEach((row, index) => {
-                    const inputs = row.querySelectorAll('input');
-                    if (inputs.length >= 2) {
-                        const name = inputs[0].value.trim();
-                        const idNumber = inputs[1].value.trim();
+                    const nameInput = row.querySelector('.employee-name');
+                    const idInput = row.querySelector('.employee-id');
+                    const idCardInput = row.querySelector('.employee-id-card');
+                    
+                    const name = nameInput ? nameInput.value.trim() : '';
+                    const idNumber = idInput ? idInput.value.trim() : '';
+                    const idCardFile = idCardInput ? idCardInput.files[0] : null;
+                    
+                    if (name || idNumber) {
+                        const employeeData = {
+                            name: name,
+                            profession: 'عامل',
+                            id_number: idNumber,
+                            id_card_file_name: idCardFile ? idCardFile.name : null,
+                            id_card_file_size: idCardFile ? idCardFile.size : null,
+                            id_card_file_type: idCardFile ? idCardFile.type : null,
+                            has_id_card: !!idCardFile
+                        };
                         
-                        if (name || idNumber) {
-                            employees.push({
-                                name: name,
-                                profession: 'عامل',
-                                id_number: idNumber
-                            });
-                        }
+                        employees.push(employeeData);
                     }
                 });
             } catch (error) {
@@ -1653,11 +1793,9 @@ function checkUserDataInStorage() {
             ];
             
             // إذا لم تكن معاينة، نضيف حقول إضافية مطلوبة
+            // ملاحظة: department و directorate و job_number تأتي تلقائياً من بيانات المستخدم (للقراءة فقط)
             if (!forPreview) {
                 requiredFields.push(
-                    { key: 'directorate', name: 'المديرية' },
-                    { key: 'job_number', name: 'الرقم الوظيفي' },
-                    { key: 'department', name: 'القسم' },
                     { key: 'supervisor_name', name: 'اسم المسؤول المباشر' },
                     { key: 'entry_purpose', name: 'تفاصيل العمل' }
                 );
@@ -1714,6 +1852,15 @@ function checkUserDataInStorage() {
             const employeeErrors = [];
             if (!forPreview && (!formData.employees || formData.employees.length === 0)) {
                 employeeErrors.push('يجب إضافة عامل واحد على الأقل');
+            }
+            
+            // التحقق من وجود بطاقة الهوية لكل عامل
+            if (!forPreview && formData.employees && formData.employees.length > 0) {
+                formData.employees.forEach((emp, index) => {
+                    if (!emp.has_id_card && !emp.id_card_file_name) {
+                        employeeErrors.push(`يجب رفع بطاقة الهوية للعامل ${index + 1}: ${emp.name || 'غير محدد'}`);
+                    }
+                });
             }
             
             // جمع كل الأخطاء
@@ -1853,6 +2000,7 @@ async function submitPermitForm() {
         console.log('📦 البيانات المعدلة للإرسال:', apiData);
         
         // 7. إرسال الطلب إلى الخادم
+        // ملاحظة: معلومات الملفات (اسم، حجم، نوع) تُرسل في JSON مع بيانات العمال
         const response = await fetch('/api/permits/company-entry/new', {
             method: 'POST',
             headers: {

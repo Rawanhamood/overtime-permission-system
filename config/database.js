@@ -1,8 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// مسار قاعدة البيانات - يشير إلى مجلد database
-const dbPath = path.join(__dirname, '../database/overtime.db');
+// مسار قاعدة البيانات - يشير إلى مجلد backend/database
+const dbPath = path.join(__dirname, '../backend/database/overtime.db');
 console.log('📂 جاري الاتصال بقاعدة البيانات:', dbPath);
 
 // إنشاء اتصال بقاعدة البيانات

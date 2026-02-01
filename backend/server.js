@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 
 const app = express();
@@ -11,808 +10,107 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ============== ⭐⭐ middleware للتحقق من التوكن ⭐⭐ ==============
-const authenticateToken = (req, res, next) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: 'غير مصرح، يرجى تسجيل الدخول أولاً'
-        });
-    }
-    
+// إنشاء مجلد uploads إذا لم يكن موجوداً
+const uploadsDir = path.join(__dirname, 'uploads', 'id-cards');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Import middleware
+const {
+    authenticateToken,
+    authorizeRoles,
+    checkGuardPermissions,
+    checkManagerRole,
+    checkSecurityRole
+} = require('./middleware/auth');
+
+// Import database and utilities
+const { db, query, run } = require('./database');
+const {
+    createNotification,
+    getUserIdByUsername,
+    notifyAllManagers,
+    notifyAllSecurityStaff,
+    notifyAllGuards,
+    notifyAllSecurityUsers
+} = require('./utils/notifications');
+const {
+    checkDatabaseTables,
+    initializeDatabase,
+    updatePermitsTable,
+    addEssentialUsers
+} = require('./utils/database-init');
+
+// ============== تهيئة قاعدة البيانات ==============
+// Database connection is handled by database.js module
+// Initialize database tables on startup
+checkDatabaseTables();
+
+
+// Database initialization functions are now in utils/database-init.js
+
+// Notification functions are now in utils/notifications.js
+
+// ============== Helper Functions ==============
+
+// دالة مساعدة لاستيراد formidable بشكل صحيح
+function getFormidable() {
+    let formidableModule;
     try {
-        // فك التوكن (في نظامك الحالي، التوكن هو مجرد base64)
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(403).json({
-            success: false,
-            message: 'توكن غير صالح'
-        });
-    }
-};
-
-// ============== ⭐⭐ middleware خاص للحارس (security_guard) ⭐⭐ ==============
-const checkGuardPermissions = (req, res, next) => {
-    if (req.user && (req.user.role === 'guard' || req.user.role === 'security_guard')) {
-        // الحارس لا يمكنه:
-        // 1. الموافقة على التصاريح
-        // 2. رفض التصاريح  
-        // 3. إنهاء التصاريح مبكراً
-        // 4. إدارة الأقسام
-        const blockedPaths = [
-            '/api/permits/security-approve',
-            '/api/permits/end-early',
-            '/api/departments',
-            '/api/auto-assign-managers',
-            '/api/reassign-all-managers'
-        ];
-        
-        if (blockedPaths.some(path => req.path.startsWith(path))) {
-            return res.status(403).json({
-                success: false,
-                message: 'الحارس ليس لديه صلاحية لهذا الإجراء'
-            });
+        formidableModule = require('formidable');
+    } catch (e1) {
+        try {
+            formidableModule = require(path.join(__dirname, '..', 'node_modules', 'formidable'));
+        } catch (e2) {
+            throw new Error('حزمة formidable غير مثبتة. يرجى تشغيل: npm install formidable في مجلد backend');
         }
     }
-    next();
-};
-
-// ============== ⭐⭐ middleware للتحقق من الصلاحية (معدّل) ⭐⭐ ==============
-const authorizeRoles = (...roles) => {
-    return (req, res, next) => {
-        if (!req.user) {
-            return res.status(403).json({
-                success: false,
-                message: 'ليس لديك صلاحية للوصول'
-            });
-        }
-        
-        const userRole = req.user.role;
-        
-        // السماح للحارس (guard) بالوصول لـ APIs محددة فقط
-        if (userRole === 'guard' || userRole === 'security_guard') {
-            // الحارس يمكنه الوصول فقط لـ APIs محددة
-            const guardAllowedAPIs = ['security', 'security_guard', 'admin'];
-            if (!guardAllowedAPIs.some(allowedRole => roles.includes(allowedRole))) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'ليس لديك صلاحية للوصول'
-                });
-            }
-        } else if (!roles.includes(userRole)) {
-            return res.status(403).json({
-                success: false,
-                message: 'ليس لديك صلاحية للوصول'
-            });
-        }
-        next();
-    };
-};
-
-const checkManagerRole = (req, res, next) => {
-    const userRole = req.user?.role;
-    if (userRole !== 'manager' && userRole !== 'admin') {
-        return res.status(403).json({
-            success: false,
-            message: 'غير مصرح لك بتنفيذ هذه العملية'
-        });
-    }
-    next();
-};
-
-const checkSecurityRole = (req, res, next) => {
-    const userRole = req.user?.role;
-    if (userRole !== 'security' && userRole !== 'admin') {
-        return res.status(403).json({
-            success: false,
-            message: 'غير مصرح لك بتنفيذ هذه العملية'
-        });
-    }
-    next();
-};
-
-// ============== اتصال بقاعدة البيانات (مُحسّن) ==============
-const dbDir = path.join(__dirname, 'database');
-
-// محاولة الملفات بالترتيب
-const dbCandidates = [
-    'overtime.db',      // الملف الأصلي
-    'overtime_new.db',  // الملف الجديد
-    'overtime_system.db' // ملف احتياطي
-];
-
-let dbPath = null;
-let selectedDb = '';
-
-// البحث عن أول ملف قاعدة بيانات صالح
-for (const dbFile of dbCandidates) {
-    const fullPath = path.join(dbDir, dbFile);
-    try {
-        if (fs.existsSync(fullPath)) {
-            // تحقق من أن الملف غير فارغ (أكبر من 0 بايت)
-            const stats = fs.statSync(fullPath);
-            if (stats.size > 0) {
-                dbPath = fullPath;
-                selectedDb = dbFile;
-                console.log(`✅ وجدت قاعدة بيانات: ${dbFile} (${stats.size} بايت)`);
-                break;
-            } else {
-                console.log(`⚠️  ملف ${dbFile} موجود لكنه فارغ`);
-            }
-        }
-    } catch (err) {
-        console.log(`⚠️  خطأ في فحص ${dbFile}: ${err.message}`);
+    
+    // التعامل مع مختلف طرق التصدير في formidable
+    // في v3 قد يكون formidable هو named export
+    if (typeof formidableModule === 'function') {
+        return formidableModule;
+    } else if (formidableModule.formidable && typeof formidableModule.formidable === 'function') {
+        return formidableModule.formidable;
+    } else if (formidableModule.default && typeof formidableModule.default === 'function') {
+        return formidableModule.default;
+    } else if (formidableModule.IncomingForm && typeof formidableModule.IncomingForm === 'function') {
+        // بعض الإصدارات تستخدم IncomingForm
+        return formidableModule.IncomingForm;
+    } else {
+        // محاولة أخيرة - قد يكون التصدير مختلفاً
+        console.warn('⚠️ تحذير: طريقة التصدير غير معروفة، محاولة استخدام الكائن مباشرة');
+        return formidableModule;
     }
 }
 
-// إذا لم نجد أي ملف، أنشئ ملفاً جديداً
-if (!dbPath) {
-    selectedDb = 'overtime_system.db';
-    dbPath = path.join(dbDir, selectedDb);
-    console.log(`🔄 لم أجد قاعدة بيانات صالحة، سأنشئ: ${selectedDb}`);
-}
-
-console.log(`🔍 استخدام قاعدة البيانات: ${selectedDb}`);
-console.log(`📁 المسار الكامل: ${dbPath}`);
-
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err.message);
-        console.error('💡 الأسباب المحتملة:');
-        console.error('   1. الملف تالف أو محمي');
-        console.error('   2. لا توجد صلاحيات للوصول');
-        console.error('   3. الملف قيد الاستخدام من قبل برنامج آخر');
-        
-        // محاولة حل تلقائي
-        console.log('\n🔄 أحاول إصلاح المشكلة تلقائياً...');
-        
-        // محاولة استخدام قاعدة بيانات في الذاكرة مؤقتاً
-        console.log('💾 استخدام قاعدة بيانات مؤقتة في الذاكرة...');
-        const memoryDb = new sqlite3.Database(':memory:', (err2) => {
-            if (err2) {
-                console.error('❌ فشل حتى قاعدة البيانات في الذاكرة:', err2.message);
-                console.log('\n🚨 **حلول يدوية:**');
-                console.log('   1. أعد تشغيل الكمبيوتر');
-                console.log('   2. شغل PowerShell كمسؤول');
-                console.log('   3. جرب: node database/init.js');
-                console.log('   4. تأكد أن الملف غير مفتوح في برنامج آخر');
-                process.exit(1);
-            }
-            
-            console.log('✅ تم الاتصال بقاعدة بيانات مؤقتة في الذاكرة');
-            console.log('⚠️  ملاحظة: البيانات لن تحفظ بعد إغلاق الخادم');
-            console.log('💡 استخدم node database/init.js لإنشاء قاعدة بيانات دائمة');
-            
-            // استبدل db بالنسخة المؤقتة
-            Object.assign(db, memoryDb);
-            initializeDatabase(db);
-        });
-        return;
-    }
-    
-    console.log('✅ تم الاتصال بقاعدة البيانات بنجاح');
-    db.run('PRAGMA foreign_keys = ON');
-    
-    // التحقق من الجداول
-    checkDatabaseTables(db);
-});
-
-
-// ============== دوال لتهيئة قاعدة البيانات ==============
-
-function checkDatabaseTables(db) {
-    const query = `
-        SELECT name 
-        FROM sqlite_master 
-        WHERE type='table' 
-        AND name NOT LIKE 'sqlite_%'
-    `;
-    
-    db.all(query, [], (err, tables) => {
-        if (err) {
-            console.error('❌ خطأ في قراءة الجداول:', err.message);
-            console.log('🔄 سأحاول إنشاء الجداول الأساسية...');
-            initializeDatabase(db);
-            return;
-        }
-        
-        const tableNames = tables ? tables.map(t => t.name) : [];
-        console.log(`📋 عدد الجداول الموجودة: ${tableNames.length}`);
-        
-        if (tableNames.length > 0) {
-            console.log('📊 الجداول:', tableNames.join(', '));
-        }
-        
-        // الجداول الأساسية المطلوبة
-        const essentialTables = ['employees', 'permits', 'departments'];
-        const missingTables = essentialTables.filter(t => !tableNames.includes(t));
-        
-        if (missingTables.length > 0) {
-            console.log(`⚠️  الجداول المفقودة: ${missingTables.join(', ')}`);
-            console.log('🔄 جاري إنشاء الجداول المفقودة...');
-            initializeDatabase(db);
-        } else {
-            console.log('✅ جميع الجداول الأساسية موجودة');
-            
-            // التحقق من وجود بيانات أساسية
-            db.get('SELECT COUNT(*) as count FROM employees', [], (err, result) => {
-                if (err) {
-                    console.error('❌ خطأ في عد الموظفين:', err.message);
-                } else {
-                    console.log(`👥 عدد الموظفين: ${result.count}`);
-                    
-                    if (result.count === 0) {
-                        console.log('🔄 لا توجد بيانات، جاري إضافة المستخدمين الأساسيين...');
-                        addEssentialUsers(db);
-                    } else {
-                        console.log('✅ قاعدة البيانات تحتوي على بيانات');
-                        // تحديث جدول التصاريح إذا لزم الأمر
-                        updatePermitsTable(db);
-                    }
-                }
-            });
-        }
-    });
-}
-
-function initializeDatabase(db) {
-    console.log('🔨 جاري إنشاء الجداول الأساسية...');
-    
-    const tables = [
-        // جدول الأقسام أولاً (لأن الموظفين يشيرون إليه)
-        `CREATE TABLE IF NOT EXISTS departments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            type TEXT,
-            manager_id INTEGER,
-            parent_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`,
-        
-        // جدول الموظفين
-        `CREATE TABLE IF NOT EXISTS employees (
-            employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            user_type TEXT NOT NULL,
-            job_number TEXT,
-            directorate TEXT,
-            department_id INTEGER,
-            manager_id INTEGER,
-            email TEXT,
-            phone TEXT,
-            is_active BOOLEAN DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`,
-        
-        // جدول التصاريح
-        `CREATE TABLE IF NOT EXISTS permits (
-            permit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER NOT NULL,
-            reason TEXT NOT NULL,
-            start_date TEXT NOT NULL,
-            end_date TEXT NOT NULL,
-            expected_exit_time TEXT NOT NULL,
-            manager_notes TEXT,
-            manager_decision TEXT,
-            manager_decision_date TEXT,
-            manager_username TEXT,
-            security_decision TEXT,
-            security_decision_date TEXT,
-            security_username TEXT,
-            security_notes TEXT,
-            actual_entry_time TEXT,
-            actual_exit_time TEXT,
-            entry_guard_username TEXT,
-            exit_guard_username TEXT,
-            entry_notes TEXT,
-            exit_notes TEXT,
-            checkin_timestamp TEXT,
-            checkout_timestamp TEXT,
-            status TEXT DEFAULT 'pending_manager',
-            request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`,
-        
-        // جدول تصاريح الشركات
-        `CREATE TABLE IF NOT EXISTS company_entry_permits (
-            permit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_username TEXT NOT NULL,
-            employee_name TEXT,
-            company_name TEXT NOT NULL,
-            company_representative TEXT NOT NULL,
-            representative_id TEXT,
-            representative_phone TEXT,
-            vehicle_number TEXT,
-            entry_purpose TEXT NOT NULL,
-            expected_entry_date TEXT NOT NULL,
-            expected_entry_time TEXT NOT NULL,
-            expected_exit_date TEXT NOT NULL,
-            expected_exit_time TEXT NOT NULL,
-            number_of_visitors INTEGER DEFAULT 1,
-            actual_visitors_count INTEGER,
-            additional_notes TEXT,
-            manager_status TEXT DEFAULT 'pending',
-            manager_username TEXT,
-            manager_notes TEXT,
-            manager_decision_date TEXT,
-            security_status TEXT DEFAULT 'pending',
-            security_username TEXT,
-            security_notes TEXT,
-            security_decision_date TEXT,
-            actual_entry_time TEXT,
-            actual_exit_time TEXT,
-            entry_guard_username TEXT,
-            exit_guard_username TEXT,
-            entry_notes TEXT,
-            exit_notes TEXT,
-            status TEXT DEFAULT 'pending',
-            request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (employee_username) REFERENCES employees(username)
-        )`,
-        
-        // جدول تصاريح الشركات المرسلة للحرس
-        `CREATE TABLE IF NOT EXISTS guard_company_permits (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            permit_id INTEGER NOT NULL,
-            security_username TEXT NOT NULL,
-            security_notes TEXT,
-            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (permit_id) REFERENCES company_entry_permits(permit_id)
-        )`,
-        
-        // ✅ جدول الحرس المناوبين
-        `CREATE TABLE IF NOT EXISTS guard_shifts (
-            shift_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guard_name TEXT NOT NULL,
-            guard_username TEXT,
-            shift_date DATE NOT NULL,
-            shift_start_time TEXT,
-            shift_end_time TEXT,
-            is_active BOOLEAN DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`,
-        
-        // ✅ جدول العمال المرتبطين بتصاريح الشركات
-        `CREATE TABLE IF NOT EXISTS company_workers (
+// دالة لضمان وجود جدول company_workers
+function ensureCompanyWorkersTable(callback) {
+    const createTableSQL = `
+        CREATE TABLE IF NOT EXISTS company_workers (
             worker_id INTEGER PRIMARY KEY AUTOINCREMENT,
             permit_id INTEGER NOT NULL,
             worker_name TEXT NOT NULL,
             worker_id_number TEXT,
             worker_profession TEXT,
             worker_phone TEXT,
+            id_card_file_name TEXT,
             added_by TEXT,
+            is_original INTEGER DEFAULT 0,
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_original BOOLEAN DEFAULT 0,
             FOREIGN KEY (permit_id) REFERENCES company_entry_permits(permit_id)
-        )`,
-        
-     
-`CREATE TABLE IF NOT EXISTS notifications (
-    notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    permit_id INTEGER,
-    company_permit_id INTEGER,
-    title TEXT NOT NULL,
-    message TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'info',
-    is_read BOOLEAN DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES employees(employee_id)
-)`,
-        
-        // جدول المخالفات
-        `CREATE TABLE IF NOT EXISTS time_violations (
-            violation_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            permit_id INTEGER NOT NULL,
-            employee_id INTEGER NOT NULL,
-            violation_type TEXT,
-            expected_time TEXT,
-            actual_time TEXT,
-            time_difference INTEGER,
-            severity TEXT,
-            reported_by TEXT,
-            resolved BOOLEAN DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`
-    ];
+        )
+    `;
     
-    db.serialize(() => {
-        // إنشاء الجداول بالتسلسل
-        tables.forEach((query, index) => {
-            db.run(query, (err) => {
-                if (err) {
-                    console.error(`❌ خطأ في إنشاء الجدول ${index + 1}:`, err.message);
-                } else {
-                    console.log(`✅ تم إنشاء/تأكيد الجدول ${index + 1}`);
-                }
-            });
-        });
-        
-        // بعد إنشاء الجداول، أضف المستخدمين الأساسيين
-        setTimeout(() => {
-            addEssentialUsers(db);
-        }, 1500);
-    });
-}
-
-function updatePermitsTable(db) {
-    console.log('🔍 التحقق من أعمدة جدول التصاريح...');
-    
-    const columnsToAdd = [
-        ['actual_entry_time', 'TEXT'],
-        ['entry_guard_username', 'TEXT'],
-        ['exit_guard_username', 'TEXT'],
-        ['entry_notes', 'TEXT'],
-        ['exit_notes', 'TEXT'],
-        ['checkin_timestamp', 'TEXT'],
-        ['checkout_timestamp', 'TEXT'],
-        ['manager_username', 'TEXT'],
-        ['security_username', 'TEXT']
-    ];
-    
-    db.all(`PRAGMA table_info(permits)`, (err, columns) => {
+    db.run(createTableSQL, (err) => {
         if (err) {
-            console.error('❌ خطأ في قراءة هيكل جدول permits:', err.message);
-            return;
-        }
-        
-        const existingColumns = columns ? columns.map(col => col.name) : [];
-        
-        // إضافة الأعمدة المفقودة
-        columnsToAdd.forEach(([columnName, columnType]) => {
-            if (!existingColumns.includes(columnName)) {
-                db.run(`ALTER TABLE permits ADD COLUMN ${columnName} ${columnType}`, (alterErr) => {
-                    if (alterErr) {
-                        console.error(`❌ خطأ في إضافة العمود ${columnName}:`, alterErr.message);
-                    } else {
-                        console.log(`✅ تم إضافة العمود: ${columnName}`);
-                    }
-                });
-            } else {
-                console.log(`✅ العمود ${columnName} موجود بالفعل`);
-            }
-        });
-    });
-    
-    // التحقق من أعمدة جدول تصاريح الشركات
-    console.log('🔍 التحقق من أعمدة جدول تصاريح الشركات...');
-    db.all(`PRAGMA table_info(company_entry_permits)`, (err, columns) => {
-        if (err) {
-            console.error('❌ خطأ في قراءة هيكل جدول company_entry_permits:', err.message);
-            return;
-        }
-        
-        const existingColumns = columns ? columns.map(col => col.name) : [];
-        
-        // إضافة العمود manager_username إذا لم يكن موجوداً
-        if (!existingColumns.includes('manager_username')) {
-            db.run(`ALTER TABLE company_entry_permits ADD COLUMN manager_username TEXT`, (alterErr) => {
-                if (alterErr) {
-                    console.error(`❌ خطأ في إضافة العمود manager_username:`, alterErr.message);
-                } else {
-                    console.log(`✅ تم إضافة العمود: manager_username`);
-                }
-            });
+            console.error('❌ خطأ في إنشاء جدول company_workers:', err);
+            if (callback) callback(err);
         } else {
-            console.log(`✅ العمود manager_username موجود بالفعل`);
+            console.log('✅ تم التحقق من وجود جدول company_workers');
+            if (callback) callback(null);
         }
-        
-        // إضافة العمود employee_id إذا لم يكن موجوداً
-        if (!existingColumns.includes('employee_id')) {
-            db.run(`ALTER TABLE company_entry_permits ADD COLUMN employee_id INTEGER`, (alterErr) => {
-                if (alterErr) {
-                    console.error(`❌ خطأ في إضافة العمود employee_id:`, alterErr.message);
-                } else {
-                    console.log(`✅ تم إضافة العمود: employee_id`);
-                }
-            });
-        } else {
-            console.log(`✅ العمود employee_id موجود بالفعل`);
-        }
-        
-        // إضافة العمود security_username إذا لم يكن موجوداً
-        if (!existingColumns.includes('security_username')) {
-            db.run(`ALTER TABLE company_entry_permits ADD COLUMN security_username TEXT`, (alterErr) => {
-                if (alterErr) {
-                    console.error(`❌ خطأ في إضافة العمود security_username:`, alterErr.message);
-                } else {
-                    console.log(`✅ تم إضافة العمود: security_username`);
-                }
-            });
-        } else {
-            console.log(`✅ العمود security_username موجود بالفعل`);
-        }
-        
-        // إضافة العمود security_status إذا لم يكن موجوداً
-        if (!existingColumns.includes('security_status')) {
-            db.run(`ALTER TABLE company_entry_permits ADD COLUMN security_status TEXT DEFAULT 'pending'`, (alterErr) => {
-                if (alterErr) {
-                    console.error(`❌ خطأ في إضافة العمود security_status:`, alterErr.message);
-                } else {
-                    console.log(`✅ تم إضافة العمود: security_status`);
-                }
-            });
-        } else {
-            console.log(`✅ العمود security_status موجود بالفعل`);
-        }
-        
-        // إضافة العمود manager_status إذا لم يكن موجوداً
-        if (!existingColumns.includes('manager_status')) {
-            db.run(`ALTER TABLE company_entry_permits ADD COLUMN manager_status TEXT DEFAULT 'pending'`, (alterErr) => {
-                if (alterErr) {
-                    console.error(`❌ خطأ في إضافة العمود manager_status:`, alterErr.message);
-                } else {
-                    console.log(`✅ تم إضافة العمود: manager_status`);
-                }
-            });
-        } else {
-            console.log(`✅ العمود manager_status موجود بالفعل`);
-        }
-    });
-}
-
-function addEssentialUsers(db) {
-    console.log('👤 جاري إضافة المستخدمين الأساسيين...');
-    
-    const users = [
-        // [username, password, full_name, user_type, job_number, directorate, email, phone]
-        ['admin', 'admin123', 'مدير النظام', 'admin', 'ADM001', 'الإدارة العامة', 'admin@company.com', '0500000000'],
-        ['employee1', 'admin123', 'محمد حسن', 'employee', 'EMP001', 'الإدارة العامة', 'employee1@company.com', '0500000001'],
-        ['employee2', 'admin123', 'فاطمة علي', 'employee', 'EMP002', 'الإدارة العامة', 'employee2@company.com', '0500000002'],
-        ['manager1', 'admin123', 'أحمد علي', 'manager', 'MGR001', 'الإدارة العامة', 'manager1@company.com', '0500000003'],
-        ['security1', 'admin123', 'خالد أمين', 'security', 'SEC001', 'الأمن والسلامة', 'security1@company.com', '0500000004'],
-        ['security2', 'admin123', 'حارس الأمن', 'guard', 'SEC002', 'الأمن والسلامة', 'security2@company.com', '0500000005']
-    ];
-    
-    let completed = 0;
-    const totalUsers = users.length;
-    
-    users.forEach((user, index) => {
-        // تحقق إذا كان المستخدم موجوداً
-        db.get('SELECT employee_id FROM employees WHERE username = ?', [user[0]], (err, existing) => {
-            if (err) {
-                console.log(`⚠️  خطأ في التحقق من ${user[0]}: ${err.message}`);
-                completed++;
-                checkCompletion();
-                return;
-            }
-            
-            if (!existing) {
-                // إضافة المستخدم
-                db.run(`
-                    INSERT INTO employees 
-                    (username, password_hash, full_name, user_type, job_number, directorate, email, phone, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-                `, user, function(err) {
-                    if (err) {
-                        console.log(`❌ ${user[0]}: ${err.message}`);
-                    } else {
-                        console.log(`✅ ${user[0]}: تمت إضافته (ID: ${this.lastID})`);
-                    }
-                    completed++;
-                    checkCompletion();
-                });
-            } else {
-                console.log(`ℹ️  ${user[0]}: موجود بالفعل`);
-                completed++;
-                checkCompletion();
-            }
-        });
-    });
-    
-    function checkCompletion() {
-        if (completed === totalUsers) {
-            console.log(`\n📊 تمت معالجة ${totalUsers} مستخدم`);
-            console.log('🎉 قاعدة البيانات جاهزة للاستخدام!\n');
-            
-            // عرض بيانات الدخول
-            console.log('='.repeat(60));
-            console.log('👤 بيانات الدخول المتاحة:');
-            console.log('='.repeat(60));
-            users.forEach(user => {
-                console.log(`📧 ${user[0].padEnd(12)} / ${user[1].padEnd(10)} (${user[3]})`);
-            });
-            console.log('='.repeat(60) + '\n');
-        }
-    }
-}
-
-// ======================== ⭐⭐ دالة إنشاء الإشعارات المحسنة ⭐⭐ ========================
-async function createNotification(notification) {
-    try {
-        const {
-            user_id,
-            permit_id = null,
-            company_permit_id = null,
-            title,
-            message,
-            type = 'info',  // تغيير من notification_type إلى type
-            is_read = 0
-        } = notification;
-
-        // ✅ التحقق من أن type صالح (info, warning, success, error)
-        const validTypes = ['info', 'warning', 'success', 'error'];
-        const validType = validTypes.includes(type) ? type : 'info';
-        
-        if (!validTypes.includes(type)) {
-            console.warn(`⚠️ تحذير: type غير صالح "${type}"، سيتم استخدام "info" بدلاً منه`);
-        }
-
-        const query = `
-            INSERT INTO notifications 
-            (user_id, permit_id, company_permit_id, title, message, type, is_read, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `;
-
-        const params = [user_id, permit_id, company_permit_id, title, message, validType, is_read];
-        
-        return new Promise((resolve, reject) => {
-            db.run(query, params, function(err) {
-                if (err) {
-                    console.error('❌ خطأ في إنشاء إشعار:', err.message);
-                    console.error('🔍 تفاصيل:', { query, params, error: err.message });
-                    reject(err);
-                } else {
-                    console.log(`✅ تم إنشاء إشعار جديد (ID: ${this.lastID})`);
-                    resolve(this.lastID);
-                }
-            });
-        });
-    } catch (error) {
-        console.error('❌ خطأ في دالة إنشاء الإشعار:', error.message);
-        throw error;
-    }
-}
-
-// دالة مساعدة للحصول على معرف المستخدم بالاسم
-function getUserIdByUsername(username) {
-    return new Promise((resolve, reject) => {
-        db.get('SELECT employee_id FROM employees WHERE username = ?', [username], (err, row) => {
-            if (err) reject(err);
-            else resolve(row ? row.employee_id : null);
-        });
-    });
-}
-
-// ============== دالة لإرسال إشعار لجميع المديرين ==============
-function notifyAllManagers(permit_id, title, message, type = 'warning', company_permit_id = null) {
-    const query = `
-        SELECT employee_id FROM employees 
-        WHERE (user_type = 'manager' OR user_type = 'admin') 
-        AND is_active = 1
-    `;
-    
-    db.all(query, [], (err, managers) => {
-        if (err || !managers) {
-            console.error('❌ خطأ في جلب المديرين:', err);
-            return;
-        }
-        
-        // ✅ تحويل type إلى قيمة صالحة (info, warning, success, error)
-        let validType = type;
-        if (type && !['info', 'warning', 'success', 'error'].includes(type)) {
-            // إذا كان type غير صالح، استخدم 'warning' كقيمة افتراضية
-            validType = 'warning';
-        }
-        
-        managers.forEach(manager => {
-            createNotification({
-                user_id: manager.employee_id,
-                permit_id: permit_id,
-                company_permit_id: company_permit_id,
-                title,
-                message,
-                type: validType
-            });
-        });
-        
-        console.log(`✅ تم إرسال إشعار لـ ${managers.length} مدير`);
-    });
-}
-
-// ============== دالة لإرسال إشعار لجميع مسؤولي الأمن (بدون الحراس) ==============
-function notifyAllSecurityStaff(permit_id, title, message, type = 'info', company_permit_id = null) {
-    const query = `
-        SELECT employee_id FROM employees 
-        WHERE user_type = 'security' 
-        AND is_active = 1
-    `;
-    
-    db.all(query, [], (err, securityUsers) => {
-        if (err || !securityUsers) {
-            console.error('❌ خطأ في جلب مسؤولي الأمن:', err);
-            return;
-        }
-        
-        // ✅ تحويل type إلى قيمة صالحة (info, warning, success, error)
-        let validType = type;
-        if (type && !['info', 'warning', 'success', 'error'].includes(type)) {
-            // إذا كان type غير صالح، استخدم 'info' كقيمة افتراضية
-            validType = 'info';
-        }
-        
-        securityUsers.forEach(user => {
-            createNotification({
-                user_id: user.employee_id,
-                permit_id: permit_id,
-                company_permit_id: company_permit_id,
-                title,
-                message,
-                type: validType
-            });
-        });
-        
-        console.log(`✅ تم إرسال إشعار لـ ${securityUsers.length} من مسؤولي الأمن`);
-    });
-}
-
-// ============== دالة لإرسال إشعار لجميع الحراس فقط ==============
-function notifyAllGuards(permit_id, title, message, type = 'info', company_permit_id = null) {
-    const query = `
-        SELECT employee_id FROM employees 
-        WHERE user_type = 'guard' 
-        AND is_active = 1
-    `;
-    
-    db.all(query, [], (err, guards) => {
-        if (err || !guards) {
-            console.error('❌ خطأ في جلب الحراس:', err);
-            return;
-        }
-        
-        // ✅ تحويل type إلى قيمة صالحة (info, warning, success, error)
-        let validType = type;
-        if (type && !['info', 'warning', 'success', 'error'].includes(type)) {
-            // إذا كان type غير صالح، استخدم 'info' كقيمة افتراضية
-            validType = 'info';
-        }
-        
-        guards.forEach(guard => {
-            createNotification({
-                user_id: guard.employee_id,
-                permit_id: permit_id,
-                company_permit_id: company_permit_id,
-                title,
-                message,
-                type: validType
-            });
-        });
-        
-        console.log(`✅ تم إرسال إشعار لـ ${guards.length} حارس`);
-    });
-}
-
-// ============== دالة لإرسال إشعار لجميع مسؤولي الأمن والحراس ==============
-function notifyAllSecurityUsers(permit_id, title, message, type = 'info') {
-    const query = `
-        SELECT employee_id FROM employees 
-        WHERE (user_type = 'security' OR user_type = 'guard') 
-        AND is_active = 1
-    `;
-    
-    db.all(query, [], (err, securityUsers) => {
-        if (err || !securityUsers) {
-            console.error('❌ خطأ في جلب مسؤولي الأمن:', err);
-            return;
-        }
-        
-        securityUsers.forEach(user => {
-            createNotification({
-                user_id: user.employee_id,
-                permit_id,
-                title,
-                message,
-                type  // ✅ إصلاح: استخدام type بدلاً من notification_type
-            });
-        });
-        
-        console.log(`✅ تم إرسال إشعار لـ ${securityUsers.length} من مسؤولي الأمن والحراس`);
     });
 }
 
@@ -824,7 +122,7 @@ app.get('/api/health', (req, res) => {
         success: true,
         status: 'OK', 
         message: 'نظام تصاريح العمل يعمل',
-        database: selectedDb,
+        database: 'overtime.db',
         timestamp: new Date().toISOString()
     });
 });
@@ -2136,20 +1434,22 @@ app.get('/api/permits/company-entry/stats', authenticateToken, authorizeRoles('m
     }
 });
 
-// الحصول على تصاريح الشركات المعتمدة من المدير
+// الحصول على تصاريح الشركات المعتمدة/المرفوضة من المدير
 app.get('/api/permits/company-entry/approved', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
     try {
-        console.log('📋 جلب تصاريح الشركات المعتمدة من المدير');
+        const { username } = req.query;
+        console.log('📋 جلب تصاريح الشركات المعتمدة/المرفوضة من المدير:', username);
         
-        // جلب تصاريح الشركات المعتمدة من المدير (pending_security أو approved_security)
+        // جلب تصاريح الشركات المعتمدة أو المرفوضة من هذا المدير
         const query = `
             SELECT * FROM company_entry_permits 
-            WHERE status IN ('pending_security', 'approved_security', 'rejected_by_manager')
+            WHERE manager_username = ? 
+            AND status IN ('approved_manager', 'pending_security', 'approved_security', 'rejected_manager')
             ORDER BY created_at DESC
-            LIMIT 20
+            LIMIT 50
         `;
         
-        db.all(query, [], (err, permits) => {
+        db.all(query, [username], (err, permits) => {
             if (err) {
                 console.error('❌ خطأ في جلب تصاريح الشركات المعتمدة:', err);
                 return res.status(500).json({ 
@@ -2221,36 +1521,30 @@ app.get('/api/permits/company-entry/active', authenticateToken,
                         }
                         
                         // ✅ أيضاً جلب العمال من حقل employees (JSON) إذا كان موجوداً
-                        if (permit.employees) {
+                        // ملاحظة: العمال من JSON يجب أن يكونوا محفوظين في قاعدة البيانات بالفعل
+                        // إذا لم يكونوا موجودين، سيتم تجاهلهم لأنهم يجب أن يكونوا في company_workers
+                        // هذا الكود موجود فقط للتوافق مع البيانات القديمة
+                        if (permit.employees && (!permit.workers || permit.workers.length === 0)) {
                             try {
                                 const employeesList = typeof permit.employees === 'string' 
                                     ? JSON.parse(permit.employees) 
                                     : permit.employees;
                                 
                                 if (Array.isArray(employeesList) && employeesList.length > 0) {
-                                    // إضافة العمال من JSON إلى القائمة (إذا لم تكن موجودة بالفعل)
-                                    employeesList.forEach(emp => {
-                                        const exists = permit.workers.some(w => 
-                                            w.worker_name === emp.name || 
-                                            w.worker_name === emp.worker_name
-                                        );
-                                        if (!exists) {
-                                            permit.workers.push({
-                                                worker_id: Date.now() + Math.random(),
-                                                permit_id: permit.permit_id,
-                                                worker_name: emp.name || emp.worker_name || '',
-                                                worker_profession: emp.profession || emp.worker_profession || '',
-                                                worker_id_number: emp.id_number || emp.worker_id_number || '',
-                                                worker_phone: emp.phone || emp.worker_phone || '',
-                                                is_original: true,
-                                                added_at: permit.created_at || new Date().toISOString()
-                                            });
-                                        }
-                                    });
+                                    console.warn(`⚠️ تصريح ${permit.permit_id}: يوجد عمال في حقل employees لكن لا يوجد في company_workers. يجب إعادة حفظ التصريح.`);
+                                    // لا نضيف عمال وهميين - يجب أن يكونوا في قاعدة البيانات
                                 }
                             } catch (e) {
                                 console.warn('⚠️ خطأ في تحليل حقل employees:', e);
                             }
+                        }
+                        
+                        // ✅ التأكد من أن جميع worker_id هي أعداد صحيحة
+                        if (permit.workers && Array.isArray(permit.workers)) {
+                            permit.workers = permit.workers.map(worker => ({
+                                ...worker,
+                                worker_id: parseInt(worker.worker_id) || worker.worker_id
+                            }));
                         }
                         
                         processed++;
@@ -2344,9 +1638,37 @@ app.get('/api/permits/company-entry/:id', authenticateToken, authorizeRoles('emp
                 });
             }
             
-            res.json({
-                success: true,
-                permit: row
+            // جلب العمال من جدول company_workers
+            ensureCompanyWorkersTable((tableErr) => {
+                if (tableErr) {
+                    console.error('❌ خطأ في التحقق من جدول company_workers:', tableErr);
+                    return res.json({
+                        success: true,
+                        permit: row,
+                        workers: []
+                    });
+                }
+                
+                db.all(`
+                    SELECT * FROM company_workers 
+                    WHERE permit_id = ? 
+                    ORDER BY is_original DESC, added_at ASC
+                `, [id], (workersErr, workers) => {
+                    if (workersErr) {
+                        console.error('❌ خطأ في جلب العمال:', workersErr);
+                        return res.json({
+                            success: true,
+                            permit: row,
+                            workers: []
+                        });
+                    }
+                    
+                    res.json({
+                        success: true,
+                        permit: row,
+                        workers: workers || []
+                    });
+                });
             });
         });
     } catch (error) {
@@ -2965,7 +2287,10 @@ app.get('/api/permits/company-entry/checked-in', authenticateToken,
                         ORDER BY is_original DESC, added_at ASC
                     `, [permit.permit_id], (err, workers) => {
                         if (!err) {
-                            permit.workers = workers || [];
+                            permit.workers = (workers || []).map(worker => ({
+                                ...worker,
+                                worker_id: parseInt(worker.worker_id) || worker.worker_id
+                            }));
                         } else {
                             permit.workers = [];
                         }
@@ -2999,61 +2324,244 @@ app.get('/api/permits/company-entry/checked-in', authenticateToken,
 
 // ========== ✅ APIs إدارة العمال في تصاريح الشركات ==========
 
-// API لإضافة عامل جديد لتصريح شركة (من قبل الحارس)
+// API لإضافة عامل جديد لتصريح شركة (من قبل الحارس) - مع دعم رفع بطاقة الهوية
 app.post('/api/permits/company-entry/:permit_id/workers', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'guard', 'security_guard', 'admin'), async (req, res) => {
     try {
         const { permit_id } = req.params;
-        const { worker_name, worker_id_number, worker_profession, worker_phone, added_by } = req.body;
+        
+        // التحقق من نوع المحتوى - FormData عادة يحتوي على multipart/form-data
+        const contentType = req.headers['content-type'] || '';
+        console.log('📥 Content-Type received:', contentType);
+        let workerData = {};
+        let idCardFileName = null;
+        
+        // محاولة معالجة FormData إذا كان content-type يحتوي على multipart
+        // أو إذا كان body فارغاً (FormData لا يظهر في req.body مباشرة)
+        if (contentType.includes('multipart/form-data') || (!req.body || Object.keys(req.body).length === 0)) {
+            // محاولة استخدام formidable
+            try {
+                const Formidable = getFormidable();
+                const form = Formidable({ 
+                    uploadDir: uploadsDir,
+                    keepExtensions: true,
+                    maxFileSize: 10 * 1024 * 1024 // 10MB
+                });
+                
+                const [fields, files] = await form.parse(req);
+                
+                console.log('📋 FormData fields:', JSON.stringify(fields, null, 2));
+                console.log('📁 FormData files:', files);
+                
+                // دالة مساعدة لاستخراج القيمة من FormData
+                const getFieldValue = (field) => {
+                    if (!field) return '';
+                    if (Array.isArray(field)) {
+                        return String(field[0] || '');
+                    }
+                    return String(field || '');
+                };
+                
+                workerData = {
+                    worker_name: getFieldValue(fields.worker_name),
+                    worker_id_number: getFieldValue(fields.worker_id_number),
+                    worker_profession: getFieldValue(fields.worker_profession),
+                    worker_phone: getFieldValue(fields.worker_phone),
+                    added_by: getFieldValue(fields.added_by)
+                };
+                
+                if (files.id_card && files.id_card[0]) {
+                    const file = files.id_card[0];
+                    idCardFileName = `${permit_id}_${Date.now()}_${file.originalFilename || file.name}`;
+                    const newPath = path.join(uploadsDir, idCardFileName);
+                    fs.renameSync(file.filepath, newPath);
+                    console.log('✅ تم حفظ ملف بطاقة الهوية:', idCardFileName);
+                }
+                
+                console.log('✅ تم معالجة FormData بنجاح:', workerData);
+            } catch (formError) {
+                console.error('❌ خطأ في معالجة FormData:', formError);
+                console.error('❌ تفاصيل الخطأ:', formError.message);
+                console.error('❌ Stack:', formError.stack);
+                return res.status(400).json({
+                    success: false,
+                    message: 'خطأ في معالجة البيانات المرسلة: ' + formError.message
+                });
+            }
+        } else {
+            // JSON عادي أو محاولة معالجة FormData إذا فشل الاكتشاف
+            // إذا كان req.body فارغاً، قد يكون FormData لم يتم اكتشافه
+            if (!req.body || Object.keys(req.body).length === 0) {
+                console.log('⚠️ req.body فارغ، محاولة معالجة كـ FormData...');
+                try {
+                    const Formidable = getFormidable();
+                    const form = Formidable({ 
+                        uploadDir: uploadsDir,
+                        keepExtensions: true,
+                        maxFileSize: 10 * 1024 * 1024
+                    });
+                    
+                    const [fields, files] = await form.parse(req);
+                    
+                    const getFieldValue = (field) => {
+                        if (!field) return '';
+                        if (Array.isArray(field)) {
+                            return String(field[0] || '');
+                        }
+                        return String(field || '');
+                    };
+                    
+                    workerData = {
+                        worker_name: getFieldValue(fields.worker_name),
+                        worker_id_number: getFieldValue(fields.worker_id_number),
+                        worker_profession: getFieldValue(fields.worker_profession),
+                        worker_phone: getFieldValue(fields.worker_phone),
+                        added_by: getFieldValue(fields.added_by)
+                    };
+                    
+                    if (files.id_card && files.id_card[0]) {
+                        const file = files.id_card[0];
+                        idCardFileName = `${permit_id}_${Date.now()}_${file.originalFilename || file.name}`;
+                        const newPath = path.join(uploadsDir, idCardFileName);
+                        fs.renameSync(file.filepath, newPath);
+                        console.log('✅ تم حفظ ملف بطاقة الهوية:', idCardFileName);
+                    }
+                    
+                    console.log('✅ تم معالجة FormData بنجاح (fallback):', workerData);
+                } catch (fallbackError) {
+                    console.error('❌ فشل معالجة FormData (fallback):', fallbackError.message);
+                    workerData = req.body || {};
+                }
+            } else {
+                workerData = req.body || {};
+            }
+            console.log('📋 JSON data:', workerData);
+            console.log('📋 req.body keys:', Object.keys(req.body || {}));
+        }
+        
+        const { worker_name, worker_id_number, worker_profession, worker_phone, added_by } = workerData;
         
         console.log(`➕ إضافة عامل جديد لتصريح الشركة: ${permit_id}`);
+        console.log('📋 بيانات العامل المستخرجة:', { worker_name, worker_id_number, worker_profession, worker_phone, added_by });
+        console.log('📋 نوع worker_name:', typeof worker_name, 'القيمة:', worker_name);
         
-        if (!worker_name) {
+        // التحقق من اسم العامل بشكل أفضل
+        const workerNameTrimmed = worker_name ? (typeof worker_name === 'string' ? worker_name.trim() : String(worker_name).trim()) : '';
+        if (!workerNameTrimmed) {
+            console.error('❌ اسم العامل مفقود أو فارغ');
+            console.error('❌ workerData كامل:', JSON.stringify(workerData, null, 2));
+            console.error('❌ req.body:', JSON.stringify(req.body, null, 2));
             return res.status(400).json({
                 success: false,
-                message: 'اسم العامل مطلوب'
+                message: 'اسم العامل مطلوب ولا يمكن أن يكون فارغاً'
             });
         }
         
+        // تحويل permit_id إلى رقم صحيح
+        const permitIdInt = parseInt(permit_id);
+        if (isNaN(permitIdInt)) {
+            console.error('❌ permit_id غير صحيح:', permit_id);
+            return res.status(400).json({
+                success: false,
+                message: 'معرف التصريح غير صحيح'
+            });
+        }
+        
+        console.log(`🔍 التحقق من وجود التصريح: permit_id=${permitIdInt} (النوع: ${typeof permit_id})`);
+        
         // التحقق من وجود التصريح
-        db.get('SELECT permit_id FROM company_entry_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
-            if (err || !permit) {
-                return res.status(404).json({
+        db.get('SELECT permit_id FROM company_entry_permits WHERE permit_id = ?', [permitIdInt], (err, permit) => {
+            if (err) {
+                console.error('❌ خطأ في التحقق من التصريح:', err);
+                return res.status(500).json({
                     success: false,
-                    message: 'التصريح غير موجود'
+                    message: 'حدث خطأ في التحقق من التصريح: ' + err.message
                 });
             }
             
-            // إضافة العامل
-            const query = `
-                INSERT INTO company_workers 
-                (permit_id, worker_name, worker_id_number, worker_profession, worker_phone, added_by, is_original)
-                VALUES (?, ?, ?, ?, ?, ?, 0)
-            `;
+            if (!permit) {
+                console.error(`❌ التصريح غير موجود: permit_id=${permitIdInt}`);
+                return res.status(404).json({
+                    success: false,
+                    message: `التصريح غير موجود (ID: ${permitIdInt})`
+                });
+            }
             
-            db.run(query, [
-                permit_id,
-                worker_name,
-                worker_id_number || null,
-                worker_profession || null,
-                worker_phone || null,
-                added_by || req.user.username,
-                0  // ليس من العمال الأصليين
-            ], function(err) {
-                if (err) {
-                    console.error('❌ خطأ في إضافة العامل:', err);
-                    return res.status(500).json({
-                        success: false,
-                        message: 'حدث خطأ في إضافة العامل'
-                    });
+            console.log('✅ التصريح موجود:', permit);
+            
+            // استخدام دالة ensureCompanyWorkersTable بدلاً من CREATE TABLE مباشرة
+            ensureCompanyWorkersTable((tableErr) => {
+                if (tableErr) {
+                    console.error('❌ خطأ في التحقق من جدول company_workers:', tableErr);
+                    // نستمر رغم ذلك، قد يكون الجدول موجوداً بالفعل
                 }
                 
-                // جلب العامل المضاف
-                db.get('SELECT * FROM company_workers WHERE worker_id = ?', [this.lastID], (err, worker) => {
-                    res.json({
-                        success: true,
-                        message: 'تم إضافة العامل بنجاح',
-                        worker: worker
+                // إضافة العامل
+                const query = `
+                    INSERT INTO company_workers 
+                    (permit_id, worker_name, worker_id_number, worker_profession, worker_phone, id_card_file_name, added_by, is_original)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                `;
+                
+                // الحصول على اسم المستخدم من token إذا لم يكن موجوداً
+                const addedByUser = added_by || (req.user && req.user.username) || 'guard';
+                
+                // استخدام workerNameTrimmed الذي تم التحقق منه مسبقاً
+                const finalWorkerName = workerNameTrimmed;
+                
+                console.log('💾 محاولة حفظ العامل مع البيانات:', {
+                    permit_id: permitIdInt,
+                    worker_name: finalWorkerName,
+                    worker_id_number: (worker_id_number && typeof worker_id_number === 'string' && worker_id_number.trim()) || null,
+                    worker_profession: (worker_profession && typeof worker_profession === 'string' && worker_profession.trim()) || null,
+                    worker_phone: (worker_phone && typeof worker_phone === 'string' && worker_phone.trim()) || null,
+                    id_card_file_name: idCardFileName || null,
+                    added_by: addedByUser
+                });
+                
+                db.run(query, [
+                    permitIdInt,  // استخدام permitIdInt بدلاً من permit_id
+                    finalWorkerName,
+                    (worker_id_number && typeof worker_id_number === 'string' && worker_id_number.trim()) || null,
+                    (worker_profession && typeof worker_profession === 'string' && worker_profession.trim()) || null,
+                    (worker_phone && typeof worker_phone === 'string' && worker_phone.trim()) || null,
+                    idCardFileName || null,
+                    addedByUser
+                ], function(err) {
+                    if (err) {
+                        console.error('❌ خطأ في إضافة العامل:', err);
+                        console.error('❌ تفاصيل الخطأ:', err.message);
+                        console.error('❌ كود الخطأ:', err.code);
+                        console.error('❌ SQL State:', err.errno);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'حدث خطأ في إضافة العامل: ' + err.message + (err.code ? ' (كود: ' + err.code + ')' : '')
+                        });
+                    }
+                    
+                    console.log('✅ تم حفظ العامل بنجاح، worker_id:', this.lastID);
+                    
+                    // إرسال إشعار لمكتب الأمن والحراس بأن الحارس أضاف عاملاً جديداً
+                    try {
+                        const guardName = (req.user && (req.user.full_name || req.user.username)) || addedByUser || 'حارس';
+                        notifyAllSecurityStaff(
+                            permitIdInt,
+                            '👷 إضافة عامل جديد لتصريح شركة',
+                            `تمت إضافة العامل ${finalWorkerName} لتصريح الشركة رقم ${permitIdInt} بواسطة الحارس ${guardName}.`,
+                            'info',
+                            permitIdInt
+                        );
+                    } catch (notifyErr) {
+                        console.warn('⚠️ تعذر إرسال إشعار إضافة عامل جديد:', notifyErr.message);
+                    }
+                    
+                    // جلب العامل المضاف
+                    db.get('SELECT * FROM company_workers WHERE worker_id = ?', [this.lastID], (err, worker) => {
+                        res.json({
+                            success: true,
+                            message: 'تم إضافة العامل بنجاح',
+                            worker: worker
+                        });
                     });
                 });
             });
@@ -3063,7 +2571,7 @@ app.post('/api/permits/company-entry/:permit_id/workers', authenticateToken,
         console.error('❌ خطأ في API إضافة عامل:', error);
         res.status(500).json({
             success: false,
-            message: 'حدث خطأ في الخادم'
+            message: 'حدث خطأ في الخادم: ' + error.message
         });
     }
 });
@@ -3074,30 +2582,294 @@ app.get('/api/permits/company-entry/:permit_id/workers', authenticateToken,
     try {
         const { permit_id } = req.params;
         
-        const query = `
-            SELECT * FROM company_workers 
-            WHERE permit_id = ? 
-            ORDER BY is_original DESC, added_at ASC
-        `;
-        
-        db.all(query, [permit_id], (err, workers) => {
+        // التأكد من وجود الجدول أولاً
+        ensureCompanyWorkersTable((err) => {
             if (err) {
-                console.error('❌ خطأ في جلب العمال:', err);
                 return res.status(500).json({
                     success: false,
-                    message: 'حدث خطأ في جلب العمال'
+                    message: 'حدث خطأ في قاعدة البيانات'
                 });
             }
             
-            res.json({
-                success: true,
-                workers: workers || [],
-                count: workers ? workers.length : 0
+            const query = `
+                SELECT * FROM company_workers 
+                WHERE permit_id = ? 
+                ORDER BY is_original DESC, added_at ASC
+            `;
+            
+            db.all(query, [permit_id], (err, workers) => {
+                if (err) {
+                    console.error('❌ خطأ في جلب العمال:', err);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'حدث خطأ في جلب العمال: ' + err.message
+                    });
+                }
+                
+                res.json({
+                    success: true,
+                    workers: workers || [],
+                    count: workers ? workers.length : 0
+                });
             });
         });
         
     } catch (error) {
         console.error('❌ خطأ في API جلب العمال:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لجلب بيانات عامل محدد
+app.get('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticateToken, 
+    authorizeRoles('security', 'guard', 'security_guard', 'admin', 'manager'), (req, res) => {
+    try {
+        const { permit_id, worker_id } = req.params;
+        
+        // تحويل worker_id إلى عدد صحيح
+        const workerIdInt = parseInt(worker_id);
+        if (isNaN(workerIdInt)) {
+            return res.status(400).json({
+                success: false,
+                message: 'معرف العامل غير صحيح'
+            });
+        }
+        
+        const permitIdInt = parseInt(permit_id);
+        if (isNaN(permitIdInt)) {
+            return res.status(400).json({
+                success: false,
+                message: 'معرف التصريح غير صحيح'
+            });
+        }
+        
+        console.log(`🔍 جلب بيانات العامل: permit_id=${permitIdInt}, worker_id=${workerIdInt}`);
+        
+        // التأكد من وجود الجدول أولاً
+        ensureCompanyWorkersTable((err) => {
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في قاعدة البيانات'
+                });
+            }
+            
+            db.get('SELECT * FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
+            [workerIdInt, permitIdInt], (err, worker) => {
+                if (err) {
+                    console.error('❌ خطأ في جلب بيانات العامل:', err);
+                    console.error('❌ تفاصيل الخطأ:', err.message, err.code);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'حدث خطأ في جلب البيانات: ' + err.message
+                    });
+                }
+                
+                console.log('📋 بيانات العامل المسترجعة:', worker);
+                
+                if (!worker) {
+                    console.warn(`⚠️ العامل غير موجود: permit_id=${permit_id}, worker_id=${worker_id}`);
+                    return res.status(404).json({
+                        success: false,
+                        message: 'العامل غير موجود'
+                    });
+                }
+                
+                res.json({
+                    success: true,
+                    worker: worker
+                });
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API جلب بيانات العامل:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم: ' + error.message
+        });
+    }
+});
+
+// API لتحديث بيانات عامل
+app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticateToken, 
+    authorizeRoles('security', 'guard', 'admin'), async (req, res) => {
+    try {
+        const { permit_id, worker_id } = req.params;
+        
+        // التأكد من وجود الجدول أولاً
+        ensureCompanyWorkersTable((err) => {
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في قاعدة البيانات'
+                });
+            }
+            
+            // التحقق من نوع المحتوى
+            const contentType = req.headers['content-type'] || '';
+            let workerData = {};
+            let idCardFileName = null;
+            let updateIdCard = false;
+            
+            const processRequest = async () => {
+                if (contentType.includes('multipart/form-data')) {
+                    // معالجة FormData
+                    try {
+                        const Formidable = getFormidable();
+                        const form = Formidable({ 
+                            uploadDir: uploadsDir,
+                            keepExtensions: true,
+                            maxFileSize: 10 * 1024 * 1024 // 10MB
+                        });
+                        
+                        const [fields, files] = await form.parse(req);
+                        
+                        const getFieldValue = (field) => {
+                            if (!field) return '';
+                            if (Array.isArray(field)) return String(field[0] || '');
+                            return String(field || '');
+                        };
+                        
+                        workerData = {
+                            worker_name: getFieldValue(fields.worker_name),
+                            worker_id_number: getFieldValue(fields.worker_id_number),
+                            worker_profession: getFieldValue(fields.worker_profession),
+                            worker_phone: getFieldValue(fields.worker_phone)
+                        };
+                        
+                        if (files.id_card && files.id_card[0]) {
+                            const file = files.id_card[0];
+                            idCardFileName = `${permit_id}_${worker_id}_${Date.now()}_${file.originalFilename || file.name}`;
+                            const newPath = path.join(uploadsDir, idCardFileName);
+                            fs.renameSync(file.filepath, newPath);
+                            updateIdCard = true;
+                        }
+                    } catch (formError) {
+                        console.error('❌ خطأ في معالجة FormData:', formError);
+                        return res.status(400).json({
+                            success: false,
+                            message: 'خطأ في معالجة البيانات المرسلة: ' + formError.message
+                        });
+                    }
+                } else {
+                    // JSON عادي
+                    workerData = req.body;
+                }
+                
+                const { worker_name, worker_id_number, worker_profession, worker_phone } = workerData;
+                
+                if (!worker_name) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'اسم العامل مطلوب'
+                    });
+                }
+                
+                // بناء استعلام التحديث
+                let updateQuery = `
+                    UPDATE company_workers 
+                    SET worker_name = ?, 
+                        worker_id_number = ?, 
+                        worker_profession = ?, 
+                        worker_phone = ?
+                `;
+                let params = [worker_name, worker_id_number || null, worker_profession || null, worker_phone || null];
+                
+                if (updateIdCard && idCardFileName) {
+                    updateQuery += ', id_card_file_name = ?';
+                    params.push(idCardFileName);
+                }
+                
+                updateQuery += ' WHERE worker_id = ? AND permit_id = ?';
+                params.push(worker_id, permit_id);
+                
+                db.run(updateQuery, params, function(err) {
+                    if (err) {
+                        console.error('❌ خطأ في تحديث بيانات العامل:', err);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'حدث خطأ في تحديث البيانات: ' + err.message
+                        });
+                    }
+                    
+                    if (this.changes === 0) {
+                        return res.status(404).json({
+                            success: false,
+                            message: 'العامل غير موجود'
+                        });
+                    }
+                    
+                    // جلب العامل المحدث
+                    db.get('SELECT * FROM company_workers WHERE worker_id = ?', [worker_id], (err, worker) => {
+                        res.json({
+                            success: true,
+                            message: 'تم تحديث بيانات العامل بنجاح',
+                            worker: worker
+                        });
+                    });
+                });
+            };
+            
+            processRequest().catch(error => {
+                console.error('❌ خطأ في معالجة الطلب:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم: ' + error.message
+                });
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API تحديث بيانات العامل:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم: ' + error.message
+        });
+    }
+});
+
+// API لتحميل بطاقة الهوية
+app.get('/api/permits/company-entry/:permit_id/workers/:worker_id/id-card', authenticateToken, 
+    authorizeRoles('security', 'guard', 'admin', 'manager'), (req, res) => {
+    try {
+        const { permit_id, worker_id } = req.params;
+        
+        // التأكد من وجود الجدول أولاً
+        ensureCompanyWorkersTable((err) => {
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في قاعدة البيانات'
+                });
+            }
+            
+            db.get('SELECT id_card_file_name FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
+            [worker_id, permit_id], (err, worker) => {
+                if (err || !worker || !worker.id_card_file_name) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'بطاقة الهوية غير موجودة'
+                    });
+                }
+                
+                const filePath = path.join(uploadsDir, worker.id_card_file_name);
+                if (fs.existsSync(filePath)) {
+                    res.sendFile(filePath);
+                } else {
+                    res.status(404).json({
+                        success: false,
+                        message: 'الملف غير موجود على الخادم'
+                    });
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API تحميل بطاقة الهوية:', error);
         res.status(500).json({
             success: false,
             message: 'حدث خطأ في الخادم'
@@ -3111,38 +2883,48 @@ app.delete('/api/permits/company-entry/:permit_id/workers/:worker_id', authentic
     try {
         const { permit_id, worker_id } = req.params;
         
-        // التحقق من أن العامل ليس من العمال الأصليين (يمكن حذف فقط العمال المضافة من قبل الحارس)
-        db.get('SELECT is_original FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
-        [worker_id, permit_id], (err, worker) => {
-            if (err || !worker) {
-                return res.status(404).json({
+        // التأكد من وجود الجدول أولاً
+        ensureCompanyWorkersTable((err) => {
+            if (err) {
+                return res.status(500).json({
                     success: false,
-                    message: 'العامل غير موجود'
+                    message: 'حدث خطأ في قاعدة البيانات'
                 });
             }
             
-            // لا يمكن حذف العمال الأصليين
-            if (worker.is_original) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'لا يمكن حذف العمال الأصليين المضافة في التصريح'
-                });
-            }
-            
-            // حذف العامل
-            db.run('DELETE FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
-            [worker_id, permit_id], function(err) {
-                if (err) {
-                    console.error('❌ خطأ في حذف العامل:', err);
-                    return res.status(500).json({
+            // التحقق من أن العامل ليس من العمال الأصليين (يمكن حذف فقط العمال المضافة من قبل الحارس)
+            db.get('SELECT is_original FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
+            [worker_id, permit_id], (err, worker) => {
+                if (err || !worker) {
+                    return res.status(404).json({
                         success: false,
-                        message: 'حدث خطأ في حذف العامل'
+                        message: 'العامل غير موجود'
                     });
                 }
                 
-                res.json({
-                    success: true,
-                    message: 'تم حذف العامل بنجاح'
+                // لا يمكن حذف العمال الأصليين
+                if (worker.is_original) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'لا يمكن حذف العمال الأصليين المضافة في التصريح'
+                    });
+                }
+                
+                // حذف العامل
+                db.run('DELETE FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
+                [worker_id, permit_id], function(err) {
+                    if (err) {
+                        console.error('❌ خطأ في حذف العامل:', err);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'حدث خطأ في حذف العامل: ' + err.message
+                        });
+                    }
+                    
+                    res.json({
+                        success: true,
+                        message: 'تم حذف العامل بنجاح'
+                    });
                 });
             });
         });
@@ -3962,7 +3744,977 @@ app.get('/api/permits/company-entry/pdf/:permit_id', authenticateToken, (req, re
     }
 });
 
+// API لطباعة تصريح الشركة
+app.get('/api/permits/company-entry/print/:permit_id', authenticateToken, authorizeRoles('security', 'manager', 'admin'), (req, res) => {
+    try {
+        const { permit_id } = req.params;
+        
+        console.log(`🖨️ طلب طباعة تصريح الشركة: ${permit_id}`);
+        
+        // جلب التصريح من قاعدة البيانات
+        db.get('SELECT * FROM company_entry_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+            if (err || !permit) {
+                console.error('❌ تصريح غير موجود:', permit_id);
+                return res.status(404).send(`
+                    <!DOCTYPE html>
+                    <html dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>خطأ</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+                            h1 { color: #e74c3c; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>❌ التصريح غير موجود</h1>
+                        <p>رقم التصريح: ${permit_id}</p>
+                    </body>
+                    </html>
+                `);
+            }
+            
+            // التحقق من صلاحية الوصول
+            const userRole = req.user.role;
+            const userName = req.user.username;
+            
+            let hasAccess = false;
+            
+            if (userRole === 'admin') {
+                hasAccess = true;
+            } else if (userRole === 'manager' && permit.manager_username === userName) {
+                hasAccess = true;
+            } else if (userRole === 'security') {
+                hasAccess = true;
+            }
+            
+            if (!hasAccess) {
+                return res.status(403).send(`
+                    <!DOCTYPE html>
+                    <html dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>خطأ</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+                            h1 { color: #e74c3c; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>❌ ليس لديك صلاحية للوصول إلى هذا التصريح</h1>
+                    </body>
+                    </html>
+                `);
+            }
+            
+            // جلب العمال من جدول company_workers
+            ensureCompanyWorkersTable((tableErr) => {
+                if (tableErr) {
+                    console.error('❌ خطأ في التحقق من جدول company_workers:', tableErr);
+                }
+                
+                db.all(`
+                    SELECT * FROM company_workers 
+                    WHERE permit_id = ? 
+                    ORDER BY is_original DESC, added_at ASC
+                `, [permit_id], (workersErr, workers) => {
+                    const workersList = workers || [];
+                    
+                    // إنشاء HTML للطباعة
+                    const workersHTML = workersList.length > 0 ? workersList.map((worker, index) => `
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${index + 1}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${worker.worker_name || 'غير محدد'}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${worker.worker_id_number || 'غير محدد'}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${worker.worker_profession || 'غير محدد'}</td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="4" style="padding: 10px; text-align: center;">لا توجد بيانات</td></tr>';
+                    
+                    const htmlContent = `
+                        <!DOCTYPE html>
+                        <html dir="rtl">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>تصريح دخول الشركة - ${permit.permit_id}</title>
+                            <style>
+                                @media print {
+                                    body { margin: 0; padding: 15px; }
+                                    .no-print { display: none; }
+                                    @page { margin: 1cm; }
+                                }
+                                body { 
+                                    font-family: 'Arial', 'Tahoma', sans-serif; 
+                                    direction: rtl; 
+                                    padding: 20px; 
+                                    max-width: 210mm;
+                                    margin: 0 auto;
+                                }
+                                .header { 
+                                    text-align: center; 
+                                    border-bottom: 3px solid #2c3e50; 
+                                    padding-bottom: 20px; 
+                                    margin-bottom: 30px; 
+                                }
+                                .header h1 { 
+                                    color: #2c3e50; 
+                                    margin: 0 0 10px 0;
+                                    font-size: 24px;
+                                }
+                                .permit-number {
+                                    font-size: 18px;
+                                    font-weight: bold;
+                                    color: #3498db;
+                                    margin: 10px 0;
+                                }
+                                .info-section { 
+                                    margin-bottom: 25px; 
+                                    background: #f8f9fa;
+                                    padding: 15px;
+                                    border-radius: 8px;
+                                }
+                                .info-section h2 { 
+                                    color: #3498db; 
+                                    border-bottom: 2px solid #3498db; 
+                                    padding-bottom: 8px; 
+                                    margin-bottom: 15px;
+                                    font-size: 18px;
+                                }
+                                .row { 
+                                    display: flex; 
+                                    margin-bottom: 12px; 
+                                    padding: 8px 0;
+                                    border-bottom: 1px dotted #ddd;
+                                }
+                                .row:last-child {
+                                    border-bottom: none;
+                                }
+                                .label { 
+                                    font-weight: bold; 
+                                    width: 180px; 
+                                    color: #2c3e50;
+                                }
+                                .value { 
+                                    flex: 1; 
+                                    color: #34495e;
+                                }
+                                .footer { 
+                                    margin-top: 50px; 
+                                    text-align: center; 
+                                    color: #7f8c8d; 
+                                    font-size: 12px; 
+                                    border-top: 2px solid #ddd;
+                                    padding-top: 20px;
+                                }
+                                .signature { 
+                                    margin-top: 50px; 
+                                    border-top: 2px solid #333; 
+                                    padding-top: 20px; 
+                                    display: flex;
+                                    justify-content: space-around;
+                                }
+                                .signature-box { 
+                                    display: inline-block; 
+                                    width: 200px; 
+                                    text-align: center; 
+                                    margin: 0 10px; 
+                                }
+                                .signature-box p {
+                                    margin: 5px 0;
+                                }
+                                .status-badge {
+                                    display: inline-block;
+                                    padding: 5px 15px;
+                                    border-radius: 20px;
+                                    font-weight: bold;
+                                    font-size: 14px;
+                                }
+                                .status-approved {
+                                    background: #d4edda;
+                                    color: #155724;
+                                }
+                                .status-rejected {
+                                    background: #f8d7da;
+                                    color: #721c24;
+                                }
+                                .status-pending {
+                                    background: #fff3cd;
+                                    color: #856404;
+                                }
+                                table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin-top: 10px;
+                                }
+                                table th {
+                                    background: #3498db;
+                                    color: white;
+                                    padding: 12px;
+                                    text-align: center;
+                                    font-weight: bold;
+                                }
+                                table td {
+                                    padding: 10px;
+                                    border: 1px solid #ddd;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>تصريح دخول الشركة</h1>
+                                <div class="permit-number">رقم التصريح: ${permit.permit_id}</div>
+                                <p>تاريخ الطلب: ${new Date(permit.request_date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h2>معلومات الشركة</h2>
+                                <div class="row">
+                                    <div class="label">اسم الشركة:</div>
+                                    <div class="value">${permit.company_name || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">الممثل القانوني / المسؤول:</div>
+                                    <div class="value">${permit.company_supervisor || permit.company_representative || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">رقم الهاتف:</div>
+                                    <div class="value">${permit.company_phone || permit.representative_phone || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">العنوان:</div>
+                                    <div class="value">${permit.company_address || 'غير محدد'}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h2>الجهة الطالبة</h2>
+                                <div class="row">
+                                    <div class="label">الموظف المكلف:</div>
+                                    <div class="value">${permit.employee_name || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">الإدارة:</div>
+                                    <div class="value">${permit.directorate || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">القسم:</div>
+                                    <div class="value">${permit.department || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">الرقم الوظيفي:</div>
+                                    <div class="value">${permit.job_number || 'غير محدد'}</div>
+                                </div>
+                                ${permit.supervisor_name ? `
+                                <div class="row">
+                                    <div class="label">المسؤول المباشر:</div>
+                                    <div class="value">${permit.supervisor_name}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="info-section">
+                                <h2>تفاصيل الدخول</h2>
+                                <div class="row">
+                                    <div class="label">تاريخ الدخول:</div>
+                                    <div class="value">${permit.start_date || permit.expected_entry_date || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">تاريخ الخروج:</div>
+                                    <div class="value">${permit.end_date || permit.expected_exit_date || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">وقت الدخول:</div>
+                                    <div class="value">${permit.entry_time || permit.expected_entry_time || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">وقت الخروج:</div>
+                                    <div class="value">${permit.exit_time || permit.expected_exit_time || 'غير محدد'}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">عدد العمال / الزوار:</div>
+                                    <div class="value">${permit.number_of_visitors || workersList.length || 0} شخص</div>
+                                </div>
+                                <div class="row">
+                                    <div class="label">الغرض من الدخول:</div>
+                                    <div class="value">${permit.work_details || permit.entry_purpose || 'غير محدد'}</div>
+                                </div>
+                            </div>
+                            
+                            ${workersList.length > 0 ? `
+                            <div class="info-section">
+                                <h2>قائمة العمال (${workersList.length} عامل)</h2>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>اسم العامل</th>
+                                            <th>الرقم المدني</th>
+                                            <th>المهنة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${workersHTML}
+                                    </tbody>
+                                </table>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="info-section">
+                                <h2>حالة الموافقات</h2>
+                                <div class="row">
+                                    <div class="label">حالة المدير:</div>
+                                    <div class="value">
+                                        <span class="status-badge ${permit.status === 'approved_manager' || permit.status === 'approved_security' ? 'status-approved' : permit.status === 'rejected_manager' ? 'status-rejected' : 'status-pending'}">
+                                            ${permit.status === 'approved_manager' || permit.status === 'approved_security' ? '✓ مقبول' : permit.status === 'rejected_manager' ? '✗ مرفوض' : '⏳ قيد الانتظار'}
+                                        </span>
+                                    </div>
+                                </div>
+                                ${permit.manager_username ? `
+                                <div class="row">
+                                    <div class="label">مسؤول الموافقة (المدير):</div>
+                                    <div class="value">${permit.manager_username}</div>
+                                </div>
+                                ` : ''}
+                                ${permit.manager_notes ? `
+                                <div class="row">
+                                    <div class="label">ملاحظات المدير:</div>
+                                    <div class="value">${permit.manager_notes}</div>
+                                </div>
+                                ` : ''}
+                                <div class="row">
+                                    <div class="label">حالة الأمن:</div>
+                                    <div class="value">
+                                        <span class="status-badge ${permit.status === 'approved_security' ? 'status-approved' : permit.status === 'rejected_security' ? 'status-rejected' : 'status-pending'}">
+                                            ${permit.status === 'approved_security' ? '✓ مقبول' : permit.status === 'rejected_security' ? '✗ مرفوض' : '⏳ قيد الانتظار'}
+                                        </span>
+                                    </div>
+                                </div>
+                                ${permit.security_username ? `
+                                <div class="row">
+                                    <div class="label">مسؤول الأمن:</div>
+                                    <div class="value">${permit.security_username}</div>
+                                </div>
+                                ` : ''}
+                                ${permit.security_notes ? `
+                                <div class="row">
+                                    <div class="label">ملاحظات الأمن:</div>
+                                    <div class="value">${permit.security_notes}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="signature">
+                                <div class="signature-box">
+                                    <p><strong>توقيع مدير القسم</strong></p>
+                                    <p style="margin-top: 40px;">________________</p>
+                                    <p>${permit.manager_username || ''}</p>
+                                </div>
+                                <div class="signature-box">
+                                    <p><strong>توقيع مسؤول الأمن</strong></p>
+                                    <p style="margin-top: 40px;">________________</p>
+                                    <p>${permit.security_username || ''}</p>
+                                </div>
+                                <div class="signature-box">
+                                    <p><strong>توقيع الحارس</strong></p>
+                                    <p style="margin-top: 40px;">________________</p>
+                                </div>
+                            </div>
+                            
+                            <div class="footer">
+                                <p><strong>© نظام تصاريح الشركات - ${new Date().getFullYear()}</strong></p>
+                                <p>هذه وثيقة رسمية - رقم التصريح: ${permit.permit_id}</p>
+                                <p>تم الإنشاء في: ${new Date().toLocaleString('ar-SA')}</p>
+                            </div>
+                            
+                            <script>
+                                // طباعة تلقائية عند فتح الصفحة
+                                window.onload = function() {
+                                    setTimeout(function() {
+                                        window.print();
+                                    }, 500);
+                                };
+                            </script>
+                        </body>
+                        </html>
+                    `;
+                    
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    res.setHeader('Content-Disposition', `inline; filename="company-permit-${permit.permit_id}.html"`);
+                    res.send(htmlContent);
+                });
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في طباعة التصريح:', error);
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <title>خطأ</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+                    h1 { color: #e74c3c; }
+                </style>
+            </head>
+            <body>
+                <h1>❌ حدث خطأ في طباعة التصريح</h1>
+                <p>${error.message}</p>
+            </body>
+            </html>
+        `);
+    }
+});
+
 // API للحصول على سجل التصاريح حسب الموظف
+// ============== ⭐⭐ تصاريح إخراج المواد والأجهزة (Material Exit Permits) ⭐⭐ ==============
+
+// API لإنشاء طلب إخراج مواد جديد
+app.post('/api/permits/material-exit', authenticateToken, authorizeRoles('employee', 'admin'), async (req, res) => {
+    try {
+        console.log('📦 استقبال طلب إخراج مواد جديد');
+        console.log('📥 البيانات:', JSON.stringify(req.body, null, 2));
+        
+        const {
+            employee_username,
+            employee_name,
+            job_number,
+            directorate,
+            department,
+            material_type,
+            exit_reason,
+            permit_date,
+            permit_time,
+            supervisor_name
+        } = req.body;
+        
+        // الحصول على معلومات المستخدم من التوكن
+        const user = req.user;
+        const finalEmployeeUsername = employee_username || user.username;
+        
+        if (!finalEmployeeUsername) {
+            return res.status(400).json({
+                success: false,
+                message: 'اسم المستخدم مطلوب. يرجى تسجيل الدخول أولاً.'
+            });
+        }
+        
+        // التحقق من الحقول المطلوبة
+        if (!material_type || !exit_reason || !permit_date || !permit_time || !supervisor_name) {
+            return res.status(400).json({
+                success: false,
+                message: 'جميع الحقول المطلوبة يجب أن تكون مملوءة'
+            });
+        }
+        
+        // التحقق من وجود المستخدم
+        db.get('SELECT * FROM employees WHERE username = ?', [finalEmployeeUsername], async (err, employee) => {
+            if (err) {
+                console.error('❌ خطأ في البحث عن الموظف:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            if (!employee) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'الموظف غير موجود'
+                });
+            }
+            
+            try {
+                // إدخال التصريح في قاعدة البيانات
+                const query = `
+                    INSERT INTO material_exit_permits 
+                    (employee_id, employee_name, job_number, directorate, department,
+                     material_type, exit_reason, permit_date, permit_time, supervisor_name, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_manager')
+                `;
+                
+                const params = [
+                    employee.employee_id,
+                    employee_name || employee.full_name,
+                    job_number || employee.job_number || '',
+                    directorate || employee.directorate || '',
+                    department || '',
+                    material_type,
+                    exit_reason,
+                    permit_date,
+                    permit_time,
+                    supervisor_name
+                ];
+                
+                db.run(query, params, function(err) {
+                    if (err) {
+                        console.error('❌ خطأ في إدخال التصريح:', err);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'حدث خطأ في حفظ التصريح: ' + err.message
+                        });
+                    }
+                    
+                    const permitId = this.lastID;
+                    console.log(`✅ تم إنشاء تصريح إخراج مواد برقم: ${permitId}`);
+                    
+                    // إرسال إشعار للمدير
+                    const title = '📦 طلب إخراج مواد جديد';
+                    const message = `طلب إخراج مواد من الموظف ${employee_name || employee.full_name} (${job_number || employee.job_number || ''}) بانتظار الموافقة.`;
+                    notifyAllManagers(permitId, title, message, 'warning', null);
+                    
+                    res.json({
+                        success: true,
+                        message: 'تم تقديم طلب إخراج المواد بنجاح',
+                        permit_id: permitId
+                    });
+                });
+                
+            } catch (error) {
+                console.error('❌ خطأ في معالجة الطلب:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API إخراج المواد:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لجلب طلبات إخراج المواد المعلقة للمدير
+app.get('/api/permits/material-exit/pending', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+    try {
+        const query = `
+            SELECT m.*, e.username, e.email, e.phone
+            FROM material_exit_permits m
+            JOIN employees e ON m.employee_id = e.employee_id
+            WHERE m.status = 'pending_manager'
+            ORDER BY m.created_at DESC
+        `;
+        
+        db.all(query, [], (err, permits) => {
+            if (err) {
+                console.error('❌ خطأ في جلب التصاريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            res.json({
+                success: true,
+                permits: permits || []
+            });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لموافقة/رفض المدير على طلب إخراج مواد
+app.post('/api/permits/material-exit/manager-approve', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+    try {
+        const { permit_id, manager_username, decision, notes } = req.body;
+        
+        if (!permit_id || !manager_username || !decision) {
+            return res.status(400).json({
+                success: false,
+                message: 'بيانات ناقصة'
+            });
+        }
+        
+        const status = decision === 'approve' ? 'pending_security' : 'rejected_manager';
+        
+        const query = `
+            UPDATE material_exit_permits 
+            SET status = ?,
+                manager_username = ?,
+                manager_decision = ?,
+                manager_decision_date = CURRENT_TIMESTAMP,
+                manager_notes = ?
+            WHERE permit_id = ? AND status = 'pending_manager'
+        `;
+        
+        db.run(query, [status, manager_username, decision, notes || '', permit_id], function(err) {
+            if (err) {
+                console.error('❌ خطأ في تحديث التصريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            if (this.changes === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'التصريح غير موجود أو تم معالجته مسبقاً'
+                });
+            }
+            
+            if (decision === 'approve') {
+                // إرسال إشعار لمكتب الأمن
+                db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+                    if (!err && permit) {
+                        const title = '📦 طلب إخراج مواد بانتظار الموافقة الأمنية';
+                        const message = `طلب إخراج مواد من الموظف ${permit.employee_name} (${permit.job_number}) بانتظار الموافقة الأمنية.`;
+                        notifyAllSecurityStaff(permit_id, title, message, 'warning', null);
+                    }
+                });
+            } else {
+                // إرسال إشعار للموظف
+                db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+                    if (!err && permit) {
+                        db.get('SELECT * FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
+                            if (!err && employee) {
+                                const title = '❌ تم رفض طلب إخراج المواد';
+                                const message = `تم رفض طلب إخراج المواد الخاص بك من قبل المدير.`;
+                                createNotification({
+                                    user_id: employee.employee_id,
+                                    permit_id: permit_id,
+                                    title: title,
+                                    message: message,
+                                    type: 'error'
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            
+            res.json({
+                success: true,
+                message: `تم ${decision === 'approve' ? 'قبول' : 'رفض'} الطلب بنجاح`,
+                permit_id: permit_id,
+                status: status
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لجلب طلبات إخراج المواد المعلقة للأمن
+app.get('/api/permits/material-exit/security-pending', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    try {
+        const query = `
+            SELECT m.*, e.username, e.email, e.phone
+            FROM material_exit_permits m
+            JOIN employees e ON m.employee_id = e.employee_id
+            WHERE m.status = 'pending_security'
+            ORDER BY m.created_at DESC
+        `;
+        
+        db.all(query, [], (err, permits) => {
+            if (err) {
+                console.error('❌ خطأ في جلب التصاريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            res.json({
+                success: true,
+                permits: permits || []
+            });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لموافقة/رفض الأمن على طلب إخراج مواد
+app.post('/api/permits/material-exit/security-approve', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    try {
+        const { permit_id, security_username, decision, notes } = req.body;
+        
+        if (!permit_id || !security_username || !decision) {
+            return res.status(400).json({
+                success: false,
+                message: 'بيانات ناقصة'
+            });
+        }
+        
+        const status = decision === 'approve' ? 'sent_to_guard' : 'rejected_security';
+        
+        const query = `
+            UPDATE material_exit_permits 
+            SET status = ?,
+                security_username = ?,
+                security_decision = ?,
+                security_decision_date = CURRENT_TIMESTAMP,
+                security_notes = ?
+            WHERE permit_id = ? AND status = 'pending_security'
+        `;
+        
+        db.run(query, [status, security_username, decision, notes || '', permit_id], function(err) {
+            if (err) {
+                console.error('❌ خطأ في تحديث التصريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            if (this.changes === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'التصريح غير موجود أو تم معالجته مسبقاً'
+                });
+            }
+            
+            if (decision === 'approve') {
+                // إرسال إشعار للحرس
+                db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+                    if (!err && permit) {
+                        const title = '📦 طلب إخراج مواد جاهز للموافقة';
+                        const message = `طلب إخراج مواد من الموظف ${permit.employee_name} (${permit.job_number}) جاهز للموافقة النهائية.`;
+                        notifyAllGuards(permit_id, title, message, 'info', null);
+                    }
+                });
+            } else {
+                // إرسال إشعار للموظف
+                db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+                    if (!err && permit) {
+                        db.get('SELECT * FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
+                            if (!err && employee) {
+                                const title = '❌ تم رفض طلب إخراج المواد';
+                                const message = `تم رفض طلب إخراج المواد الخاص بك من قبل مكتب الأمن.`;
+                                createNotification({
+                                    user_id: employee.employee_id,
+                                    permit_id: permit_id,
+                                    title: title,
+                                    message: message,
+                                    type: 'error'
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            
+            res.json({
+                success: true,
+                message: `تم ${decision === 'approve' ? 'قبول' : 'رفض'} الطلب بنجاح`,
+                permit_id: permit_id,
+                status: status
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لجلب طلبات إخراج المواد الجاهزة للحارس
+app.get('/api/permits/material-exit/guard-pending', authenticateToken, authorizeRoles('guard', 'security', 'admin'), (req, res) => {
+    try {
+        const query = `
+            SELECT m.*, e.username, e.email, e.phone
+            FROM material_exit_permits m
+            JOIN employees e ON m.employee_id = e.employee_id
+            WHERE m.status = 'sent_to_guard'
+            ORDER BY m.created_at DESC
+        `;
+        
+        db.all(query, [], (err, permits) => {
+            if (err) {
+                console.error('❌ خطأ في جلب التصاريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            res.json({
+                success: true,
+                permits: permits || []
+            });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لموافقة الحارس على طلب إخراج مواد
+app.post('/api/permits/material-exit/guard-approve', authenticateToken, authorizeRoles('guard', 'security', 'admin'), (req, res) => {
+    try {
+        const { permit_id, guard_username, notes } = req.body;
+        
+        if (!permit_id || !guard_username) {
+            return res.status(400).json({
+                success: false,
+                message: 'بيانات ناقصة'
+            });
+        }
+        
+        const query = `
+            UPDATE material_exit_permits 
+            SET status = 'completed',
+                guard_username = ?,
+                guard_verification_date = CURRENT_TIMESTAMP,
+                guard_notes = ?
+            WHERE permit_id = ? AND status = 'sent_to_guard'
+        `;
+        
+        db.run(query, [guard_username, notes || '', permit_id], function(err) {
+            if (err) {
+                console.error('❌ خطأ في تحديث التصريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            if (this.changes === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'التصريح غير موجود أو تم معالجته مسبقاً'
+                });
+            }
+            
+            // إرسال إشعار للموظف
+            db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+                if (!err && permit) {
+                    db.get('SELECT * FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
+                        if (!err && employee) {
+                            const title = '✅ تم الموافقة على طلب إخراج المواد';
+                            const message = `تم الموافقة على طلب إخراج المواد الخاص بك من قبل الحارس. يمكنك الآن إخراج المواد.`;
+                            createNotification({
+                                user_id: employee.employee_id,
+                                permit_id: permit_id,
+                                title: title,
+                                message: message,
+                                type: 'success'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            res.json({
+                success: true,
+                message: 'تم الموافقة على الطلب بنجاح',
+                permit_id: permit_id,
+                status: 'completed'
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لجلب تصاريح إخراج المواد الخاصة بالموظف
+app.get('/api/permits/material-exit/my/:username', authenticateToken, (req, res) => {
+    try {
+        const { username } = req.params;
+        
+        const query = `
+            SELECT m.*, e.username, e.email, e.phone
+            FROM material_exit_permits m
+            JOIN employees e ON m.employee_id = e.employee_id
+            WHERE e.username = ?
+            ORDER BY m.created_at DESC
+        `;
+        
+        db.all(query, [username], (err, permits) => {
+            if (err) {
+                console.error('❌ خطأ في جلب التصاريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            res.json({
+                success: true,
+                permits: permits || []
+            });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
+// API لجلب تفاصيل تصريح إخراج مواد محدد
+app.get('/api/permits/material-exit/:id', authenticateToken, (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const query = `
+            SELECT m.*, e.username, e.email, e.phone, e.full_name
+            FROM material_exit_permits m
+            JOIN employees e ON m.employee_id = e.employee_id
+            WHERE m.permit_id = ?
+        `;
+        
+        db.get(query, [id], (err, permit) => {
+            if (err) {
+                console.error('❌ خطأ في جلب التصريح:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+            
+            if (!permit) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'التصريح غير موجود'
+                });
+            }
+            
+            res.json({
+                success: true,
+                permit: permit
+            });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ في الخادم'
+        });
+    }
+});
+
 app.get('/api/permits/company-entry/history/:username', authenticateToken, (req, res) => {
     try {
         const { username } = req.params;
@@ -5032,49 +5784,41 @@ app.get('/api/permits/pending/:managerUsername', authenticateToken, authorizeRol
     });
 });
 
-// API للحصول على التصاريح المعتمدة من المدير
+// API للحصول على التصاريح المعتمدة/المرفوضة من المدير
 app.get('/api/permits/approved/:managerUsername', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
     const { managerUsername } = req.params;
     
-    db.get('SELECT employee_id FROM employees WHERE username = ?', [managerUsername], (err, manager) => {
-        if (err || !manager) {
-            return res.status(404).json({
+    // جلب التصاريح المعتمدة والمرفوضة من هذا المدير
+    const query = `
+        SELECT 
+            p.*, 
+            e.full_name, 
+            e.job_number, 
+            e.directorate, 
+            d.name as department_name,
+            e.phone,
+            e.email
+        FROM permits p
+        JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE p.manager_username = ?
+        AND p.status IN ('pending_security', 'approved_security', 'rejected_manager')
+        ORDER BY p.request_date DESC
+        LIMIT 50
+    `;
+    
+    db.all(query, [managerUsername], (err, permits) => {
+        if (err) {
+            console.error('خطأ في جلب التصاريح المعتمدة/المرفوضة:', err);
+            return res.status(500).json({
                 success: false,
-                message: 'المدير غير موجود'
+                message: 'حدث خطأ في الخادم'
             });
         }
         
-        const query = `
-            SELECT 
-                p.*, 
-                e.full_name, 
-                e.job_number, 
-                e.directorate, 
-                d.name as department_name,
-                e.phone,
-                e.email
-            FROM permits p
-            JOIN employees e ON p.employee_id = e.employee_id
-            LEFT JOIN departments d ON e.department_id = d.id
-            WHERE e.manager_id = ?
-            AND p.status IN ('approved_manager', 'pending_security', 'approved_security')
-            ORDER BY p.request_date DESC
-            LIMIT 10
-        `;
-        
-        db.all(query, [manager.employee_id], (err, permits) => {
-            if (err) {
-                console.error('خطأ في جلب التصاريح المعتمدة:', err);
-                return res.status(500).json({
-                    success: false,
-                    message: 'حدث خطأ في الخادم'
-                });
-            }
-            
-            res.json({
-                success: true,
-                permits: permits || []
-            });
+        res.json({
+            success: true,
+            permits: permits || []
         });
     });
 });
@@ -6200,7 +6944,7 @@ app.listen(PORT, () => {
     console.log(`✅  الخادم يعمل على: http://localhost:${PORT}`);
     console.log(`🔗  رابط تسجيل الدخول: http://localhost:${PORT}/login`);
     console.log(`🎯  رابط لوحة التحكم: http://localhost:${PORT}/dashboard.html`);
-    console.log(`💾  قاعدة البيانات: ${selectedDb}`);
+    console.log(`💾  قاعدة البيانات: overtime.db`);
     console.log('\n👤  بيانات الدخول للتجربة:');
     console.log('   📧  admin      / admin123  (مسؤول النظام)');
     console.log('   📧  manager1   / admin123  (مدير قسم)');
