@@ -79,6 +79,7 @@ function createNewDatabase() {
             employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
             username VARCHAR(50) UNIQUE NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
+            
             full_name VARCHAR(100) NOT NULL,
             job_number VARCHAR(20) UNIQUE NOT NULL,
             directorate VARCHAR(100) NOT NULL,
@@ -186,6 +187,50 @@ function createNewDatabase() {
             FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
         )`,
         
+`CREATE TABLE material_exit_permits (
+    permit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL,
+    employee_name TEXT NOT NULL,
+    job_number TEXT,
+    directorate TEXT,
+    department TEXT,
+    material_type TEXT NOT NULL,
+    exit_reason TEXT NOT NULL,
+    permit_date DATE NOT NULL,
+    permit_time TIME NOT NULL,
+    supervisor_name TEXT NOT NULL,
+    status TEXT DEFAULT 'pending_manager' CHECK(status IN (
+        'pending_manager', 
+        'approved_manager', 
+        'rejected_manager',
+        'pending_security',
+        'approved_security',
+        'rejected_security',
+        'sent_to_guard',
+        'completed'
+    )),
+    
+    -- معلومات المدير
+    manager_username TEXT,
+    manager_decision TEXT,
+    manager_decision_date TIMESTAMP,
+    manager_notes TEXT,
+    
+    -- معلومات الأمن
+    security_username TEXT,
+    security_decision TEXT,
+    security_decision_date TIMESTAMP,
+    security_notes TEXT,
+    
+    -- معلومات الحارس
+    guard_username TEXT,
+    guard_verification_date TIMESTAMP,
+    guard_notes TEXT,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+)`,
        // 5. جدول الإشعارات
 `CREATE TABLE notifications (
     notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -246,6 +291,13 @@ function createIndexes() {
         'CREATE INDEX idx_company_permits_employee_id ON company_entry_permits(employee_id)',
         'CREATE INDEX idx_company_permits_status ON company_entry_permits(status)',
         'CREATE INDEX idx_company_permits_company_name ON company_entry_permits(company_name)',
+
+                // فهارس جدول تصاريح المواد
+
+        'CREATE INDEX idx_material_exit_employee_id ON material_exit_permits(employee_id)',
+        'CREATE INDEX idx_material_exit_status ON material_exit_permits(status)',
+        'CREATE INDEX idx_material_exit_date ON material_exit_permits(permit_date)',
+        'CREATE INDEX idx_material_exit_material_type ON material_exit_permits(material_type)',
         
         // فهارس جدول الإشعارات
         'CREATE INDEX idx_notifications_user_id ON notifications(user_id)',
@@ -400,6 +452,7 @@ function createTestData() {
         );
     });
 }
+
 
 function createSampleNotifications(employees) {
     const notifications = [
