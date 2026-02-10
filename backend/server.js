@@ -2040,28 +2040,47 @@ app.post('/api/permits/company-entry/guard-checkin', authenticateToken,
                     console.error('❌ خطأ في جلب بيانات التصريح:', err);
                 }
                 
-                // إرسال إشعار للموظف
+                // ✅ إرسال إشعار للموظف والمدير ومكتب الأمن
                 if (permit && permit.employee_username) {
                     db.get('SELECT employee_id FROM employees WHERE username = ?', 
                     [permit.employee_username], (err, employee) => {
                         if (!err && employee) {
+                            // إشعار للموظف
                             createNotification({
                                 user_id: employee.employee_id,
                                 company_permit_id: permit_id,
                                 title: '🏢 تم تسجيل دخول الشركة',
-                                message: `تم تسجيل دخول الشركة ${permit.company_name} في الساعة ${actual_entry_time}`,
+                                message: `تم تسجيل دخول الشركة ${permit.company_name} في الساعة ${actual_entry_time} بواسطة الحارس ${guard_username}.${entry_notes ? '\nملاحظات: ' + entry_notes : ''}${actual_visitors_count ? '\nعدد الزوار الفعلي: ' + actual_visitors_count : ''}`,
                                 type: 'success'
+                            });
+                            
+                            // إشعار للمدير
+                            db.get(`
+                                SELECT m.employee_id as manager_id
+                                FROM employees e
+                                LEFT JOIN employees m ON e.manager_id = m.employee_id
+                                WHERE e.username = ?
+                            `, [permit.employee_username], (err, result) => {
+                                if (!err && result && result.manager_id) {
+                                    createNotification({
+                                        user_id: result.manager_id,
+                                        company_permit_id: permit_id,
+                                        title: '🏢 تسجيل دخول شركة',
+                                        message: `تم تسجيل دخول الشركة ${permit.company_name} في الساعة ${actual_entry_time} بواسطة الحارس ${guard_username}.${actual_visitors_count ? '\nعدد الزوار الفعلي: ' + actual_visitors_count : ''}`,
+                                        type: 'info'
+                                    });
+                                }
                             });
                         }
                     });
                 }
                 
-                // ✅ إرسال إشعار لجميع مسؤولي الأمن باسم الحارس المناوب وتوقيت الدخول
+                // ✅ إشعار لمكتب الأمن
                 if (permit) {
                     notifyAllSecurityStaff(
                         null, // permit_id للتصاريح الشخصية فقط
                         '🏢 تسجيل دخول شركة',
-                        `تم تسجيل دخول شركة بنقطة الحراسة.\nاسم الشركة: ${permit.company_name}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${actual_entry_time}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                        `تم تسجيل دخول شركة بنقطة الحراسة.\nاسم الشركة: ${permit.company_name}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${actual_entry_time}${actual_visitors_count ? '\nعدد الزوار الفعلي: ' + actual_visitors_count : ''}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
                         'info',
                         permit_id // company_permit_id
                     );
@@ -2160,19 +2179,23 @@ app.post('/api/permits/company-entry/guard-checkout', authenticateToken,
                 const actualTime = new Date(`2000-01-01T${actual_exit_time}`);
                 const diffMinutes = (actualTime - expectedTime) / (1000 * 60);
                 
-                // إرسال إشعار للموظف
+                // ✅ إرسال إشعار للموظف والمدير ومكتب الأمن
                 if (permit.employee_username) {
                     db.get('SELECT employee_id FROM employees WHERE username = ?', 
                     [permit.employee_username], (err, employee) => {
                         if (!err && employee) {
-                            let message = `تم تسجيل خروج الشركة ${permit.company_name} في الساعة ${actual_exit_time}`;
+                            let message = `تم تسجيل خروج الشركة ${permit.company_name} في الساعة ${actual_exit_time} بواسطة الحارس ${guard_username}.`;
                             
                             if (diffMinutes > 15) {
-                                message += ` (تأخر ${Math.abs(diffMinutes)} دقيقة)`;
+                                message += `\n⚠️ تأخر: ${Math.round(diffMinutes)} دقيقة`;
                             } else if (diffMinutes < -15) {
-                                message += ` (خرجت مبكراً ${Math.abs(diffMinutes)} دقيقة)`;
+                                message += `\n⚠️ خرجت مبكراً: ${Math.round(Math.abs(diffMinutes))} دقيقة`;
+                            }
+                            if (exit_notes) {
+                                message += `\nملاحظات: ${exit_notes}`;
                             }
                             
+                            // إشعار للموظف
                             createNotification({
                                 user_id: employee.employee_id,
                                 company_permit_id: permit_id,
@@ -2180,15 +2203,50 @@ app.post('/api/permits/company-entry/guard-checkout', authenticateToken,
                                 message: message,
                                 type: 'success'
                             });
+                            
+                            // إشعار للمدير
+                            db.get(`
+                                SELECT m.employee_id as manager_id
+                                FROM employees e
+                                LEFT JOIN employees m ON e.manager_id = m.employee_id
+                                WHERE e.username = ?
+                            `, [permit.employee_username], (err, result) => {
+                                if (!err && result && result.manager_id) {
+                                    let managerMessage = `تم تسجيل خروج الشركة ${permit.company_name} في الساعة ${actual_exit_time} بواسطة الحارس ${guard_username}.`;
+                                    if (diffMinutes > 15) {
+                                        managerMessage += `\n⚠️ تأخر: ${Math.round(diffMinutes)} دقيقة`;
+                                    } else if (diffMinutes < -15) {
+                                        managerMessage += `\n⚠️ خرجت مبكراً: ${Math.round(Math.abs(diffMinutes))} دقيقة`;
+                                    }
+                                    
+                                    createNotification({
+                                        user_id: result.manager_id,
+                                        company_permit_id: permit_id,
+                                        title: '🏢 تسجيل خروج شركة',
+                                        message: managerMessage,
+                                        type: 'info'
+                                    });
+                                }
+                            });
                         }
                     });
                 }
                 
-                // إرسال إشعار لمكتب الأمن باسم الحارس المناوب وتوقيت الخروج
+                // ✅ إشعار لمكتب الأمن
+                let securityMessage = `تم تسجيل خروج شركة بنقطة الحراسة.\nاسم الشركة: ${permit.company_name}\nالحارس المناوب: ${guard_username}\nوقت الخروج: ${actual_exit_time}`;
+                if (diffMinutes > 15) {
+                    securityMessage += `\n⚠️ تأخر: ${Math.round(diffMinutes)} دقيقة`;
+                } else if (diffMinutes < -15) {
+                    securityMessage += `\n⚠️ خرجت مبكراً: ${Math.round(Math.abs(diffMinutes))} دقيقة`;
+                }
+                if (exit_notes) {
+                    securityMessage += `\nملاحظات: ${exit_notes}`;
+                }
+                
                 notifyAllSecurityStaff(
                     null, // permit_id للتصاريح الشخصية فقط
                     '🏢 تسجيل خروج شركة',
-                    `تم تسجيل خروج شركة بنقطة الحراسة.\nاسم الشركة: ${permit.company_name}\nالحارس المناوب: ${guard_username}\nوقت الخروج: ${actual_exit_time}${exit_notes ? '\nملاحظات: ' + exit_notes : ''}`,
+                    securityMessage,
                     'info',
                     permit_id // company_permit_id
                 );
@@ -2541,16 +2599,98 @@ app.post('/api/permits/company-entry/:permit_id/workers', authenticateToken,
                     
                     console.log('✅ تم حفظ العامل بنجاح، worker_id:', this.lastID);
                     
-                    // إرسال إشعار لمكتب الأمن والحراس بأن الحارس أضاف عاملاً جديداً
+                    // ✅ إرسال إشعار للموظف والمدير ومكتب الأمن عند إضافة عامل جديد مع جدول بالعمال
                     try {
                         const guardName = (req.user && (req.user.full_name || req.user.username)) || addedByUser || 'حارس';
-                        notifyAllSecurityStaff(
-                            permitIdInt,
-                            '👷 إضافة عامل جديد لتصريح شركة',
-                            `تمت إضافة العامل ${finalWorkerName} لتصريح الشركة رقم ${permitIdInt} بواسطة الحارس ${guardName}.`,
-                            'info',
-                            permitIdInt
-                        );
+                        
+                        // جلب جميع العمال المضافين من قبل هذا الحارس لهذا التصريح
+                        db.all(`
+                            SELECT worker_name, worker_id_number, worker_profession, worker_phone, added_at
+                            FROM company_workers 
+                            WHERE permit_id = ? AND added_by = ?
+                            ORDER BY added_at DESC
+                        `, [permitIdInt, addedByUser], (err, workers) => {
+                            if (err) {
+                                console.error('❌ خطأ في جلب العمال للإشعار:', err);
+                                return;
+                            }
+                            
+                            // إنشاء جدول HTML بالعمال
+                            let workersTableHTML = '';
+                            if (workers && workers.length > 0) {
+                                workersTableHTML = `
+                                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #ddd;">
+                                        <thead>
+                                            <tr style="background: #3498db; color: white;">
+                                                <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">#</th>
+                                                <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">اسم العامل</th>
+                                                <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">المهنة</th>
+                                                <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">رقم الهوية</th>
+                                                <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">الهاتف</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${workers.map((worker, index) => `
+                                                <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+                                                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${index + 1}</td>
+                                                    <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_name || 'غير محدد'}</td>
+                                                    <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_profession || 'غير محدد'}</td>
+                                                    <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_id_number || 'غير محدد'}</td>
+                                                    <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_phone || 'غير محدد'}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                `;
+                            }
+                            
+                            // جلب بيانات التصريح للموظف والمدير
+                            db.get('SELECT employee_id, employee_username, company_name FROM company_entry_permits WHERE permit_id = ?', 
+                            [permitIdInt], (err, permit) => {
+                                if (!err && permit) {
+                                    const notificationMessage = `
+                                        قام الحارس <strong>${guardName}</strong> بإضافة ${workers.length} عامل/عمال لتصريح الشركة <strong>${permit.company_name}</strong> (رقم ${permitIdInt}).
+                                        <br><br>
+                                        <strong>قائمة العمال المضافين:</strong>
+                                        ${workersTableHTML}
+                                    `;
+                                    
+                                    // إرسال إشعار للموظف
+                                    if (permit.employee_username) {
+                                        db.get('SELECT employee_id FROM employees WHERE username = ?', 
+                                        [permit.employee_username], (err, employee) => {
+                                            if (!err && employee) {
+                                                createNotification({
+                                                    user_id: employee.employee_id,
+                                                    company_permit_id: permitIdInt,
+                                                    title: '👷 تم إضافة عمال جدد',
+                                                    message: notificationMessage,
+                                                    type: 'info'
+                                                });
+                                            }
+                                        });
+                                    }
+                                    
+                                    // إرسال إشعار لجميع المديرين
+                                    notifyAllManagers(
+                                        null,
+                                        '👷 إضافة عمال جدد لتصريح شركة',
+                                        notificationMessage,
+                                        'info',
+                                        permitIdInt
+                                    );
+                                    
+                                    // إرسال إشعار لمكتب الأمن
+                                    notifyAllSecurityStaff(
+                                        null,
+                                        '👷 إضافة عمال جدد لتصريح شركة',
+                                        notificationMessage,
+                                        'info',
+                                        permitIdInt
+                                    );
+                                }
+                            });
+                        });
                     } catch (notifyErr) {
                         console.warn('⚠️ تعذر إرسال إشعار إضافة عامل جديد:', notifyErr.message);
                     }
@@ -4567,7 +4707,7 @@ app.get('/api/permits/material-exit/guard-pending', authenticateToken, authorize
 // API لموافقة الحارس على طلب إخراج مواد
 app.post('/api/permits/material-exit/guard-approve', authenticateToken, authorizeRoles('guard', 'security', 'admin'), (req, res) => {
     try {
-        const { permit_id, guard_username, notes } = req.body;
+        const { permit_id, guard_username, notes, exit_date, exit_time } = req.body;
         
         if (!permit_id || !guard_username) {
             return res.status(400).json({
@@ -4575,17 +4715,68 @@ app.post('/api/permits/material-exit/guard-approve', authenticateToken, authoriz
                 message: 'بيانات ناقصة'
             });
         }
+
+        if (!exit_date || !exit_time) {
+            return res.status(400).json({
+                success: false,
+                message: 'تاريخ ووقت خروج المواد مطلوبان'
+            });
+        }
+
+        // تجهيز وقت خروج المواد/الأجهزة بناءً على التاريخ والوقت الذي يدخلهما الحارس
+        let guardExitDateTime;
+        
+        try {
+            // دمج التاريخ والوقت
+            const dateStr = exit_date; // YYYY-MM-DD
+            let timeStr = exit_time.trim();
+            
+            // محاولة تحليل الوقت (يدعم صيغ مختلفة: "14:30", "02:30 مساءً", "2:30 PM", إلخ)
+            let hours = 0, minutes = 0;
+            
+            // إذا كان الوقت بصيغة HH:MM أو H:MM
+            if (timeStr.includes(':')) {
+                const timeParts = timeStr.split(':');
+                hours = parseInt(timeParts[0]) || 0;
+                minutes = parseInt(timeParts[1]) || 0;
+                
+                // إذا كان الوقت بصيغة 12 ساعة مع "مساءً" أو "PM"
+                if (timeStr.toLowerCase().includes('مساء') || timeStr.toLowerCase().includes('pm')) {
+                    if (hours < 12) hours += 12;
+                }
+                // إذا كان الوقت بصيغة 12 ساعة مع "صباحاً" أو "AM" وكان 12
+                else if ((timeStr.toLowerCase().includes('ص') || timeStr.toLowerCase().includes('am')) && hours === 12) {
+                    hours = 0;
+                }
+            }
+            
+            // إنشاء تاريخ/وقت من التاريخ والوقت المدخلين
+            guardExitDateTime = new Date(dateStr + 'T' + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':00');
+            
+            // التحقق من صحة التاريخ
+            if (isNaN(guardExitDateTime.getTime())) {
+                throw new Error('تاريخ أو وقت غير صحيح');
+            }
+        } catch (error) {
+            console.error('❌ خطأ في تحليل التاريخ/الوقت:', error);
+            return res.status(400).json({
+                success: false,
+                message: 'تاريخ أو وقت خروج المواد غير صحيح. يرجى استخدام صيغة صحيحة (مثال: 14:30 أو 02:30 مساءً)'
+            });
+        }
+        
+        const guardExitDateTimeStr = guardExitDateTime.toISOString();
         
         const query = `
             UPDATE material_exit_permits 
             SET status = 'completed',
                 guard_username = ?,
-                guard_verification_date = CURRENT_TIMESTAMP,
+                guard_verification_date = ?,
                 guard_notes = ?
             WHERE permit_id = ? AND status = 'sent_to_guard'
         `;
         
-        db.run(query, [guard_username, notes || '', permit_id], function(err) {
+        db.run(query, [guard_username, guardExitDateTimeStr, notes || '', permit_id], function(err) {
             if (err) {
                 console.error('❌ خطأ في تحديث التصريح:', err);
                 return res.status(500).json({
@@ -4601,13 +4792,15 @@ app.post('/api/permits/material-exit/guard-approve', authenticateToken, authoriz
                 });
             }
             
-            // إرسال إشعار للموظف
+            // ✅ إرسال إشعار للموظف ومكتب الأمن عند تسجيل خروج المادة/الجهاز
             db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
                 if (!err && permit) {
                     db.get('SELECT * FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
                         if (!err && employee) {
-                            const title = '✅ تم الموافقة على طلب إخراج المواد';
-                            const message = `تم الموافقة على طلب إخراج المواد الخاص بك من قبل الحارس. يمكنك الآن إخراج المواد.`;
+                            const title = '✅ تم تسجيل خروج المواد/الأجهزة';
+                            const message = `تم تسجيل خروج ${permit.material_type} من قبل الحارس ${guard_username} في ${new Date().toLocaleString('ar-SA')}.${notes ? '\nملاحظات الحارس: ' + notes : ''}`;
+                            
+                            // إشعار للموظف
                             createNotification({
                                 user_id: employee.employee_id,
                                 permit_id: permit_id,
@@ -4617,6 +4810,15 @@ app.post('/api/permits/material-exit/guard-approve', authenticateToken, authoriz
                             });
                         }
                     });
+                    
+                    // إشعار لمكتب الأمن
+                    notifyAllSecurityStaff(
+                        permit_id,
+                        '📦 تسجيل خروج مواد/أجهزة',
+                        `تم تسجيل خروج ${permit.material_type} من قبل الحارس ${guard_username}.\nالموظف: ${permit.employee_name} (${permit.job_number})\nالسبب: ${permit.exit_reason}${notes ? '\nملاحظات الحارس: ' + notes : ''}`,
+                        'info',
+                        null
+                    );
                 }
             });
             
@@ -6265,6 +6467,7 @@ app.post('/api/permits/guard-checkin', authenticateToken,
             });
         }
         
+        // ✅ حفظ كل التفاصيل بدقة في قاعدة البيانات
         const query = `
             UPDATE permits 
             SET status = 'checked_in',
@@ -6284,38 +6487,47 @@ app.post('/api/permits/guard-checkin', authenticateToken,
                 });
             }
             
-            createNotification({
-                user_id: permit.employee_id,
-                permit_id: permit_id,
-                title: '👤 تم تسجيل دخولك',
-                message: `تم تسجيل دخولك بنقطة الحراسة في الساعة ${actual_entry_time}`,
-                type: 'success'
+            // جلب بيانات الموظف الكاملة للإشعارات
+            db.get('SELECT full_name, job_number, directorate FROM employees WHERE employee_id = ?', 
+            [permit.employee_id], (err, employeeInfo) => {
+                const employeeName = employeeInfo ? (employeeInfo.full_name || 'موظف') : 'موظف';
+                const jobNumber = employeeInfo ? (employeeInfo.job_number || '') : '';
+                
+                // ✅ إشعار للموظف
+                createNotification({
+                    user_id: permit.employee_id,
+                    permit_id: permit_id,
+                    title: '👤 تم تسجيل دخولك',
+                    message: `تم تسجيل دخولك بنقطة الحراسة في الساعة ${actual_entry_time} بواسطة الحارس ${guard_username}.${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                    type: 'success'
+                });
+                
+                // ✅ إشعار للمدير
+                db.get(`
+                    SELECT m.employee_id as manager_id
+                    FROM employees e
+                    LEFT JOIN employees m ON e.manager_id = m.employee_id
+                    WHERE e.employee_id = ?
+                `, [permit.employee_id], (err, result) => {
+                    if (!err && result && result.manager_id) {
+                        createNotification({
+                            user_id: result.manager_id,
+                            permit_id: permit_id,
+                            title: '👤 تسجيل دخول موظف',
+                            message: `تم تسجيل دخول الموظف ${employeeName} (${jobNumber}) بنقطة الحراسة في الساعة ${actual_entry_time} بواسطة الحارس ${guard_username}.`,
+                            type: 'info'
+                        });
+                    }
+                });
+                
+                // ✅ إشعار لمكتب الأمن
+                notifyAllSecurityStaff(
+                    permit_id,
+                    '👤 تسجيل دخول موظف',
+                    `تم تسجيل دخول موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${actual_entry_time}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                    'info'
+                );
             });
-            
-            db.get(`
-                SELECT m.employee_id as manager_id
-                FROM employees e
-                LEFT JOIN employees m ON e.manager_id = m.employee_id
-                WHERE e.employee_id = ?
-            `, [permit.employee_id], (err, result) => {
-                if (!err && result && result.manager_id) {
-                    createNotification({
-                        user_id: result.manager_id,
-                        permit_id: permit_id,
-                        title: '👤 تسجيل دخول موظف',
-                        message: `تم تسجيل دخول أحد موظفيك بنقطة الحراسة`,
-                        type: 'info'
-                    });
-                }
-            });
-            
-            // ✅ إرسال إشعار لجميع مسؤولي الأمن باسم الحارس المناوب وتوقيت الدخول
-            notifyAllSecurityStaff(
-                permit_id,
-                '👤 تسجيل دخول موظف',
-                `تم تسجيل دخول موظف بنقطة الحراسة.\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${actual_entry_time}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
-                'info'
-            );
             
             res.json({
                 success: true,
@@ -6369,6 +6581,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
             });
         }
         
+        // ✅ حفظ كل التفاصيل بدقة في قاعدة البيانات
         const query = `
             UPDATE permits 
             SET status = 'completed',
@@ -6392,46 +6605,74 @@ app.post('/api/permits/guard-checkout', authenticateToken,
             const actualTime = new Date(`2000-01-01T${actual_exit_time}`);
             const diffMinutes = (actualTime - expectedTime) / (1000 * 60);
             
-            let notificationMessage = `تم تسجيل خروجك بنقطة الحراسة في الساعة ${actual_exit_time}`;
-            if (diffMinutes > 15) {
-                notificationMessage += ` (تأخر ${Math.abs(diffMinutes)} دقيقة)`;
-            } else if (diffMinutes < -15) {
-                notificationMessage += ` (خرجت مبكراً ${Math.abs(diffMinutes)} دقيقة)`;
-            }
-            
-            createNotification({
-                user_id: permit.employee_id,
-                permit_id: permit_id,
-                title: '🚪 تم تسجيل خروجك',
-                message: notificationMessage,
-                type: 'success'
-            });
-            
-            // إرسال إشعار للمدير
-            db.get(`
-                SELECT m.employee_id as manager_id
-                FROM employees e
-                LEFT JOIN employees m ON e.manager_id = m.employee_id
-                WHERE e.employee_id = ?
-            `, [permit.employee_id], (err, result) => {
-                if (!err && result && result.manager_id) {
-                    createNotification({
-                        user_id: result.manager_id,
-                        permit_id: permit_id,
-                        title: '🚪 تسجيل خروج موظف',
-                        message: `تم تسجيل خروج أحد موظفيك بنقطة الحراسة`,
-                        type: 'info'
-                    });
+            // جلب بيانات الموظف الكاملة للإشعارات
+            db.get('SELECT full_name, job_number, directorate FROM employees WHERE employee_id = ?', 
+            [permit.employee_id], (err, employeeInfo) => {
+                const employeeName = employeeInfo ? (employeeInfo.full_name || 'موظف') : 'موظف';
+                const jobNumber = employeeInfo ? (employeeInfo.job_number || '') : '';
+                
+                let notificationMessage = `تم تسجيل خروجك بنقطة الحراسة في الساعة ${actual_exit_time} بواسطة الحارس ${guard_username}.`;
+                if (diffMinutes > 15) {
+                    notificationMessage += ` (تأخر ${Math.round(diffMinutes)} دقيقة)`;
+                } else if (diffMinutes < -15) {
+                    notificationMessage += ` (خرجت مبكراً ${Math.round(Math.abs(diffMinutes))} دقيقة)`;
                 }
+                if (exit_notes) {
+                    notificationMessage += `\nملاحظات: ${exit_notes}`;
+                }
+                
+                // ✅ إشعار للموظف
+                createNotification({
+                    user_id: permit.employee_id,
+                    permit_id: permit_id,
+                    title: '🚪 تم تسجيل خروجك',
+                    message: notificationMessage,
+                    type: 'success'
+                });
+                
+                // ✅ إشعار للمدير
+                db.get(`
+                    SELECT m.employee_id as manager_id
+                    FROM employees e
+                    LEFT JOIN employees m ON e.manager_id = m.employee_id
+                    WHERE e.employee_id = ?
+                `, [permit.employee_id], (err, result) => {
+                    if (!err && result && result.manager_id) {
+                        let managerMessage = `تم تسجيل خروج الموظف ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''} بنقطة الحراسة في الساعة ${actual_exit_time} بواسطة الحارس ${guard_username}.`;
+                        if (diffMinutes > 15) {
+                            managerMessage += ` (تأخر ${Math.round(diffMinutes)} دقيقة)`;
+                        } else if (diffMinutes < -15) {
+                            managerMessage += ` (خرج مبكراً ${Math.round(Math.abs(diffMinutes))} دقيقة)`;
+                        }
+                        
+                        createNotification({
+                            user_id: result.manager_id,
+                            permit_id: permit_id,
+                            title: '🚪 تسجيل خروج موظف',
+                            message: managerMessage,
+                            type: 'info'
+                        });
+                    }
+                });
+                
+                // ✅ إشعار لمكتب الأمن
+                let securityMessage = `تم تسجيل خروج موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الخروج: ${actual_exit_time}`;
+                if (diffMinutes > 15) {
+                    securityMessage += `\n⚠️ تأخر: ${Math.round(diffMinutes)} دقيقة`;
+                } else if (diffMinutes < -15) {
+                    securityMessage += `\n⚠️ خرج مبكراً: ${Math.round(Math.abs(diffMinutes))} دقيقة`;
+                }
+                if (exit_notes) {
+                    securityMessage += `\nملاحظات: ${exit_notes}`;
+                }
+                
+                notifyAllSecurityStaff(
+                    permit_id,
+                    '🚪 تسجيل خروج موظف',
+                    securityMessage,
+                    'info'
+                );
             });
-            
-            // إرسال إشعار لمكتب الأمن باسم الحارس المناوب وتوقيت الخروج
-            notifyAllSecurityStaff(
-                permit_id,
-                '🚪 تسجيل خروج موظف',
-                `تم تسجيل خروج موظف بنقطة الحراسة.\nالحارس المناوب: ${guard_username}\nوقت الخروج: ${actual_exit_time}${exit_notes ? '\nملاحظات: ' + exit_notes : ''}`,
-                'info'
-            );
             
             if (diffMinutes > 30) {
                 db.run(`

@@ -1249,17 +1249,18 @@
                 </div>
                 
                 <div class="filter-group">
-    <label class="filter-label">نوع التصريح</label>
-    <select class="filter-select" id="typeFilter" onchange="filterPermits()">
-        <option value="">جميع الأنواع</option>
-        <option value="personal">تصاريح شخصية</option>
-        <option value="company_entry">تصاريح شركات</option>
-        <option value="exit">خروج من العمل</option>
-        <option value="entry">دخول إلى الشركة</option>
-        <option value="visit">زيارة</option>
-        <option value="delivery">توصيل</option>
-    </select>
-</div>
+                    <label class="filter-label">نوع التصريح</label>
+                    <select class="filter-select" id="typeFilter" onchange="filterPermits()">
+                        <option value="">جميع الأنواع</option>
+                        <option value="personal">تصاريح شخصية</option>
+                        <option value="company_entry">تصاريح شركات</option>
+                        <option value="material_exit">تصاريح إخراج مواد وأجهزة</option>
+                        <option value="exit">خروج من العمل</option>
+                        <option value="entry">دخول إلى الشركة</option>
+                        <option value="visit">زيارة</option>
+                        <option value="delivery">توصيل</option>
+                    </select>
+                </div>
                 
                 <div class="filter-group">
                     <label class="filter-label">الفترة الزمنية</label>
@@ -1310,6 +1311,23 @@
                 </div>
                 
                 <div id="companyPermitsList">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل التصاريح...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم تصاريح إخراج المواد والأجهزة -->
+            <div class="permits-section" style="margin-top: 30px;">
+                <div class="permits-header">
+                    <div class="permits-title">
+                        📦 تصاريح إخراج المواد والأجهزة
+                        <span class="permits-count" id="materialPermitsCount">0 تصريح</span>
+                    </div>
+                </div>
+                
+                <div id="materialPermitsList">
                     <div class="loading-state">
                         <div class="loading-spinner"></div>
                         <p class="loading-text">جاري تحميل التصاريح...</p>
@@ -1420,6 +1438,35 @@
         }
 
         // =============== NOTIFICATIONS SYSTEM ===============
+        let lastUnreadNotifications = 0;
+
+        function playNotificationSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = 880;
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                const now = ctx.currentTime;
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } catch (e) {
+                console.warn('تعذر تشغيل صوت الإشعار:', e);
+            }
+        }
+
         function showNotifications() {
             const panel = document.getElementById('notificationsPanel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'block';
@@ -1461,6 +1508,11 @@
                 if (data.success) {
                     renderNotifications(data.notifications);
                     updateBadge(data.unread_count);
+                    
+                    if (typeof data.unread_count === 'number' && data.unread_count > lastUnreadNotifications) {
+                        playNotificationSound();
+                    }
+                    lastUnreadNotifications = data.unread_count || 0;
                 }
             } catch (error) {
                 console.error('خطأ في تحميل الإشعارات:', error);
@@ -1598,14 +1650,22 @@ async function loadPermits() {
     try {
         console.log('📋 بدء تحميل التصاريح للموظف:', userData.username);
         
-        // جلب جميع أنواع التصاريح (الشخصية + الشركات)
-        const [personalPermitsResponse, companyPermitsResponse] = await Promise.allSettled([
+        // جلب جميع أنواع التصاريح (الشخصية + الشركات + إخراج المواد)
+        const [
+            personalPermitsResponse,
+            companyPermitsResponse,
+            materialPermitsResponse
+        ] = await Promise.allSettled([
             fetchJson(`/api/permits/my/${userData.username}`).catch(err => {
                 console.error('❌ خطأ في جلب التصاريح الشخصية:', err);
                 return { success: false, permits: [] };
             }),
             fetchJson(`/api/permits/company-entry/my/${userData.username}`).catch(err => {
                 console.error('❌ خطأ في جلب تصاريح الشركات:', err);
+                return { success: false, permits: [] };
+            }),
+            fetchJson(`/api/permits/material-exit/my/${userData.username}`).catch(err => {
+                console.error('❌ خطأ في جلب تصاريح إخراج المواد:', err);
                 return { success: false, permits: [] };
             })
         ]);
@@ -1643,6 +1703,25 @@ async function loadPermits() {
         } else {
             console.warn('⚠️ تحذير: فشل في جلب تصاريح الشركات:', companyResult.message || 'خطأ غير معروف');
         }
+
+        // إضافة تصاريح إخراج المواد والأجهزة
+        const materialResult = materialPermitsResponse.status === 'fulfilled'
+            ? materialPermitsResponse.value
+            : { success: false, permits: [] };
+
+        if (materialResult.success && materialResult.permits) {
+            materialResult.permits.forEach(p => {
+                p.permit_type = 'material_exit';
+                // استخدام created_at كتاريخ طلب إن لم يوجد request_date
+                if (!p.request_date && p.created_at) {
+                    p.request_date = p.created_at;
+                }
+            });
+            allPermits = [...allPermits, ...materialResult.permits];
+            console.log(`✅ تم جلب ${materialResult.permits.length} تصريح إخراج مواد`);
+        } else if (materialResult.message) {
+            console.warn('⚠️ تحذير: فشل في جلب تصاريح إخراج المواد:', materialResult.message);
+        }
         
         // ترتيب حسب التاريخ (الأحدث أولاً)
         allPermits.sort((a, b) => {
@@ -1652,11 +1731,12 @@ async function loadPermits() {
         });
         
         // فصل التصاريح حسب النوع
-        const personalPermits = allPermits.filter(p => p.permit_type !== 'company_entry');
+        const personalPermits = allPermits.filter(p => p.permit_type === 'personal' || (!p.permit_type && p.type));
         const companyPermits = allPermits.filter(p => p.permit_type === 'company_entry');
+        const materialPermits = allPermits.filter(p => p.permit_type === 'material_exit');
         
         updateStatistics(allPermits);
-        displayPermitsSeparated(personalPermits, companyPermits);
+        displayPermitsSeparated(personalPermits, companyPermits, materialPermits);
         
     } catch (error) {
         console.error('خطأ في تحميل التصاريح:', error);
@@ -1667,10 +1747,14 @@ async function loadPermits() {
         function updateStatistics(permits) {
             const total = permits.length;
             const pending = permits.filter(p => 
-                p.status === 'pending_manager' || p.status === 'approved_manager'
+                p.status === 'pending_manager' || 
+                p.status === 'approved_manager' ||
+                p.status === 'pending_security' ||
+                p.status === 'sent_to_guard'
             ).length;
             const approved = permits.filter(p => 
-                p.status === 'approved_security'
+                p.status === 'approved_security' ||
+                p.status === 'completed'
             ).length;
             const rejected = permits.filter(p => 
                 p.status === 'rejected_manager' || p.status === 'rejected_security'
@@ -1702,6 +1786,8 @@ async function loadPermits() {
                 return permit.permit_type === 'personal';
             } else if (typeFilter === 'company_entry') {
                 return permit.permit_type === 'company_entry';
+            } else if (typeFilter === 'material_exit') {
+                return permit.permit_type === 'material_exit';
             } else {
                 // للأنواع الفرعية للتصاريح الشخصية
                 return permit.permit_type === 'personal' && permit.type === typeFilter;
@@ -1759,6 +1845,16 @@ async function loadPermits() {
                     (permit.entry_purpose && permit.entry_purpose.toLowerCase().includes(searchTerm))
                 );
             }
+            // البحث في تصاريح إخراج المواد والأجهزة
+            else if (permit.permit_type === 'material_exit') {
+                return (
+                    permit.permit_id.toString().includes(searchTerm) ||
+                    (permit.material_type && permit.material_type.toLowerCase().includes(searchTerm)) ||
+                    (permit.exit_reason && permit.exit_reason.toLowerCase().includes(searchTerm)) ||
+                    (permit.supervisor_name && permit.supervisor_name.toLowerCase().includes(searchTerm)) ||
+                    (permit.permit_date && permit.permit_date.includes(searchTerm))
+                );
+            }
             return false;
         });
     }
@@ -1773,15 +1869,17 @@ async function loadPermits() {
 
         function displayPermits(permits) {
             // فصل التصاريح حسب النوع
-            const personalPermits = permits.filter(p => p.permit_type !== 'company_entry');
+            const personalPermits = permits.filter(p => p.permit_type === 'personal' || (!p.permit_type && p.type));
             const companyPermits = permits.filter(p => p.permit_type === 'company_entry');
+            const materialPermits = permits.filter(p => p.permit_type === 'material_exit');
             
-            displayPermitsSeparated(personalPermits, companyPermits);
+            displayPermitsSeparated(personalPermits, companyPermits, materialPermits);
         }
         
-        function displayPermitsSeparated(personalPermits, companyPermits) {
+        function displayPermitsSeparated(personalPermits, companyPermits, materialPermits) {
             const personalContainer = document.getElementById('personalPermitsList');
             const companyContainer = document.getElementById('companyPermitsList');
+            const materialContainer = document.getElementById('materialPermitsList');
             
             // عرض تصاريح بعد الدوام
             if (personalPermits.length === 0) {
@@ -1817,9 +1915,27 @@ async function loadPermits() {
                 `;
             }
             
-            // تحديث العداد
+            // عرض تصاريح إخراج المواد والأجهزة
+            if (materialPermits.length === 0) {
+                materialContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p class="empty-title">لا توجد تصاريح إخراج مواد وأجهزة</p>
+                        <p class="empty-message">لم تقم بتقديم أي تصاريح إخراج مواد وأجهزة حتى الآن</p>
+                    </div>
+                `;
+            } else {
+                materialContainer.innerHTML = `
+                    <div class="permits-list">
+                        ${materialPermits.map(permit => createPermitCardHTML(permit)).join('')}
+                    </div>
+                `;
+            }
+            
+            // تحديث العدادات
             document.getElementById('personalPermitsCount').textContent = `${personalPermits.length} تصريح`;
             document.getElementById('companyPermitsCount').textContent = `${companyPermits.length} تصريح`;
+            document.getElementById('materialPermitsCount').textContent = `${materialPermits.length} تصريح`;
         }
 
         function createPermitCardHTML(permit) {
@@ -1829,7 +1945,9 @@ async function loadPermits() {
     // تحديد نوع التصريح
     const permitType = permit.permit_type === 'company_entry' 
         ? { name: 'دخول شركة', icon: '🏢' }
-        : getPermitType(permit.type || 'exit');
+        : permit.permit_type === 'material_exit'
+            ? { name: 'إخراج مواد وأجهزة', icon: '📦' }
+            : getPermitType(permit.type || 'exit');
     
     return `
         <div class="permit-card" id="permitCard_${permit.permit_id}" data-type="${permit.permit_type}">
@@ -1855,9 +1973,13 @@ async function loadPermits() {
             
             <!-- تفاصيل إضافية قابلة للطي -->
             <div id="extraDetails_${permit.permit_id}" class="extra-details" style="display: none;">
-                ${permit.permit_type === 'company_entry' ? 
-                    renderCompanyEntryExtraDetails(permit) : 
-                    renderPersonalPermitExtraDetails(permit)}
+                ${
+                    permit.permit_type === 'company_entry'
+                        ? renderCompanyEntryExtraDetails(permit)
+                        : permit.permit_type === 'material_exit'
+                            ? renderMaterialExitExtraDetails(permit)
+                            : renderPersonalPermitExtraDetails(permit)
+                }
             </div>
             
             <!-- الملاحظات -->
@@ -1871,12 +1993,12 @@ async function loadPermits() {
                 <button class="action-btn btn-view" onclick="togglePermitDetails(${permit.permit_id})" id="toggleBtn_${permit.permit_id}">
                     👁️ عرض التفاصيل
                 </button>
-                ${permit.status === 'pending_manager' ? `
+                ${permit.status === 'pending_manager' && permit.permit_type !== 'material_exit' ? `
                     <button class="action-btn btn-cancel" onclick="cancelPermit(${permit.permit_id}, '${permit.permit_type}')">
                         ✖️ إلغاء الطلب
                     </button>
                 ` : ''}
-                ${permit.status === 'approved_security' ? `
+                ${permit.status === 'approved_security' && permit.permit_type !== 'material_exit' ? `
                     <button class="action-btn btn-print" onclick="printPermit(${permit.permit_id}, '${permit.permit_type}')">
                         🖨️ طباعة التصريح
                     </button>
@@ -1923,6 +2045,28 @@ async function loadPermits() {
                         <div class="detail-item">
                             <div class="detail-label">عدد الزوار</div>
                             <div class="detail-value">${permit.number_of_visitors || 1} شخص</div>
+                        </div>
+                    </div>
+                `;
+            } else if (permit.permit_type === 'material_exit') {
+                // لتصاريح إخراج المواد والأجهزة
+                return `
+                    <div class="permit-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">نوع المادة / الجهاز</div>
+                            <div class="detail-value">${permit.material_type || 'غير محدد'}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">سبب الإخراج</div>
+                            <div class="detail-value" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${permit.exit_reason || 'غير محدد'}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">المشرف المباشر</div>
+                            <div class="detail-value">${permit.supervisor_name || 'غير محدد'}</div>
                         </div>
                     </div>
                 `;
@@ -2211,8 +2355,14 @@ async function loadPermits() {
                     return { class: 'status-pending', icon: '⏳', text: 'قيد مراجعة المدير' };
                 case 'approved_manager':
                     return { class: 'status-security', icon: '✅', text: 'موافق عليها من المدير' };
+                case 'pending_security':
+                    return { class: 'status-security', icon: '⏳', text: 'قيد مراجعة الأمن' };
+                case 'sent_to_guard':
+                    return { class: 'status-security', icon: '✅', text: 'بإنتظار موافقة الحارس' };
                 case 'approved_security':
                     return { class: 'status-approved', icon: '✅', text: 'موافق عليها نهائياً' };
+                case 'completed':
+                    return { class: 'status-approved', icon: '✅', text: 'تم تنفيذ التصريح' };
                 case 'rejected_manager':
                     return { class: 'status-rejected', icon: '❌', text: 'مرفوضة من المدير' };
                 case 'rejected_security':
@@ -2512,7 +2662,7 @@ function renderCompanyEntryExtraDetails(permit) {
     `;
 }
 
-// دالة لعرض تفاصيل إضافية للتصاريح الشخصية
+// دالة لعرض تفاصيل إضافية لتصاريح الشخصية
 function renderPersonalPermitExtraDetails(permit) {
     const permitType = getPermitType(permit.type || 'exit');
     
@@ -2542,6 +2692,59 @@ function renderPersonalPermitExtraDetails(permit) {
                 <h5 class="sub-title">📄 السبب بالتفصيل</h5>
                 <div class="reason-details">
                     ${permit.reason || 'لا يوجد'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// دالة لعرض تفاصيل إضافية لتصاريح إخراج المواد والأجهزة
+function renderMaterialExitExtraDetails(permit) {
+    return `
+        <div class="extra-section">
+            <h4 class="extra-title">📦 معلومات كاملة - تصريح إخراج مواد وأجهزة</h4>
+            
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">اسم الموظف</div>
+                    <div class="detail-value">${permit.employee_name || ''}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">الرقم الوظيفي</div>
+                    <div class="detail-value">${permit.job_number || ''}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">المديرية</div>
+                    <div class="detail-value">${permit.directorate || ''}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">القسم</div>
+                    <div class="detail-value">${permit.department || ''}</div>
+                </div>
+            </div>
+            
+            <div class="details-grid" style="margin-top: 20px;">
+                <div class="detail-item">
+                    <div class="detail-label">نوع المادة / الجهاز</div>
+                    <div class="detail-value">${permit.material_type || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">سبب الإخراج</div>
+                    <div class="detail-value">${permit.exit_reason || 'غير محدد'}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">تاريخ الإخراج</div>
+                    <div class="detail-value">${permit.permit_date || ''} - ${permit.permit_time || ''}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">المشرف المباشر</div>
+                    <div class="detail-value">${permit.supervisor_name || ''}</div>
                 </div>
             </div>
         </div>

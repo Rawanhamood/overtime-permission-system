@@ -19,7 +19,13 @@ async function checkDatabaseTables() {
         }
         
         // الجداول الأساسية المطلوبة
-        const essentialTables = ['employees', 'permits', 'departments'];
+        // تمت إضافة جدول تصاريح إخراج المواد والأجهزة لضمان إنشائه إذا كان مفقوداً
+        const essentialTables = [
+            'employees',
+            'permits',
+            'departments',
+            'material_exit_permits'
+        ];
         const missingTables = essentialTables.filter(t => !tableNames.includes(t));
         
         if (missingTables.length > 0) {
