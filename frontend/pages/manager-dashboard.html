@@ -1047,60 +1047,23 @@
         <!-- Alerts Container -->
         <div class="alerts-container" id="alertsContainer"></div>
 
-        <!-- Tabs for Navigation -->
+        <!-- Tabs for Navigation (حسب الأولوية: شركات أولاً ثم إخراج مواد ثم موظفين) -->
         <div class="tabs-container">
             <div class="tabs">
-                <button class="tab-btn active" onclick="showTab('employee-permits')">
-                    👤 تصاريح الموظفين
-                </button>
-                <button class="tab-btn" onclick="showTab('company-permits')">
+                <button class="tab-btn active" onclick="showTab('company-permits')">
                     🏢 تصاريح الشركات
                 </button>
                 <button class="tab-btn" onclick="showTab('material-exit-permits')">
                     📦 تصاريح إخراج المواد
                 </button>
+                <button class="tab-btn" onclick="showTab('employee-permits')">
+                    👤 تصاريح الموظفين
+                </button>
             </div>
         </div>
 
-        <!-- Employee Permits Tab Content -->
-        <div id="employee-permits" class="tab-content">
-            <!-- Pending Employee Permits Section -->
-            <div class="permits-section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <span>📋</span>
-                        التصاريح المعلقة للموظفين
-                    </div>
-                    <span class="section-count" id="pendingCount">0 تصريح</span>
-                </div>
-                <div class="permits-list-container" id="requestsContainer">
-                    <div class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <p class="loading-text">جاري تحميل التصاريح المعلقة...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recently Approved Employee Permits -->
-            <div class="permits-section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <span>✅</span>
-                        التصاريح المعتمدة مؤخراً للموظفين
-                    </div>
-                    <span class="section-count" id="approvedCount">0 تصريح</span>
-                </div>
-                <div class="permits-list-container" id="approvedContainer">
-                    <div class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <p class="loading-text">جاري تحميل التصاريح المعتمدة...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Company Permits Tab Content -->
-        <div id="company-permits" class="tab-content" style="display: none;">
+        <!-- Company Permits Tab Content (أولاً حسب الأولوية) -->
+        <div id="company-permits" class="tab-content">
             <!-- Pending Company Entry Permits Section -->
             <div class="permits-section">
                 <div class="section-header">
@@ -1143,14 +1106,68 @@
                 <div class="section-header">
                     <div class="section-title">
                         <span>📦</span>
-                        طلبات إخراج المواد والأجهزة المعلقة
+                        تصاريح إخراج المواد المعلقة
                     </div>
                     <span class="section-count" id="materialExitPendingCount">0 تصريح</span>
                 </div>
                 <div class="permits-list-container" id="materialExitRequestsContainer">
                     <div class="loading-state">
                         <div class="loading-spinner"></div>
-                        <p class="loading-text">جاري تحميل طلبات إخراج المواد...</p>
+                        <p class="loading-text">جاري تحميل تصاريح إخراج المواد...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approved Material Exit Permits -->
+            <div class="permits-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>✅</span>
+                        تصاريح إخراج المواد المعتمدة
+                    </div>
+                    <span class="section-count" id="materialExitApprovedCount">0 تصريح</span>
+                </div>
+                <div class="permits-list-container" id="materialExitApprovedContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل تصاريح إخراج المواد المعتمدة...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Permits Tab Content -->
+        <div id="employee-permits" class="tab-content" style="display: none;">
+            <!-- Pending Employee Permits Section -->
+            <div class="permits-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>📋</span>
+                        التصاريح المعلقة للموظفين
+                    </div>
+                    <span class="section-count" id="pendingCount">0 تصريح</span>
+                </div>
+                <div class="permits-list-container" id="requestsContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل التصاريح المعلقة...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recently Approved Employee Permits -->
+            <div class="permits-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>✅</span>
+                        التصاريح المعتمدة مؤخراً للموظفين
+                    </div>
+                    <span class="section-count" id="approvedCount">0 تصريح</span>
+                </div>
+                <div class="permits-list-container" id="approvedContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل التصاريح المعتمدة...</p>
                     </div>
                 </div>
             </div>
@@ -1159,7 +1176,7 @@
 
     <script>
         // =============== SYSTEM INITIALIZATION ===============
-        let currentTab = 'employee-permits';
+        let currentTab = 'company-permits';
         
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 بدء تحميل لوحة المدير...');
@@ -1170,6 +1187,7 @@
             setupNotificationsClose();
             startNotificationPolling();
             setupTabs();
+            showTab('company-permits');
         });
 
         // =============== TAB MANAGEMENT ===============
@@ -1224,6 +1242,7 @@
             } else if (tabId === 'material-exit-permits') {
                 const userData = JSON.parse(localStorage.getItem('user'));
                 loadMaterialExitPendingRequestsForManager(userData.username);
+                loadMaterialExitApprovedRequestsForManager(userData.username);
             }
         }
 
@@ -1295,35 +1314,26 @@
                     }
                 }
                 
-                // محاولة تحليل employees إذا كان موجوداً
-                if (permit.employees) {
-                    try {
-                        employeesList = typeof permit.employees === 'string' 
-                            ? JSON.parse(permit.employees) 
-                            : permit.employees;
-                        if (!Array.isArray(employeesList)) {
-                            employeesList = [];
-                        }
-                    } catch (e) {
-                        // ignore
+                // أولوية لجدول العمال من الـ API (company_workers) كامل للمدير
+                if (permit.workers && Array.isArray(permit.workers) && permit.workers.length > 0) {
+                    employeesList = permit.workers.map(w => ({ name: w.worker_name || 'غير محدد' }));
+                } else {
+                    if (permit.employees) {
+                        try {
+                            employeesList = typeof permit.employees === 'string' 
+                                ? JSON.parse(permit.employees) 
+                                : permit.employees;
+                            if (!Array.isArray(employeesList)) employeesList = [];
+                        } catch (e) { employeesList = []; }
                     }
-                }
-                
-                // محاولة تحليل additional_notes إذا كان JSON
-                if (permit.additional_notes) {
-                    try {
-                    const notesObj = typeof permit.additional_notes === 'string' 
-                        ? JSON.parse(permit.additional_notes) 
-                        : permit.additional_notes;
-                    
-                        if (notesObj.requesting_department) {
-                            additionalData = { ...additionalData, ...notesObj.requesting_department };
-                        }
-                        if (notesObj.employees && Array.isArray(notesObj.employees)) {
-                            employeesList = [...employeesList, ...notesObj.employees];
-                        }
-                    } catch (e) {
-                        // إذا فشل التحليل، يعني أنه نص عادي وليس JSON - نتجاهله
+                    if (permit.additional_notes) {
+                        try {
+                            const notesObj = typeof permit.additional_notes === 'string' 
+                                ? JSON.parse(permit.additional_notes) 
+                                : permit.additional_notes;
+                            if (notesObj.requesting_department) additionalData = { ...additionalData, ...notesObj.requesting_department };
+                            if (notesObj.employees && Array.isArray(notesObj.employees)) employeesList = [...employeesList, ...notesObj.employees];
+                        } catch (e) {}
                     }
                 }
             } catch (e) {
@@ -1356,21 +1366,26 @@
                             <p>الممثل: ${permit.company_representative || 'غير محدد'}</p>
                             <p>الهاتف: ${permit.representative_phone || 'غير محدد'}</p>
                             ${additionalData.employee_name ? `<p>الموظف الطالب: ${additionalData.employee_name}</p>` : ''}
+                            ${(additionalData.directorate || additionalData.department) ? `<p><strong>الدائرة الطالبة:</strong> ${[additionalData.directorate, additionalData.department].filter(Boolean).join(' / ')}</p>` : ''}
                         </div>
                     </div>
                     
                     <div class="permit-details">
                         <div class="detail-item">
+                            <span class="detail-label">الدائرة الطالبة للتصريح:</span>
+                            <span class="detail-value">${[additionalData.directorate, additionalData.department].filter(Boolean).join(' / ') || 'غير محدد'}</span>
+                        </div>
+                        <div class="detail-item">
                             <span class="detail-label">الغرض:</span>
                             <span class="detail-value">${permit.entry_purpose || 'غير محدد'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">التواريخ:</span>
-                            <span class="detail-value">${permit.expected_entry_date} إلى ${permit.expected_exit_date}</span>
+                            <span class="detail-label">التاريخ:</span>
+                            <span class="detail-value">${permit.expected_entry_date || permit.start_date || '-'} إلى ${permit.expected_exit_date || permit.end_date || '-'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">الأوقات:</span>
-                            <span class="detail-value">${permit.expected_entry_time} - ${permit.expected_exit_time}</span>
+                            <span class="detail-label">الوقت:</span>
+                            <span class="detail-value">${permit.expected_entry_time || permit.entry_time || '-'} - ${permit.expected_exit_time || permit.exit_time || '-'}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">عدد الزوار:</span>
@@ -1378,10 +1393,9 @@
                         </div>
                         ${employeesList.length > 0 ? `
                         <div class="detail-item">
-                            <span class="detail-label">قائمة العمال:</span>
+                            <span class="detail-label">قائمة العمال (${employeesList.length}):</span>
                             <span class="detail-value" style="font-size: 12px;">
-                                ${employeesList.slice(0, 3).map(emp => emp.name).join('، ')}
-                                ${employeesList.length > 3 ? ` + ${employeesList.length - 3} آخرين` : ''}
+                                ${employeesList.map(emp => emp.name || emp.worker_name).join('، ')}
                             </span>
                         </div>
                         ` : ''}
@@ -1506,6 +1520,18 @@
                             <span class="detail-label">الوقت:</span>
                             <span class="detail-value">${permit.expected_entry_time} - ${permit.expected_exit_time}</span>
                         </div>
+                        ${permit.manager_notes ? `
+                        <div class="detail-item" style="background: #e8f4ff; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #3498db;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات المدير:</span>
+                            <span class="detail-value" style="display: block; margin-top: 4px;">${permit.manager_notes}</span>
+                        </div>
+                        ` : ''}
+                        ${permit.security_notes ? `
+                        <div class="detail-item" style="background: #fff8e6; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #f39c12;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات مكتب الأمن:</span>
+                            <span class="detail-value" style="display: block; margin-top: 4px;">${permit.security_notes}</span>
+                        </div>
+                        ` : ''}
                     </div>
                     
                     <div class="action-buttons">
@@ -1887,6 +1913,90 @@
                 showNotification('❌ حدث خطأ في الطباعة', 'error');
             }
         }
+        
+        async function printOvertimePermit(permitId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`/api/permits/print/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'حدث خطأ في جلب البيانات' }));
+                    showNotification('❌ ' + (errorData.message || 'حدث خطأ في الطباعة'), 'error');
+                    return;
+                }
+                
+                const htmlContent = await response.text();
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url, '_blank');
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => {
+                            printWindow.print();
+                            URL.revokeObjectURL(url);
+                        }, 500);
+                    };
+                } else {
+                    showNotification('⚠️ يرجى السماح للنوافذ المنبثقة', 'warning');
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('خطأ في الطباعة:', error);
+                showNotification('❌ حدث خطأ في الطباعة', 'error');
+            }
+        }
+        
+        async function printMaterialExitPermit(permitId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`/api/permits/material-exit/print/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'حدث خطأ في جلب البيانات' }));
+                    showNotification('❌ ' + (errorData.message || 'حدث خطأ في الطباعة'), 'error');
+                    return;
+                }
+                
+                const htmlContent = await response.text();
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url, '_blank');
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => {
+                            printWindow.print();
+                            URL.revokeObjectURL(url);
+                        }, 500);
+                    };
+                } else {
+                    showNotification('⚠️ يرجى السماح للنوافذ المنبثقة', 'warning');
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('خطأ في الطباعة:', error);
+                showNotification('❌ حدث خطأ في الطباعة', 'error');
+            }
+        }
 
         // =============== MATERIAL EXIT PERMITS MANAGEMENT ===============
         async function loadMaterialExitPendingRequestsForManager(username) {
@@ -2005,11 +2115,138 @@
                                 onclick="viewMaterialExitPermit(${permit.permit_id})">
                             👁️ عرض التفاصيل
                         </button>
+                        ${permit.status === 'sent_to_guard' || permit.status === 'completed' || permit.status === 'pending_security' ? `
+                        <button class="action-btn btn-print" onclick="printMaterialExitPermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            🖨️ طباعة
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
         }
 
+        // =============== LOAD APPROVED MATERIAL EXIT PERMITS ===============
+        async function loadMaterialExitApprovedRequestsForManager(username) {
+            try {
+                console.log('✅ تحميل تصاريح إخراج المواد المعتمدة...');
+                const data = await fetchJson('/api/permits/material-exit/approved');
+                const container = document.getElementById('materialExitApprovedContainer');
+                
+                if (data.success) {
+                    const permits = data.permits || [];
+                    
+                    // Update stats card
+                    document.getElementById('materialExitApprovedCount').textContent = `${permits.length} تصريح`;
+                    
+                    if (permits.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">✅</div>
+                                <h3 class="empty-title">لا توجد تصاريح إخراج مواد معتمدة</h3>
+                                <p class="empty-description">سيتم عرض التصاريح المعتمدة هنا</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="permits-grid">
+                            ${permits.map(permit => createApprovedMaterialExitCard(permit)).join('')}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="alert alert-error">
+                            <span>❌</span>
+                            <span>${data.message || 'حدث خطأ في تحميل البيانات'}</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل تصاريح إخراج المواد المعتمدة:', error);
+                document.getElementById('materialExitApprovedContainer').innerHTML = `
+                    <div class="alert alert-error">
+                        <span>❌</span>
+                        <span>حدث خطأ في تحميل التصاريح المعتمدة: ${error.message}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function createApprovedMaterialExitCard(permit) {
+            const permitDate = permit.permit_date || permit.created_at || new Date().toISOString();
+            const statusColor = permit.status === 'completed' ? '#d4edda' : 
+                               permit.status === 'pending_security' ? '#fff3cd' : 
+                               permit.status === 'rejected_security' ? '#f8d7da' : '#d4edda';
+            const statusText = permit.status === 'completed' ? '✅ مكتمل' : 
+                             permit.status === 'pending_security' ? '⏳ بانتظار الأمن' : 
+                             permit.status === 'rejected_security' ? '❌ مرفوض من الأمن' : 
+                             '✅ معتمد من المدير';
+            
+            return `
+                <div class="permit-card material-exit approved">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">
+                                📦 تصريح إخراج مواد #${permit.permit_id}
+                            </div>
+                            <div class="permit-date">
+                                ${new Date(permitDate).toLocaleDateString('ar-SA')}
+                            </div>
+                        </div>
+                        <span class="permit-status" style="background: ${statusColor}; color: #155724; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            ${statusText}
+                        </span>
+                    </div>
+                    
+                    <div class="employee-info">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">📦</div>
+                        <div class="employee-details">
+                            <h3>${permit.employee_name || permit.username || 'غير معروف'}</h3>
+                            <p>الرقم الوظيفي: ${permit.job_number || 'غير محدد'}</p>
+                            <p>الإدارة: ${permit.directorate || 'غير محدد'}</p>
+                            <p>القسم: ${permit.department || 'غير محدد'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">نوع المادة/الجهاز:</span>
+                            <span class="detail-value">${permit.material_type || 'غير محدد'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">سبب الإخراج:</span>
+                            <span class="detail-value">${permit.exit_reason || 'غير محدد'}</span>
+                        </div>
+                        ${permit.manager_notes ? `
+                        <div class="detail-item">
+                            <span class="detail-label">ملاحظات المدير:</span>
+                            <span class="detail-value">${permit.manager_notes}</span>
+                        </div>
+                        ` : ''}
+                        ${permit.approved_by_manager_at ? `
+                        <div class="detail-item">
+                            <span class="detail-label">تاريخ الموافقة:</span>
+                            <span class="detail-value">${new Date(permit.approved_by_manager_at).toLocaleDateString('ar-SA')}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn btn-view" 
+                                onclick="viewMaterialExitPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                        ${permit.status === 'sent_to_guard' || permit.status === 'completed' || permit.status === 'pending_security' ? `
+                        <button class="action-btn btn-print" onclick="printMaterialExitPermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            🖨️ طباعة
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
         async function viewMaterialExitPermit(permitId) {
             try {
                 const response = await fetch(`/api/permits/material-exit/${permitId}`, {
@@ -2188,6 +2425,9 @@
                     // تحديث الصفحة مباشرة
                     if (currentTab === 'material-exit-permits') {
                         await loadMaterialExitPendingRequestsForManager(userData.username);
+                        if (decision === 'approve') {
+                            await loadMaterialExitApprovedRequestsForManager(userData.username);
+                        }
                     }
                     await loadStats(userData.username);
                 } else {
@@ -2580,6 +2820,11 @@
                         <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
                             👁️ تفاصيل
                         </button>
+                        ${permit.status === 'approved_security' ? `
+                        <button class="action-btn btn-print" onclick="printOvertimePermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            🖨️ طباعة
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2587,7 +2832,7 @@
         
         function getPermitType(type) {
             const types = {
-                'exit': { name: 'خروج من العمل', icon: '🚪' },
+                'exit': { name: 'الدوام بعد ساعات العمل', icon: '⏰' },
                 'entry': { name: 'دخول إلى الشركة', icon: '🏢' },
                 'visit': { name: 'زيارة', icon: '👥' },
                 'delivery': { name: 'توصيل', icon: '📦' }
@@ -2648,10 +2893,31 @@
                             <p>${permit.department_name || ''}</p>
                         </div>
                     </div>
+                    ${(permit.manager_notes || permit.security_notes) ? `
+                    <div class="permit-details" style="margin-top: 8px;">
+                        ${permit.manager_notes ? `
+                        <div class="detail-item" style="background: #e8f4ff; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; border-right: 4px solid #3498db;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات المدير:</span>
+                            <span class="detail-value" style="display: block; margin-top: 4px;">${permit.manager_notes}</span>
+                        </div>
+                        ` : ''}
+                        ${permit.security_notes ? `
+                        <div class="detail-item" style="background: #fff8e6; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #f39c12;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات مكتب الأمن:</span>
+                            <span class="detail-value" style="display: block; margin-top: 4px;">${permit.security_notes}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
                     <div class="action-buttons">
                         <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
                             👁️ عرض التفاصيل
                         </button>
+                        ${permit.status === 'approved_security' ? `
+                        <button class="action-btn btn-print" onclick="printOvertimePermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            🖨️ طباعة
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2712,19 +2978,30 @@
         
         async function viewPermit(permitId) {
             try {
-                // البحث عن التصريح في القائمة المحلية أولاً
+                // البحث عن التصريح في القوائم المحلية
                 const userData = JSON.parse(localStorage.getItem('user'));
-                const pendingData = await fetchJson(`/api/permits/pending/${userData.username}`);
-                const approvedData = await fetchJson(`/api/permits/my/${userData.username}`);
-                
                 let permit = null;
                 
-                if (pendingData.success && pendingData.permits) {
-                    permit = pendingData.permits.find(p => p.permit_id === permitId);
+                // البحث في التصاريح المعلقة
+                try {
+                    const pendingData = await fetchJson(`/api/permits/pending/${userData.username}`);
+                    if (pendingData.success && pendingData.permits) {
+                        permit = pendingData.permits.find(p => p.permit_id === permitId);
+                    }
+                } catch (e) {
+                    console.warn('خطأ في جلب التصاريح المعلقة:', e);
                 }
                 
-                if (!permit && approvedData.success && approvedData.permits) {
-                    permit = approvedData.permits.find(p => p.permit_id === permitId);
+                // البحث في التصاريح المعتمدة
+                if (!permit) {
+                    try {
+                        const approvedData = await fetchJson(`/api/permits/approved/${userData.username}`);
+                        if (approvedData.success && approvedData.permits) {
+                            permit = approvedData.permits.find(p => p.permit_id === permitId);
+                        }
+                    } catch (e) {
+                        console.warn('خطأ في جلب التصاريح المعتمدة:', e);
+                    }
                 }
                 
                 if (!permit) {
@@ -2771,6 +3048,15 @@
                             ${permit.approval_date ? `<p><strong>تاريخ الموافقة:</strong> ${new Date(permit.approval_date).toLocaleDateString('ar-SA')}</p>` : ''}
                             ${permit.rejection_reason ? `<p><strong>سبب الرفض:</strong> ${permit.rejection_reason}</p>` : ''}
                         </div>
+                        
+                        ${permit.status === 'approved_security' ? `
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button onclick="printOvertimePermit(${permitId})" 
+                                    style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                                🖨️ طباعة التصريح
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -2852,24 +3138,32 @@
                     lastUnreadNotifications = unreadCount;
                     
                     // تحديث قائمة الإشعارات
-                    updateNotificationsList(notifications);
+                    const listContainer = document.getElementById('notificationsList');
+                    const emptyContainer = document.getElementById('notificationsEmpty');
+                    updateNotificationsList(notifications, listContainer, emptyContainer);
                 }
             } catch (error) {
                 console.error('خطأ في تحميل الإشعارات:', error);
             }
         }
         
-        function updateNotificationsList(notifications, listContainer) {
-            if (!listContainer) return;
+        function updateNotificationsList(notifications, listContainer, emptyContainer) {
+            if (!listContainer) {
+                console.warn('⚠️ notificationsList element not found');
+                return;
+            }
             
             if (notifications.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="notifications-empty">
-                        <div style="font-size: 48px; margin-bottom: 15px;">🔔</div>
-                        <p>لا توجد إشعارات</p>
-                    </div>
-                `;
+                listContainer.innerHTML = '';
+                if (emptyContainer) {
+                    emptyContainer.style.display = 'block';
+                }
                 return;
+            }
+            
+            // إخفاء رسالة "لا توجد إشعارات" إذا كانت هناك إشعارات
+            if (emptyContainer) {
+                emptyContainer.style.display = 'none';
             }
             
             listContainer.innerHTML = notifications.map(notif => {
@@ -2921,8 +3215,14 @@
         function showNotifications() {
             const panel = document.getElementById('notificationsPanel');
             if (panel) {
-                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-                loadNotifications();
+                const isVisible = panel.style.display === 'block';
+                panel.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    loadNotifications();
+                    markAllNotificationsAsRead();
+                }
+            } else {
+                console.error('❌ notificationsPanel element not found');
             }
         }
         

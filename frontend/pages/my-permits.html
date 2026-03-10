@@ -1255,7 +1255,7 @@
                         <option value="personal">تصاريح شخصية</option>
                         <option value="company_entry">تصاريح شركات</option>
                         <option value="material_exit">تصاريح إخراج مواد وأجهزة</option>
-                        <option value="exit">خروج من العمل</option>
+                        <option value="exit">الدوام بعد ساعات العمل</option>
                         <option value="entry">دخول إلى الشركة</option>
                         <option value="visit">زيارة</option>
                         <option value="delivery">توصيل</option>
@@ -1472,6 +1472,7 @@
             panel.style.display = panel.style.display === 'none' ? 'block' : 'block';
             if (panel.style.display === 'block') {
                 loadNotifications();
+                markAllNotificationsAsRead();
             }
         }
 
@@ -1938,7 +1939,78 @@ async function loadPermits() {
             document.getElementById('materialPermitsCount').textContent = `${materialPermits.length} تصريح`;
         }
 
+        // دالة مساعدة للتحقق من إمكانية الطباعة
+        function canPrintPermit(permit) {
+            if (!permit || !permit.status) {
+                console.log(`[DEBUG] التصريح ${permit?.permit_id || 'غير معروف'} لا يحتوي على حالة`);
+                return false;
+            }
+            
+            // تحديد نوع التصريح
+            const permitType = permit.permit_type || (permit.permit_type === undefined ? 'personal' : null);
+            const isPersonalPermit = permitType === 'personal' || 
+                                     !permitType || 
+                                     permitType === undefined ||
+                                     permitType === null ||
+                                     permitType === '' ||
+                                     (permitType !== 'company_entry' && permitType !== 'material_exit');
+            
+            // للتصاريح الشخصية - قبول جميع الحالات المعتمدة أو المكتملة
+            if (isPersonalPermit) {
+                // التحقق من الحالات المعتمدة للتصاريح الشخصية
+                const approvedStatuses = [
+                    'approved_security',
+                    'approved',
+                    'completed',
+                    'approved_manager'
+                ];
+                
+                const isApproved = approvedStatuses.includes(permit.status) ||
+                                  (typeof permit.status === 'string' && permit.status.toLowerCase().includes('approved'));
+                
+                if (isApproved) {
+                    console.log(`[DEBUG] ✅ التصريح الشخصي ${permit.permit_id} قابل للطباعة - نوع: "${permitType}", الحالة: "${permit.status}"`);
+                    return true;
+                } else {
+                    console.log(`[DEBUG] ❌ التصريح الشخصي ${permit.permit_id} غير معتمد - الحالة: "${permit.status}"`);
+                    return false;
+                }
+            }
+            
+            // للتصاريح الأخرى (شركات أو إخراج مواد)
+            if (permitType === 'company_entry') {
+                const isApproved = permit.status === 'approved_security' || 
+                                  (typeof permit.status === 'string' && permit.status.toLowerCase().includes('approved'));
+                if (isApproved) {
+                    console.log(`[DEBUG] ✅ تصريح الشركة ${permit.permit_id} قابل للطباعة - الحالة: "${permit.status}"`);
+                    return true;
+                }
+            }
+            
+            if (permitType === 'material_exit') {
+                const isCompleted = permit.status === 'completed' || 
+                                   permit.status === 'approved_security' ||
+                                   (typeof permit.status === 'string' && permit.status.toLowerCase().includes('approved'));
+                if (isCompleted) {
+                    console.log(`[DEBUG] ✅ تصريح إخراج المواد ${permit.permit_id} قابل للطباعة - الحالة: "${permit.status}"`);
+                    return true;
+                }
+            }
+            
+            console.log(`[DEBUG] ❌ التصريح ${permit.permit_id} غير قابل للطباعة - نوع: "${permitType}", الحالة: "${permit.status}"`);
+            return false;
+        }
+        
         function createPermitCardHTML(permit) {
+    // طباعة بيانات التصريح للتحقق
+    console.log(`[DEBUG] إنشاء بطاقة تصريح #${permit.permit_id}:`, {
+        permit_id: permit.permit_id,
+        permit_type: permit.permit_type,
+        status: permit.status,
+        type: permit.type,
+        canPrint: canPrintPermit(permit)
+    });
+    
     const statusInfo = getStatusInfo(permit.status);
     const requestDate = formatDate(permit.request_date);
     
@@ -1994,12 +2066,16 @@ async function loadPermits() {
                     👁️ عرض التفاصيل
                 </button>
                 ${permit.status === 'pending_manager' && permit.permit_type !== 'material_exit' ? `
-                    <button class="action-btn btn-cancel" onclick="cancelPermit(${permit.permit_id}, '${permit.permit_type}')">
+                    <button class="action-btn btn-cancel" onclick="cancelPermit(${permit.permit_id}, '${permit.permit_type || 'personal'}')">
                         ✖️ إلغاء الطلب
                     </button>
                 ` : ''}
-                ${permit.status === 'approved_security' && permit.permit_type !== 'material_exit' ? `
-                    <button class="action-btn btn-print" onclick="printPermit(${permit.permit_id}, '${permit.permit_type}')">
+                ${(() => {
+                    const canPrint = canPrintPermit(permit);
+                    console.log(`[DEBUG] زر الطباعة للتصريح ${permit.permit_id}: ${canPrint ? 'سيظهر' : 'لن يظهر'}`);
+                    return canPrint;
+                })() ? `
+                    <button class="action-btn btn-print" onclick="printPermit(${permit.permit_id != null ? permit.permit_id : permit.id}, '${permit.permit_type || 'personal'}')" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
                         🖨️ طباعة التصريح
                     </button>
                 ` : ''}
@@ -2015,12 +2091,26 @@ async function loadPermits() {
                 let additionalInfo = {};
                 try {
                     if (permit.additional_notes) {
-                        additionalInfo = typeof permit.additional_notes === 'string' 
-                            ? JSON.parse(permit.additional_notes) 
-                            : permit.additional_notes;
+                        if (typeof permit.additional_notes === 'string') {
+                            // التحقق من أن النص يبدأ بـ { أو [ قبل محاولة تحليله كـ JSON
+                            const trimmed = permit.additional_notes.trim();
+                            if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+                                (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                                additionalInfo = JSON.parse(permit.additional_notes);
+                            } else {
+                                // إذا كان نصاً عادياً، نستخدمه كما هو
+                                additionalInfo = { additional_notes: permit.additional_notes };
+                            }
+                        } else {
+                            additionalInfo = permit.additional_notes;
+                        }
                     }
                 } catch (e) {
                     console.warn('خطأ في تحليل البيانات الإضافية:', e);
+                    // في حالة الخطأ، نستخدم النص الأصلي
+                    if (permit.additional_notes && typeof permit.additional_notes === 'string') {
+                        additionalInfo = { additional_notes: permit.additional_notes };
+                    }
                 }
                 
                 return `
@@ -2305,7 +2395,7 @@ async function loadPermits() {
             if (permit.security_notes) {
                 notesHTML += `
                     <div class="permit-notes" style="background: #f0f7ff; border-right-color: #2ecc71;">
-                        <div class="detail-label">ملاحظات الأمن</div>
+                        <div class="detail-label">ملاحظات مكتب الأمن</div>
                         <div class="detail-value">${permit.security_notes}</div>
                     </div>
                 `;
@@ -2374,7 +2464,7 @@ async function loadPermits() {
 
         function getPermitType(type) {
             const types = {
-                'exit': { name: 'خروج من العمل', icon: '🚪' },
+                'exit': { name: 'الدوام بعد ساعات العمل', icon: '⏰' },
                 'entry': { name: 'دخول إلى الشركة', icon: '🏢' },
                 'visit': { name: 'زيارة', icon: '👥' },
                 'delivery': { name: 'توصيل', icon: '📦' }
@@ -2480,12 +2570,68 @@ async function loadPermits() {
             }
         }
 
-        function printPermit(permitId, permitType = 'personal') {
-            const endpoint = permitType === 'company_entry'
-                ? `/api/permits/company-entry/print/${permitId}`
-                : `/api/permits/print/${permitId}`;
-            
-            window.open(endpoint, '_blank');
+        async function printPermit(permitId, permitType = 'personal') {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('❌ يرجى تسجيل الدخول أولاً');
+                    return;
+                }
+                const id = permitId != null && permitId !== '' ? permitId : null;
+                if (id == null || id === 'undefined') {
+                    showError('❌ رقم التصريح غير صالح');
+                    return;
+                }
+                
+                let endpoint;
+                if (permitType === 'company_entry') {
+                    endpoint = `/api/permits/company-entry/print/${id}`;
+                } else if (permitType === 'material_exit') {
+                    endpoint = `/api/permits/material-exit/print/${id}`;
+                } else {
+                    endpoint = `/api/permits/print/${id}`;
+                }
+                
+                // فتح نافذة جديدة للطباعة مع إضافة التوكن في header
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    showError('❌ يرجى السماح بالنوافذ المنبثقة للطباعة');
+                    return;
+                }
+                
+                // جلب محتوى الطباعة
+                const response = await fetch(endpoint, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    let msg = 'حدث خطأ في الطباعة';
+                    try {
+                        const data = JSON.parse(text);
+                        if (data && data.message) msg = data.message;
+                    } catch (_) {}
+                    showError('❌ ' + msg);
+                    printWindow.close();
+                    return;
+                }
+                
+                const htmlContent = await response.text();
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                
+                // انتظار تحميل المحتوى ثم فتح نافذة الطباعة
+                printWindow.onload = function() {
+                    setTimeout(() => {
+                        printWindow.print();
+                    }, 500);
+                };
+            } catch (error) {
+                console.error('خطأ في الطباعة:', error);
+                showError('❌ حدث خطأ في الطباعة');
+            }
         }
 
         function viewPermitDetails(permitId, permitType = 'personal') {
@@ -2572,12 +2718,26 @@ function renderCompanyEntryExtraDetails(permit) {
     let additionalInfo = {};
     try {
         if (permit.additional_notes) {
-            additionalInfo = typeof permit.additional_notes === 'string' 
-                ? JSON.parse(permit.additional_notes) 
-                : permit.additional_notes;
+            if (typeof permit.additional_notes === 'string') {
+                // التحقق من أن النص يبدأ بـ { أو [ قبل محاولة تحليله كـ JSON
+                const trimmed = permit.additional_notes.trim();
+                if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+                    (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                    additionalInfo = JSON.parse(permit.additional_notes);
+                } else {
+                    // إذا كان نصاً عادياً، نستخدمه كما هو
+                    additionalInfo = { additional_notes: permit.additional_notes };
+                }
+            } else {
+                additionalInfo = permit.additional_notes;
+            }
         }
     } catch (e) {
         console.warn('خطأ في تحليل البيانات الإضافية:', e);
+        // في حالة الخطأ، نستخدم النص الأصلي
+        if (permit.additional_notes && typeof permit.additional_notes === 'string') {
+            additionalInfo = { additional_notes: permit.additional_notes };
+        }
     }
     
     const requestingDepartment = additionalInfo.requesting_department || {};

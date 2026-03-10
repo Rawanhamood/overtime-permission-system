@@ -161,6 +161,7 @@ async function initializeDatabase() {
             worker_phone TEXT,
             id_card_file_name TEXT,
             added_by TEXT,
+            company_name TEXT,
             is_original INTEGER DEFAULT 0,
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (permit_id) REFERENCES company_entry_permits(permit_id)

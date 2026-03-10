@@ -969,16 +969,6 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="additionalNotes" class="form-label">
-                        <span>📋</span>
-                        ملاحظات إضافية (اختياري)
-                    </label>
-                    <textarea id="additionalNotes" 
-                              placeholder="أي معلومات إضافية ترغب في إضافتها...
-مثال: سيتم حضور اجتماع مع قسم آخر، وجود أعمال طارئة..."></textarea>
-                </div>
-                
                 <!-- Submit Button -->
                 <div class="form-actions">
                     <button type="submit" class="submit-btn" id="submitBtn">
@@ -1110,6 +1100,7 @@
             panel.style.display = panel.style.display === 'none' ? 'block' : 'block';
             if (panel.style.display === 'block') {
                 loadNotifications();
+                markAllNotificationsAsRead();
             }
         }
 
@@ -1457,7 +1448,7 @@
                 start_date: document.getElementById('startDate').value,
                 end_date: document.getElementById('endDate').value,
                 expected_exit_time: `${document.getElementById('expectedExitFrom').value} - ${document.getElementById('expectedExitTo').value}`,
-                additional_notes: document.getElementById('additionalNotes').value.trim() || ''
+                additional_notes: ''
             };
             
             // Validate form data
@@ -1528,7 +1519,6 @@
 
         function resetForm() {
             document.getElementById('reason').value = '';
-            document.getElementById('additionalNotes').value = '';
             document.getElementById('expectedExitFrom').value = '17:00';
             document.getElementById('expectedExitTo').value = '19:00';
             

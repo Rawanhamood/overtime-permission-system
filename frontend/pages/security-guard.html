@@ -2175,6 +2175,15 @@ function displayCompanyPermits(permits) {
         const workers = permit.workers || [];
         const isCheckedIn = permit.actual_entry_time && permit.actual_entry_time !== '';
         
+        // استخراج الدائرة الطالبة للتصريح (للعرض في الجدول)
+        let requestingDeptText = '';
+        try {
+            if (permit.requesting_department) {
+                const rd = typeof permit.requesting_department === 'string' ? JSON.parse(permit.requesting_department) : permit.requesting_department;
+                if (rd && (rd.directorate || rd.department)) requestingDeptText = [rd.directorate, rd.department].filter(Boolean).join(' / ');
+            }
+        } catch (e) {}
+        
         // ✅ تحليل additional_notes إذا كان JSON
         let additionalNotesHtml = '';
         if (permit.additional_notes) {
@@ -2185,6 +2194,10 @@ function displayCompanyPermits(permits) {
                 const parsedNotes = JSON.parse(notesStr);
                 
                 if (typeof parsedNotes === 'object' && parsedNotes !== null) {
+                    if (parsedNotes.requesting_department && !requestingDeptText) {
+                        const d = typeof parsedNotes.requesting_department === 'string' ? JSON.parse(parsedNotes.requesting_department) : parsedNotes.requesting_department;
+                        if (d && (d.directorate || d.department)) requestingDeptText = [d.directorate, d.department].filter(Boolean).join(' / ');
+                    }
                     // عرض البيانات المنظمة
                     if (parsedNotes.requesting_department) {
                         const dept = typeof parsedNotes.requesting_department === 'string' 
@@ -2265,13 +2278,25 @@ function displayCompanyPermits(permits) {
                                 <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; line-height: 1.6; max-width: 100%; white-space: normal;">${permit.entry_purpose || ''}</span>
                             </div>
                             <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">الدائرة الطالبة للتصريح:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${requestingDeptText || (permit.directorate || permit.department ? [permit.directorate, permit.department].filter(Boolean).join(' / ') : 'غير محدد')}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
                                 <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">عدد الزوار:</span>
                                 <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.number_of_visitors || workers.length || 0}</span>
                             </div>
                         </div>
                         
-                        <!-- العمود الثاني -->
+                        <!-- العمود الثاني: التاريخ والوقت والموظف الطالب -->
                         <div style="display: flex; flex-direction: column; gap: 0;">
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">التاريخ:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_entry_date || ''} إلى ${permit.expected_exit_date || ''}</span>
+                            </div>
+                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">الوقت:</span>
+                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_entry_time || ''} - ${permit.expected_exit_time || ''}</span>
+                            </div>
                             <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
                                 <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">تاريخ الدخول:</span>
                                 <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_entry_date || ''}</span>
@@ -2279,14 +2304,6 @@ function displayCompanyPermits(permits) {
                             <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
                                 <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">وقت الدخول:</span>
                                 <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_entry_time || ''}</span>
-                            </div>
-                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
-                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">تاريخ الخروج:</span>
-                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_exit_date || ''}</span>
-                            </div>
-                            <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
-                                <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">وقت الخروج المتوقع:</span>
-                                <span class="detail-value" style="font-size: 15px; color: #2c3e50; font-weight: 500; display: block; word-wrap: break-word; line-height: 1.5;">${permit.expected_exit_time || ''}</span>
                             </div>
                             <div class="detail-item" style="margin-bottom: 0; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
                                 <span class="detail-label" style="font-size: 15px; color: #3498db; font-weight: 600; display: block; margin-bottom: 8px;">الموظف الطالب:</span>
@@ -2380,14 +2397,15 @@ function displayCompanyPermits(permits) {
                                                     </button>
                                                     ${worker.is_original ? `
                                                         <span style="color: #27ae60; font-size: 12px; font-weight: 600; padding: 6px 10px; background: #d4edda; border-radius: 4px;">✅ أصلي</span>
-                                                    ` : ''}
+                                                    ` : `
                                                     <button onclick="deleteWorker(${permit.permit_id}, ${parseInt(worker.worker_id) || worker.worker_id})" 
                                                             style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);"
                                                             onmouseover="this.style.transform='scale(1.05)'" 
                                                             onmouseout="this.style.transform='scale(1)'"
-                                                            title="حذف العامل">
+                                                            title="حذف العامل (العمّال المضافون من الحارس فقط)">
                                                         🗑️ حذف
                                                     </button>
+                                                    `}
                                                 </div>
                                             </td>
                                         ` : worker.is_original ? '<td style="padding: 14px; text-align: center; color: #27ae60; font-size: 14px; font-weight: 600;">✅ أصلي</td>' : '<td style="padding: 14px; text-align: center; color: #95a5a6; font-size: 14px;">-</td>'}
@@ -2457,10 +2475,10 @@ function openAddWorkerModal(permitId) {
             </div>
             <div style="margin-bottom: 22px;">
                 <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية الشخصية</label>
-                <input type="file" id="workerIdCard" accept="image/*,.pdf" 
+                <input type="file" id="workerIdCard" accept="image/*,.pdf,application/pdf" 
                        style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
                 <small style="display: block; color: #666; font-size: 12px; margin-top: 6px;">
-                    صورة أو PDF لبطاقة الهوية
+                    تصوير (صورة) أو إرفاق ملف PDF
                 </small>
             </div>
         </div>
@@ -2637,10 +2655,10 @@ async function openEditWorkerModal(permitId, workerId) {
                             ⚠️ لا توجد بطاقة هوية مرفوعة
                         </div>
                     `}
-                    <input type="file" id="editWorkerIdCard" accept="image/*,.pdf" 
+                    <input type="file" id="editWorkerIdCard" accept="image/*,.pdf,application/pdf" 
                            style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; cursor: pointer;">
                     <small style="display: block; color: #666; font-size: 13px; margin-top: 6px; line-height: 1.5;">
-                        ${worker.id_card_file_name ? 'اختر ملف جديد لاستبدال الملف الحالي' : 'صورة أو PDF لبطاقة الهوية'}
+                        ${worker.id_card_file_name ? 'اختر ملف جديد لاستبدال الملف الحالي (تصوير أو PDF)' : 'تصوير (صورة) أو إرفاق ملف PDF'}
                     </small>
                 </div>
             </div>
@@ -2912,6 +2930,91 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 300);
                 }
             }, 5000);
+        }
+        
+        // ========== PRINT FUNCTIONS ==========
+        async function printCompanyPermit(permitId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`/api/permits/company-entry/print/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'حدث خطأ في جلب البيانات' }));
+                    showNotification('❌ ' + (errorData.message || 'حدث خطأ في الطباعة'), 'error');
+                    return;
+                }
+                
+                const htmlContent = await response.text();
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url, '_blank');
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => {
+                            printWindow.print();
+                            URL.revokeObjectURL(url);
+                        }, 500);
+                    };
+                } else {
+                    showNotification('⚠️ يرجى السماح للنوافذ المنبثقة', 'warning');
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('خطأ في الطباعة:', error);
+                showNotification('❌ حدث خطأ في الطباعة', 'error');
+            }
+        }
+        
+        async function printMaterialExitPermit(permitId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول أولاً', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`/api/permits/material-exit/print/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'حدث خطأ في جلب البيانات' }));
+                    showNotification('❌ ' + (errorData.message || 'حدث خطأ في الطباعة'), 'error');
+                    return;
+                }
+                
+                const htmlContent = await response.text();
+                const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url, '_blank');
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => {
+                            printWindow.print();
+                            URL.revokeObjectURL(url);
+                        }, 500);
+                    };
+                } else {
+                    showNotification('⚠️ يرجى السماح للنوافذ المنبثقة', 'warning');
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('خطأ في الطباعة:', error);
+                showNotification('❌ حدث خطأ في الطباعة', 'error');
+            }
         }
     </script>
 </body>
