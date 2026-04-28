@@ -19,18 +19,34 @@
             min-height: 100vh;
         }
         
-        /* ========== NAVBAR STYLES ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 26px rgba(70, 113, 145, 0.38), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -39,18 +55,37 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         
         .logo-icon {
-            background: #fff;
-            color: #3498db;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            background: radial-gradient(
+                ellipse 100% 95% at 50% 42%,
+                #ffffff 0%,
+                rgba(255, 255, 255, 0.94) 28%,
+                rgba(255, 255, 255, 0.65) 58%,
+                rgba(255, 255, 255, 0.22) 82%,
+                transparent 100%
+            );
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        
+        .logo-icon img {
+            height: 60px;
+            width: auto;
+            max-width: min(220px, 40vw);
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 1;
         }
         
         .nav-links {
@@ -60,7 +95,7 @@
         }
         
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -72,23 +107,25 @@
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.16);
             transform: translateY(-2px);
         }
         
         .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             padding: 8px 20px;
             border-radius: 25px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
         }
         
         .user-details {
@@ -98,23 +135,25 @@
         .user-name {
             font-weight: 600;
             font-size: 16px;
+            color: #fff;
         }
         
         .user-role {
             font-size: 13px;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.88);
         }
         
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e4a6b;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         /* ========== NOTIFICATION SYSTEM ========== */
@@ -123,9 +162,9 @@
         }
         
         .notification-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -136,7 +175,7 @@
         }
         
         .notification-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
         
@@ -154,7 +193,7 @@
             justify-content: center;
             font-size: 11px;
             font-weight: bold;
-            border: 2px solid #2c3e50;
+            border: 2px solid #467191;
         }
         
         .notifications-panel {
@@ -184,7 +223,7 @@
         }
         
         .notifications-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
             padding: 20px;
             display: flex;
@@ -786,7 +825,9 @@
     <!-- ========== NAVBAR ========== -->
     <nav class="navbar">
         <div class="logo">
-            <div class="logo-icon">🚀</div>
+            <div class="logo-icon">
+                <img src="/assets/images/login-logo.png?v=5" alt="شعار محافظة الداخلية" decoding="async">
+            </div>
             <span>نظام تصاريح العمل</span>
         </div>
         
@@ -848,6 +889,14 @@
     <script>
         // =============== SYSTEM INITIALIZATION ===============
         document.addEventListener('DOMContentLoaded', function() {
+            // تفعيل Web Audio بعد تفاعل المستخدم (سياسة المتصفح — يمنع تحذير AudioContext)
+            ['pointerdown', 'keydown'].forEach(function (ev) {
+                document.addEventListener(ev, prepareNotificationAudioFromUserGesture, {
+                    capture: true,
+                    passive: true
+                });
+            });
+
             // Initialize the dashboard
             initDashboard();
             
@@ -883,27 +932,59 @@
         // =============== NOTIFICATIONS SYSTEM ===============
         let notificationCheckInterval;
         let lastUnreadNotifications = 0;
+        let notificationAudioCtx = null;
+        let notificationAudioOk = false;
+
+        /** يُستدعى مرة بعد أول نقرة/ضغطة مفتاح حتى يُسمح بتشغيل الصوت (بدون تحذير المتصفح) */
+        function prepareNotificationAudioFromUserGesture() {
+            if (notificationAudioOk) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new AC();
+                }
+                const ctx = notificationAudioCtx;
+                const markOk = function () {
+                    if (ctx.state === 'running') {
+                        notificationAudioOk = true;
+                    }
+                };
+                if (ctx.state === 'running') {
+                    notificationAudioOk = true;
+                    return;
+                }
+                const p = ctx.resume();
+                if (p && typeof p.then === 'function') {
+                    p.then(markOk).catch(function () {});
+                } else {
+                    markOk();
+                }
+            } catch (e) {
+                /* تجاهل — الصوت اختياري */
+            }
+        }
 
         function playNotificationSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                
-                const ctx = new AudioContext();
+                if (!notificationAudioOk || !notificationAudioCtx || notificationAudioCtx.state !== 'running') {
+                    return;
+                }
+                const ctx = notificationAudioCtx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.type = 'sine';
                 osc.frequency.value = 880;
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 const now = ctx.currentTime;
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                
+
                 osc.start(now);
                 osc.stop(now + 0.5);
             } catch (e) {
@@ -1138,13 +1219,13 @@
             // رابط نقطة الحراسة للحارس
             if (role === 'guard' || role === 'security_guard') {
                 linksHTML += '<a href="/pages/security-guard.html" class="nav-link">👮 نقطة الحراسة</a>';
-            } else if (role !== 'manager' && role !== 'guard' && role !== 'security_guard' && role !== 'security') {
+            } else if (role !== 'manager' && role !== 'deputy_manager' && role !== 'guard' && role !== 'security_guard' && role !== 'security') {
                 // رابط تصاريحي للجميع ما عدا الحارس والمدير ومسؤول الأمن
                 linksHTML += '<a href="/pages/my-permits.html" class="nav-link">📋 تصاريحي</a>';
             }
             
             // روابط خاصة بالمديرين
-            if (role === 'manager' || role === 'admin') {
+            if (role === 'manager' || role === 'deputy_manager' || role === 'admin') {
                 linksHTML += '<a href="/pages/manager-dashboard.html" class="nav-link">📊 لوحة المدير</a>';
             }
             
@@ -1225,7 +1306,7 @@
                             ${greeting}، ${userData.name || userData.username}! 👋
                         </h1>
                         <p class="welcome-subtitle">
-                            مساء الخير، employees! أنت الآن في لوحة التحكم الرئيسية لنظام التصاريح.<br>
+                           أنت الآن في لوحة التحكم الرئيسية لنظام التصاريح.<br>
                             يمكنك من هنا الوصول إلى جميع الخدمات المتاحة حسب صلاحياتك.
                         </p>
                     </div>
@@ -1324,7 +1405,7 @@
                 );
             }
             
-            if (role === 'manager') {
+            if (role === 'manager' || role === 'deputy_manager') {
                 cardsHTML += createCard(
                     '👨‍💼 لوحة المدير',
                     'الموافقة على طلبات الموظفين وإدارة تصاريح فريقك.',
@@ -1409,6 +1490,7 @@
                 'admin': 'مسؤول النظام',
                 'employee': 'موظف',
                 'manager': 'مدير',
+                'deputy_manager': 'نائب المدير',
                 'security': 'مسؤول أمن'
             };
             return roles[role] || role;

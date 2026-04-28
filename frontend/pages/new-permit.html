@@ -19,18 +19,34 @@
             min-height: 100vh;
         }
         
-        /* ========== NAVBAR STYLES ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 26px rgba(70, 113, 145, 0.38), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -39,18 +55,37 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         
         .logo-icon {
-            background: #fff;
-            color: #3498db;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            background: radial-gradient(
+                ellipse 100% 95% at 50% 42%,
+                #ffffff 0%,
+                rgba(255, 255, 255, 0.94) 28%,
+                rgba(255, 255, 255, 0.65) 58%,
+                rgba(255, 255, 255, 0.22) 82%,
+                transparent 100%
+            );
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        
+        .logo-icon img {
+            height: 60px;
+            width: auto;
+            max-width: min(220px, 40vw);
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 1;
         }
         
         .nav-links {
@@ -60,7 +95,7 @@
         }
         
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -72,23 +107,25 @@
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.16);
             transform: translateY(-2px);
         }
         
         .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             padding: 8px 20px;
             border-radius: 25px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
         }
         
         .user-details {
@@ -98,23 +135,25 @@
         .user-name {
             font-weight: 600;
             font-size: 16px;
+            color: #fff;
         }
         
         .user-role {
             font-size: 13px;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.88);
         }
         
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e4a6b;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         /* ========== NOTIFICATION SYSTEM ========== */
@@ -123,9 +162,9 @@
         }
         
         .notification-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -136,7 +175,7 @@
         }
         
         .notification-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
         
@@ -154,7 +193,7 @@
             justify-content: center;
             font-size: 11px;
             font-weight: bold;
-            border: 2px solid #2c3e50;
+            border: 2px solid #467191;
         }
         
         .notifications-panel {
@@ -184,7 +223,7 @@
         }
         
         .notifications-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
             padding: 20px;
             display: flex;
@@ -831,13 +870,7 @@
         <div class="form-card">
             <!-- Form Header -->
             <div class="form-header">
-                <h1>
-                    ➕ تقديم طلب تصريح جديد
-                    <div class="form-header-subtitle">
-                        لاستمرار ودخول الموظفين في مبنى محافظة الداخلية<br>
-                        بعد ساعات الدوام الرسمي
-                    </div>
-                </h1>
+                <h1>➕ تقديم طلب تصريح جديد</h1>
             </div>
 
             <!-- User Information Box -->
@@ -876,45 +909,6 @@
 
             <!-- Form Content -->
             <form id="permitForm">
-                <!-- معلومات الموظف (للقراءة فقط) -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>👤</span>
-                            اسم الموظف
-                        </label>
-                        <input type="text" id="employeeName" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>🔢</span>
-                            الرقم الوظيفي
-                        </label>
-                        <input type="text" id="jobNumber" readonly>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>🏢</span>
-                            المديرية\الدائرة
-                        </label>
-                        <input type="text" id="directorate" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>📍</span>
-                            القسم
-                        </label>
-                        <input type="text" id="department" readonly>
-                    </div>
-                </div>
-                
-                <div class="form-divider"></div>
-                
                 <!-- معلومات التصريح -->
                 <div class="form-group">
                     <label for="reason" class="form-label required">
@@ -1005,6 +999,13 @@
     <script>
         // =============== SYSTEM INITIALIZATION ===============
         document.addEventListener('DOMContentLoaded', function() {
+            ['pointerdown', 'keydown'].forEach(function (ev) {
+                document.addEventListener(ev, prepareNotificationAudioFromUserGesture, {
+                    capture: true,
+                    passive: true
+                });
+            });
+
             // Initialize the page
             initPermitPage();
             
@@ -1067,27 +1068,58 @@
         // =============== NOTIFICATIONS SYSTEM ===============
         let notificationCheckInterval;
         let lastUnreadNotifications = 0;
+        let notificationAudioCtx = null;
+        let notificationAudioOk = false;
+
+        function prepareNotificationAudioFromUserGesture() {
+            if (notificationAudioOk) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new AC();
+                }
+                const ctx = notificationAudioCtx;
+                const markOk = function () {
+                    if (ctx.state === 'running') {
+                        notificationAudioOk = true;
+                    }
+                };
+                if (ctx.state === 'running') {
+                    notificationAudioOk = true;
+                    return;
+                }
+                const p = ctx.resume();
+                if (p && typeof p.then === 'function') {
+                    p.then(markOk).catch(function () {});
+                } else {
+                    markOk();
+                }
+            } catch (e) {
+                /* صوت اختياري */
+            }
+        }
 
         function playNotificationSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                
-                const ctx = new AudioContext();
+                if (!notificationAudioOk || !notificationAudioCtx || notificationAudioCtx.state !== 'running') {
+                    return;
+                }
+                const ctx = notificationAudioCtx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.type = 'sine';
                 osc.frequency.value = 880;
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 const now = ctx.currentTime;
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                
+
                 osc.start(now);
                 osc.stop(now + 0.5);
             } catch (e) {
@@ -1275,9 +1307,8 @@
         }
 
         // =============== PAGE INITIALIZATION ===============
-        function initPermitPage() {
-            // Load user data from localStorage
-            const userData = JSON.parse(localStorage.getItem('user'));
+        async function initPermitPage() {
+            let userData = JSON.parse(localStorage.getItem('user'));
             const token = localStorage.getItem('token');
             
             if (!userData || !token) {
@@ -1285,16 +1316,38 @@
                 return;
             }
             
-            // Update user info in navbar
+            // تحديث بيانات الموظف من الخادم (الرقم الوظيفي والمديرية من قاعدة البيانات)
+            try {
+                const headers = getAuthHeaders();
+                if (headers) {
+                    const res = await fetch('/api/user/profile', { headers });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.user) {
+                            const u = data.user;
+                            userData = {
+                                ...userData,
+                                name: u.name || u.full_name || userData.name,
+                                role: u.role || userData.role,
+                                job_number: (u.job_number != null && String(u.job_number).trim() !== '') ? u.job_number : userData.job_number,
+                                directorate: (u.directorate != null && String(u.directorate).trim() !== '') ? u.directorate : userData.directorate,
+                                department_id: u.department_id != null ? u.department_id : userData.department_id,
+                                department: u.department || userData.department || '',
+                                email: u.email || userData.email,
+                                phone: u.phone || userData.phone,
+                                employee_id: u.employee_id || userData.employee_id
+                            };
+                            localStorage.setItem('user', JSON.stringify(userData));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('تعذر تحديث بيانات الملف الشخصي:', e);
+            }
+            
             updateUserInfo(userData);
-            
-            // Fill user details
             fillUserDetails(userData);
-            
-            // Set up form
             setupForm(userData);
-            
-            // Check user role and permissions
             checkUserRole(userData);
         }
 
@@ -1311,17 +1364,12 @@
         }
 
         function fillUserDetails(userData) {
-            // Update display boxes
+            const jn = userData.job_number;
+            const jobText = (jn != null && String(jn).trim() !== '') ? String(jn).trim() : 'غير محدد';
             document.getElementById('employeeNameDisplay').textContent = userData.name || userData.username;
-            document.getElementById('jobNumberDisplay').textContent = userData.job_number || 'غير محدد';
+            document.getElementById('jobNumberDisplay').textContent = jobText;
             document.getElementById('directorateDisplay').textContent = userData.directorate || 'غير محدد';
             document.getElementById('roleDisplay').textContent = getRoleName(userData.role);
-            
-            // Fill read-only fields
-            document.getElementById('employeeName').value = userData.name || userData.username;
-            document.getElementById('jobNumber').value = userData.job_number || '';
-            document.getElementById('directorate').value = userData.directorate || '';
-            document.getElementById('department').value = userData.department || 'غير محدد';
         }
 
         function setupForm(userData) {

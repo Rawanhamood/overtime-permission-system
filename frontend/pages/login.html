@@ -14,12 +14,34 @@
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            isolation: isolate;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: url('/assets/images/login-bg.png') center top / cover no-repeat;
+            opacity: 0.42;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(
+                135deg,
+                rgba(102, 126, 234, 0.72) 0%,
+                rgba(118, 75, 162, 0.68) 100%
+            );
         }
         
         /* ========== LOGIN CONTAINER ========== */
@@ -31,6 +53,7 @@
             max-width: 480px;
             overflow: hidden;
             position: relative;
+            z-index: 1;
             animation: fadeIn 0.5s ease;
         }
         
@@ -47,10 +70,10 @@
         
         /* ========== LOGIN HEADER ========== */
         .login-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(165deg, #f4f8fc 0%, #e8f1f9 45%, #dceaf5 100%);
             padding: 50px 40px;
             text-align: center;
-            color: white;
+            color: #15324a;
             position: relative;
             overflow: hidden;
         }
@@ -62,42 +85,56 @@
             right: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            z-index: 0;
+            background: radial-gradient(circle, rgba(21, 50, 74, 0.06) 1px, transparent 1px);
             background-size: 20px 20px;
-            opacity: 0.3;
+            opacity: 0.55;
         }
         
         .logo {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 16px;
+            margin-bottom: 0;
+            position: relative;
+            z-index: 1;
         }
         
         .logo-icon {
-            width: 50px;
-            height: 50px;
-            background: white;
-            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            color: #3498db;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 0 10px;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: auto;
+            max-height: 100px;
+            object-fit: contain;
+            object-position: center;
+            display: block;
         }
         
         .login-header h1 {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin: 0;
+            line-height: 1.25;
+            color: #0f2840;
         }
         
-        .login-header p {
-            opacity: 0.9;
-            font-size: 16px;
-            font-weight: 400;
+        .login-header .login-subtitle {
+            margin: 0;
+            opacity: 0.88;
+            font-size: 17px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: #1e4a6b;
         }
         
         /* ========== LOGIN FORM ========== */
@@ -311,24 +348,62 @@
             font-weight: 500;
         }
         
-        /* ========== LOGIN FOOTER ========== */
+        /* ========== LOGIN FOOTER (نفس تدرج الهيدر العلوي للنظام) ========== */
         .login-footer {
             text-align: center;
-            padding: 25px;
-            color: #7f8c8d;
-            border-top: 1px solid #eee;
+            padding: 28px 22px;
             font-size: 14px;
-            background: #f8f9fa;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            border-radius: 0 0 24px 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-footer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.4;
+        }
+        
+        .login-footer > * {
+            position: relative;
+            z-index: 1;
         }
         
         .footer-text {
-            margin-bottom: 5px;
+            margin: 0 0 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        }
+        
+        .login-footer .footer-tagline {
+            margin: 0 0 10px;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.55;
+            max-width: 520px;
+            margin-inline: auto;
+        }
+        
+        .login-footer .footer-version {
+            margin: 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.78);
         }
         
         /* ========== RESPONSIVE DESIGN ========== */
         @media (max-width: 768px) {
             .login-container {
                 border-radius: 20px;
+            }
+            
+            .login-footer {
+                border-radius: 0 0 20px 20px;
             }
             
             .login-header {
@@ -342,6 +417,10 @@
             .login-header h1 {
                 font-size: 28px;
             }
+            
+            .logo-icon img {
+                max-height: 86px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -353,6 +432,10 @@
                 border-radius: 18px;
             }
             
+            .login-footer {
+                border-radius: 0 0 18px 18px;
+            }
+            
             .login-header {
                 padding: 35px 25px;
             }
@@ -361,14 +444,20 @@
                 padding: 35px 25px;
             }
             
-            .logo-icon {
-                width: 45px;
-                height: 45px;
-                font-size: 22px;
-            }
-            
             .login-header h1 {
                 font-size: 24px;
+            }
+            
+            .login-header .login-subtitle {
+                font-size: 15px;
+            }
+            
+            .logo-icon {
+                padding: 0 6px;
+            }
+            
+            .logo-icon img {
+                max-height: 74px;
             }
             
             .demo-accounts {
@@ -430,10 +519,12 @@
         <!-- ========== LOGIN HEADER ========== -->
         <div class="login-header">
             <div class="logo">
-                <div class="logo-icon">🚀</div>
+                <div class="logo-icon">
+                    <img src="/assets/images/login-logo.png?v=5" alt="شعار محافظة الداخلية" decoding="async">
+                </div>
                 <h1>نظام تصاريح العمل</h1>
+                <p class="login-subtitle">مكتب محافظة الداخلية</p>
             </div>
-            <p>تسجيل الدخول إلى حسابك</p>
         </div>
 
         <!-- ========== LOGIN FORM ========== -->
@@ -478,17 +569,30 @@
                     <span class="demo-credentials">manager1 / admin123</span>
                 </div>
                 
+                <div class="demo-item" data-username="deputy_manager1" data-password="admin123">
+                    <span class="demo-role">نائب المدير (نيابة عن manager1)</span>
+                    <span class="demo-credentials">deputy_manager1 / admin123</span>
+                </div>
+                
                 <div class="demo-item" data-username="employee1" data-password="admin123">
                     <span class="demo-role">موظف</span>
                     <span class="demo-credentials">employee1 / admin123</span>
                 </div>
                 
                 <div class="demo-item" data-username="security1" data-password="admin123">
-                    <span class="demo-role">أمن</span>
+                    <span class="demo-role">مكتب الأمن ١ — خالد أمين</span>
                     <span class="demo-credentials">security1 / admin123</span>
                 </div>
+                <div class="demo-item" data-username="security_office_2" data-password="admin123">
+                    <span class="demo-role">مكتب الأمن ٢ — سعد الرواحي</span>
+                    <span class="demo-credentials">security_office_2 / admin123</span>
+                </div>
+                <div class="demo-item" data-username="security_office_3" data-password="admin123">
+                    <span class="demo-role">مكتب الأمن ٣ — فهد الريامي</span>
+                    <span class="demo-credentials">security_office_3 / admin123</span>
+                </div>
                 <div class="demo-item" data-username="security2" data-password="admin123">
-                    <span class="demo-role">حارس الآمن</span>
+                    <span class="demo-role">حارس نقطة الدخول (منفصل عن المكتب)</span>
                     <span class="demo-credentials">security2 / admin123</span>
                 </div>
             </div>
@@ -502,8 +606,9 @@
         
         <!-- ========== LOGIN FOOTER ========== -->
         <div class="login-footer">
-            <p class="footer-text">© 2024 نظام تصاريح العمل الإضافي</p>
-            <p>للاستخدام الداخلي فقط</p>
+            <p class="footer-text">© 2026 نظام تقديم التصاريح في مبنى محافظ الداخلية</p>
+            <p class="footer-tagline">نظام متكامل لإدارة التصاريح في مبنى محافظة الداخلية</p>
+            <p class="footer-version">الإصدار 1.0.0 | للاستخدام الداخلي</p>
         </div>
     </div>
 
@@ -581,9 +686,10 @@
                     // إظهار رسالة التوجيه
                     showMessage(`✅ مرحباً بعودتك ${user.name || user.username}! جاري توجيهك...`, 'success');
                     
-                    // توجيه بعد 1 ثانية
+                    const role = user.role || user.user_type || 'employee';
+                    const path = getRedirectPathForRole(role);
                     setTimeout(() => {
-                        window.location.href = '/dashboard.html';
+                        window.location.href = path;
                     }, 1000);
                     
                 } catch (error) {
@@ -624,63 +730,50 @@
                 logDebug(`📤 إرسال بيانات:`, { username, password });
                 
                 try {
-                    // نقاط النهاية المحتملة (جربها بالترتيب)
-                    const endpoints = [
-                        '/api/login',
-                        '/login',
-                        '/auth/login',
-                        '/api/auth/login',
-                        'http://localhost:5000/api/login',
-                        'http://localhost:5000/login'
-                    ];
+                    // تسجيل الدخول عبر /api/login فقط على نفس أصل الصفحة.
+                    // (الحلقة القديمة كانت تتابع إلى POST /login فيرجع 404 «الصفحة غير موجودة»
+                    // ويخفي رسالة 401 الحقيقية من /api/login — مثلاً عند فشل كلمة المرور أو غياب المستخدم)
+                    const loginUrls = [];
+                    if (window.location.protocol === 'file:') {
+                        loginUrls.push('http://127.0.0.1:5050/api/login', 'http://localhost:5050/api/login');
+                    } else {
+                        loginUrls.push('/api/login');
+                    }
                     
                     let response = null;
                     let lastError = null;
-                    
-                    // جرب كل نقطة نهاية حتى تنجح
-                    for (const endpoint of endpoints) {
+                    for (const endpoint of loginUrls) {
                         try {
-                            logDebug(`🔄 تجربة: ${endpoint}`);
-                            
+                            logDebug(`🔄 تسجيل الدخول عبر: ${endpoint}`);
                             const controller = new AbortController();
                             const timeoutId = setTimeout(() => controller.abort(), 8000);
-                            
                             response = await fetch(endpoint, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'Accept': 'application/json'
                                 },
-                                body: JSON.stringify({ 
+                                body: JSON.stringify({
                                     username: username,
                                     password: password,
                                     action: 'login'
                                 }),
-                                credentials: 'include', // مهم لارسال الكوكيز
+                                credentials: 'include',
                                 signal: controller.signal
                             });
-                            
                             clearTimeout(timeoutId);
-                            
                             logDebug(`📥 الاستجابة من ${endpoint}:`, {
                                 status: response.status,
-                                statusText: response.statusText,
-                                headers: Object.fromEntries(response.headers.entries())
+                                statusText: response.statusText
                             });
-                            
-                            // إذا كانت الاستجابة ناجحة، توقف عن التجربة
-                            if (response.ok || response.status === 200) {
-                                break;
-                            }
-                            
+                            break;
                         } catch (error) {
                             lastError = error;
                             logDebug(`❌ فشل ${endpoint}:`, error.message);
-                            // استمر في المحاولة مع النقطة التالية
+                            response = null;
                         }
                     }
                     
-                    // إذا لم تنجح أي محاولة
                     if (!response) {
                         throw new Error(lastError?.message || 'لا يمكن الوصول إلى الخادم');
                     }
@@ -777,6 +870,25 @@
             });
         }
 
+        /** صفحة التوجيه بعد تسجيل الدخول (نفس المنطق للجلسة الموجودة مسبقاً) */
+        function getRedirectPathForRole(userRole) {
+            switch (userRole) {
+                case 'admin':
+                case 'manager':
+                case 'deputy_manager':
+                    return '/pages/manager-dashboard.html';
+                case 'security':
+                    return '/pages/security-dashboard.html';
+                case 'security_guard':
+                case 'guard':
+                    return '/pages/security-guard.html';
+                case 'employee':
+                    return '/pages/my-permits.html';
+                default:
+                    return '/dashboard.html';
+            }
+        }
+
         // =============== HANDLE LOGIN SUCCESS ===============
         function handleLoginSuccess(data, username) {
     // حفظ البيانات في localStorage
@@ -784,34 +896,44 @@
         localStorage.setItem('token', data.token);
     }
     
-    // ===== تحديد الدور من اسم المستخدم =====
-    let userRole = 'employee';
-    let userName = username;
+    const apiUser = data.user || {};
     
-    // إذا كان الخادم يُرجع دور
-    if (data.role) {
-        userRole = data.role;
-    } else {
-        // تحديد الدور من اسم المستخدم (احتياطي)
-        if (username === 'admin') {
-            userRole = 'admin';
-        } else if (username.includes('manager')) {
-            userRole = 'manager';
-        } else if (username === 'security2') {
-            userRole = 'security_guard';
-        } else if (username.includes('security')) {
-            userRole = 'security';
-        } else if (username.includes('employee')) {
-            userRole = 'employee';
+    // ===== تحديد الدور =====
+    let userRole = apiUser.role || apiUser.user_type || 'employee';
+    if (!data.user) {
+        if (data.role) {
+            userRole = data.role;
+        } else {
+            if (username === 'admin') {
+                userRole = 'admin';
+            } else if (username.includes('deputy')) {
+                userRole = 'deputy_manager';
+            } else if (username.includes('manager')) {
+                userRole = 'manager';
+            } else if (username === 'security2') {
+                userRole = 'security_guard';
+            } else if (username.includes('security')) {
+                userRole = 'security';
+            } else if (username.includes('employee')) {
+                userRole = 'employee';
+            }
         }
     }
     
-    // حفظ معلومات المستخدم
+    const displayName = apiUser.full_name || apiUser.name || data.name || username;
+    
+    // حفظ معلومات المستخدم كاملة من الخادم (الرقم الوظيفي، المديرية، إلخ)
     const userData = {
-        username: username,
-        name: data.name || username,
+        username: apiUser.username || username,
+        name: displayName,
         role: userRole,
-        department: data.department || ''
+        job_number: apiUser.job_number != null ? apiUser.job_number : '',
+        directorate: apiUser.directorate != null ? apiUser.directorate : '',
+        department_id: apiUser.department_id,
+        department: apiUser.department || data.department || '',
+        email: apiUser.email,
+        phone: apiUser.phone,
+        employee_id: apiUser.employee_id
     };
     
     localStorage.setItem('user', JSON.stringify(userData));
@@ -820,37 +942,16 @@
     const roleArabic = {
         'admin': 'المسؤول',
         'manager': 'المدير',
-        'security': 'موظف الأمن',
-        'security_guard': 'حارس الآمن',
+        'deputy_manager': 'نائب المدير',
+        'security': 'مكتب الأمن',
+        'security_guard': 'حارس نقطة الدخول',
+        'guard': 'حارس نقطة الدخول',
         'employee': 'الموظف'
     }[userRole] || 'المستخدم';
     
-    showMessage(`✅ تم تسجيل الدخول بنجاح! مرحباً ${userName} (${roleArabic})`, 'success');
+    showMessage(`✅ تم تسجيل الدخول بنجاح! مرحباً ${displayName} (${roleArabic})`, 'success');
     
-    // ===== تحديد الصفحة المناسبة بناءً على الدور =====
-    let redirectPath = '/dashboard.html';
-    
-    switch(userRole) {
-        case 'admin':
-        case 'manager':
-            redirectPath = '/pages/manager-dashboard.html';
-            break;
-            
-        case 'security':
-            redirectPath = '/pages/security-dashboard.html';
-            break;
-            
-        case 'security_guard':
-            redirectPath = '/pages/security-guard.html'; // ✅ صفحة الحارس
-            break;
-            
-        case 'employee':
-            redirectPath = '/pages/my-permits.html';
-            break;
-            
-        default:
-            redirectPath = '/dashboard.html';
-    }
+    const redirectPath = getRedirectPathForRole(userRole);
     
     console.log(`🔐 المستخدم: ${username} | الدور: ${userRole} | الصفحة: ${redirectPath}`);
     
@@ -918,8 +1019,9 @@
             const role = username === 'admin' ? 'المسؤول' :
                         username.includes('manager') ? 'المدير' :
                         username.includes('employee') ? 'الموظف' :
-                        username === 'security2' ? 'حارس الآمن' :
-                        username.includes('security') ? 'الأمن' :
+                        username === 'security2' ? 'حارس نقطة الدخول' :
+                        username === 'security_office_2' || username === 'security_office_3' ? 'مكتب الأمن' :
+                        username.includes('security') ? 'مكتب الأمن' :
                         'المستخدم';
             
             showMessage(`✅ تم تعبئة بيانات ${role}، اضغط على زر تسجيل الدخول أو Enter`, 'success');

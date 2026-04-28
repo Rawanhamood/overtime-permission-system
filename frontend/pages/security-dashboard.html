@@ -19,18 +19,34 @@
             min-height: 100vh;
         }
         
-        /* ========== NAVBAR STYLES ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 26px rgba(70, 113, 145, 0.38), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -39,18 +55,37 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         
         .logo-icon {
-            background: #fff;
-            color: #3498db;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            background: radial-gradient(
+                ellipse 100% 95% at 50% 42%,
+                #ffffff 0%,
+                rgba(255, 255, 255, 0.94) 28%,
+                rgba(255, 255, 255, 0.65) 58%,
+                rgba(255, 255, 255, 0.22) 82%,
+                transparent 100%
+            );
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        
+        .logo-icon img {
+            height: 60px;
+            width: auto;
+            max-width: min(220px, 40vw);
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 1;
         }
         
         .nav-links {
@@ -60,7 +95,7 @@
         }
         
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -72,23 +107,25 @@
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.16);
             transform: translateY(-2px);
         }
         
         .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             padding: 8px 20px;
             border-radius: 25px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
         }
         
         .user-details {
@@ -98,23 +135,25 @@
         .user-name {
             font-weight: 600;
             font-size: 16px;
+            color: #fff;
         }
         
         .user-role {
             font-size: 13px;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.88);
         }
         
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e4a6b;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         /* ========== NOTIFICATION SYSTEM ========== */
@@ -123,9 +162,9 @@
         }
         
         .notification-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -136,7 +175,7 @@
         }
         
         .notification-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
         
@@ -154,7 +193,7 @@
             justify-content: center;
             font-size: 11px;
             font-weight: bold;
-            border: 2px solid #2c3e50;
+            border: 2px solid #467191;
         }
         
         .notifications-panel {
@@ -184,7 +223,7 @@
         }
         
         .notifications-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
             padding: 20px;
             display: flex;
@@ -352,7 +391,6 @@
         .stat-icon.pending { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; }
         .stat-icon.approved { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; }
         .stat-icon.rejected { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
-        .stat-icon.active { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
         
         .stat-number {
             font-size: 36px;
@@ -363,7 +401,6 @@
         .stat-number.pending { color: #f39c12; }
         .stat-number.approved { color: #2ecc71; }
         .stat-number.rejected { color: #e74c3c; }
-        .stat-number.active { color: #3498db; }
         
         .stat-label {
             color: #7f8c8d;
@@ -588,6 +625,54 @@
             max-width: 60%;
         }
         
+        .security-company-workers-block {
+            grid-column: 1 / -1;
+            margin-top: 6px;
+            padding-top: 12px;
+            border-top: 1px solid #edf2f7;
+        }
+        
+        .security-company-workers-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .security-company-workers-table th {
+            background: #3498db;
+            color: #fff;
+            padding: 10px 8px;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .security-company-workers-table td {
+            padding: 9px 8px;
+            border-bottom: 1px solid #edf2f7;
+            text-align: right;
+        }
+        
+        .security-company-workers-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .company-card-label {
+            font-size: 12px;
+            color: #5a6c7d;
+            margin: 2px 0 0 0;
+        }
+        
+        .company-card-value {
+            font-size: 14px;
+            color: #2c3e50;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
         .action-buttons {
             display: flex;
             gap: 12px;
@@ -651,35 +736,6 @@
             background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-        }
-        
-        /* ========== ACTIVE PERMITS STYLES ========== */
-        .active-permit-card {
-            background: linear-gradient(135deg, #e8f5e9 0%, #d4edda 100%);
-            border: 2px solid #28a745;
-        }
-        
-        .active-permit-card::before {
-            background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
-        }
-        
-        .timer-display {
-            background: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 15px 0;
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
-        }
-        
-        .timer-label {
-            font-size: 12px;
-            color: #7f8c8d;
-            text-align: center;
-            margin-bottom: 5px;
         }
         
         /* ========== EMPTY STATE ========== */
@@ -782,7 +838,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
         }
         
@@ -901,6 +957,65 @@
             box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
         
+        /* ========== SECURITY PERMIT TYPE TABS ========== */
+        .security-permit-tabs {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 4px;
+        }
+        
+        .security-tab {
+            flex: 1;
+            min-width: 160px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 20px;
+            border: 2px solid #e8eef5;
+            border-radius: 14px;
+            background: #fff;
+            color: #2c3e50;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            font-family: inherit;
+        }
+        
+        .security-tab:hover {
+            border-color: #b8d4f0;
+            box-shadow: 0 4px 14px rgba(52, 152, 219, 0.12);
+        }
+        
+        .security-tab.active {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: #fff;
+            border-color: #2980b9;
+            box-shadow: 0 4px 16px rgba(52, 152, 219, 0.35);
+        }
+        
+        .security-tab.active .security-tab-icon {
+            filter: none;
+        }
+        
+        .security-tab-icon {
+            font-size: 1.25em;
+            line-height: 1;
+        }
+        
+        .security-tab-panels {
+            margin-bottom: 10px;
+        }
+        
+        .security-tab-panel[hidden] {
+            display: none !important;
+        }
+        
         /* ========== RESPONSIVE DESIGN ========== */
         @media (max-width: 1024px) {
             .main-container {
@@ -961,6 +1076,15 @@
             
             .search-input, .search-btn {
                 width: 100%;
+            }
+            
+            .security-permit-tabs {
+                flex-direction: column;
+            }
+            
+            .security-tab {
+                width: 100%;
+                min-width: unset;
             }
             
             .modal-box {
@@ -1062,7 +1186,9 @@
     <!-- ========== NAVBAR ========== -->
     <nav class="navbar">
         <div class="logo">
-            <div class="logo-icon">🚀</div>
+            <div class="logo-icon">
+                <img src="/assets/images/login-logo.png?v=5" alt="شعار محافظة الداخلية" decoding="async">
+            </div>
             <span>نظام تصاريح العمل</span>
         </div>
         
@@ -1132,7 +1258,7 @@
                     لوحة الأمن
                 </h1>
                 <p class="page-subtitle">
-                    مراقبة وتتبع جميع تصاريح البقاء بعد الدوام الرسمي، الموافقة على الطلبات، وإدارة التصاريح النشطة
+                    مراقبة وتتبع تصاريح البقاء بعد الدوام الرسمي، الموافقة على الطلبات، والاطلاع على سجل الرفض الأمني
                 </p>
             </div>
             <!-- 🔥 NEW: زر تحميل إشعارات الحرس -->
@@ -1160,11 +1286,6 @@
                 <div class="stat-number rejected" id="todayRejected">0</div>
                 <div class="stat-label">تم الرفض اليوم</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon active">🟢</div>
-                <div class="stat-number active" id="activePasses">0</div>
-                <div class="stat-label">تصاريح نشطة</div>
-            </div>
         </div>
 
         <!-- Alerts Container -->
@@ -1177,76 +1298,147 @@
 
         <!-- Search Box -->
         <div class="search-box">
-            <input type="text" class="search-input" id="searchInput" placeholder="ابحث باسم الموظف، رقم الوظيفة، أو رقم التصريح...">
-            <button class="search-btn" onclick="searchPermits()">
+            <input type="text" class="search-input" id="searchInput" placeholder="ابحث في كل التصاريح: موظف، شركة، مواد، رقم وظيفي، رقم تصريح، اسم شركة..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPermits();}">
+            <button type="button" class="search-btn" onclick="searchPermits()">
                 <span>🔍</span> بحث
             </button>
         </div>
 
-        <!-- 🔥 NEW: Company Entry Permits Section -->
-        <div class="permits-section">
-            <div class="section-header">
-                <div class="section-title">
-                    <span>🏢</span>
-                    طلبات دخول الشركات المعتمدة من المديرين
-                </div>
-                <span class="section-count" id="companyEntryCount">0 طلب</span>
-            </div>
-            <div class="permits-list-container" id="companyEntryContainer">
-                <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p class="loading-text">جاري تحميل طلبات دخول الشركات...</p>
-                </div>
-            </div>
+        <div class="security-permit-tabs" role="tablist" aria-label="تصنيف التصاريح">
+            <button type="button" class="security-tab active" role="tab" aria-selected="true" data-security-tab="company" id="securityTabBtnCompany" onclick="setSecurityPermitTab('company')">
+                <span class="security-tab-label">تصاريح الشركات</span>
+                <span class="security-tab-icon" aria-hidden="true">🏢</span>
+            </button>
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-security-tab="material" id="securityTabBtnMaterial" onclick="setSecurityPermitTab('material')">
+                <span class="security-tab-label">تصاريح إخراج المواد</span>
+                <span class="security-tab-icon" aria-hidden="true">📦</span>
+            </button>
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-security-tab="employee" id="securityTabBtnEmployee" onclick="setSecurityPermitTab('employee')">
+                <span class="security-tab-label">تصاريح الموظفين</span>
+                <span class="security-tab-icon" aria-hidden="true">👤</span>
+            </button>
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-security-tab="rejected" id="securityTabBtnRejected" onclick="setSecurityPermitTab('rejected')">
+                <span class="security-tab-label">سجل الرفض الأمني</span>
+                <span class="security-tab-icon" aria-hidden="true">📛</span>
+            </button>
         </div>
 
-        <!-- Material Exit Permits Section -->
-        <div class="permits-section">
-            <div class="section-header">
-                <div class="section-title">
-                    <span>📦</span>
-                    طلبات إخراج المواد والأجهزة المعتمدة من المديرين
+        <div class="security-tab-panels">
+            <div class="security-tab-panel" data-panel="company" id="securityTabPanelCompany" role="tabpanel" aria-labelledby="securityTabBtnCompany">
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>🏢</span>
+                            طلبات دخول الشركات المعتمدة من المديرين
+                        </div>
+                        <span class="section-count" id="companyEntryCount">0 طلب</span>
+                    </div>
+                    <div class="permits-list-container" id="companyEntryContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل طلبات دخول الشركات...</p>
+                        </div>
+                    </div>
                 </div>
-                <span class="section-count" id="materialExitCount">0 طلب</span>
             </div>
-            <div class="permits-list-container" id="materialExitContainer">
-                <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p class="loading-text">جاري تحميل طلبات إخراج المواد...</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Pending Security Permits Section -->
-        <div class="permits-section">
-            <div class="section-header">
-                <div class="section-title">
-                    <span>📋</span>
-                    التصاريح بانتظار القرار الأمني
+            <div class="security-tab-panel" data-panel="material" id="securityTabPanelMaterial" role="tabpanel" aria-labelledby="securityTabBtnMaterial" hidden>
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>📦</span>
+                            طلبات إخراج المواد والأجهزة المعتمدة من المديرين
+                        </div>
+                        <span class="section-count" id="materialExitCount">0 طلب</span>
+                    </div>
+                    <div class="permits-list-container" id="materialExitContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل طلبات إخراج المواد...</p>
+                        </div>
+                    </div>
                 </div>
-                <span class="section-count" id="pendingCount">0 تصريح</span>
             </div>
-            <div class="permits-list-container" id="securityRequests">
-                <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p class="loading-text">جاري تحميل التصاريح المعلقة...</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Recently Approved Permits -->
-        <div class="permits-section">
-            <div class="section-header">
-                <div class="section-title">
-                    <span>✅</span>
-                    التصاريح المعتمدة مؤخراً
+            <div class="security-tab-panel" data-panel="employee" id="securityTabPanelEmployee" role="tabpanel" aria-labelledby="securityTabBtnEmployee" hidden>
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>📋</span>
+                            التصاريح بانتظار القرار الأمني
+                        </div>
+                        <span class="section-count" id="pendingCount">0 تصريح</span>
+                    </div>
+                    <div class="permits-list-container" id="securityRequests">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل التصاريح المعلقة...</p>
+                        </div>
+                    </div>
                 </div>
-                <span class="section-count" id="approvedCount">0 تصريح</span>
+
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>✅</span>
+                            سجل الاعتمادات الأمنية (موظفون، شركات، إخراج مواد)
+                        </div>
+                        <span class="section-count" id="approvedCount">0 تصريح</span>
+                    </div>
+                    <div class="permits-list-container" id="approvedContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل التصاريح المعتمدة...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="permits-list-container" id="approvedContainer">
-                <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p class="loading-text">جاري تحميل التصاريح المعتمدة...</p>
+
+            <div class="security-tab-panel" data-panel="rejected" id="securityTabPanelRejected" role="tabpanel" aria-labelledby="securityTabBtnRejected" hidden>
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>👤</span>
+                            تصاريح الموظفين المرفوضة من مكتب الأمن
+                        </div>
+                        <span class="section-count" id="securityRejectedEmployeeCount">0 تصريح</span>
+                    </div>
+                    <div class="permits-list-container" id="securityRejectedEmployeeContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل السجل...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>🏢</span>
+                            تصاريح الشركات المرفوضة من مكتب الأمن
+                        </div>
+                        <span class="section-count" id="securityRejectedCompanyCount">0 طلب</span>
+                    </div>
+                    <div class="permits-list-container" id="securityRejectedCompanyContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل السجل...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>📦</span>
+                            تصاريح إخراج المواد المرفوضة من مكتب الأمن
+                        </div>
+                        <span class="section-count" id="securityRejectedMaterialCount">0 طلب</span>
+                    </div>
+                    <div class="permits-list-container" id="securityRejectedMaterialContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">جاري تحميل السجل...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1255,8 +1447,21 @@
     <script>
         // 🔥🔥🔥 =============== SYSTEM INITIALIZATION =============== 🔥🔥🔥
         document.addEventListener('DOMContentLoaded', function() {
+            ['pointerdown', 'keydown'].forEach(function (ev) {
+                document.addEventListener(ev, prepareNotificationAudioFromUserGesture, {
+                    capture: true,
+                    passive: true
+                });
+            });
+
             // Load user data and security dashboard
             loadUserData();
+            try {
+                const savedTab = sessionStorage.getItem('securityDashboardPermitTab');
+                setSecurityPermitTab(savedTab || 'company');
+            } catch (e) {
+                setSecurityPermitTab('company');
+            }
             loadSecurityData();
             loadNotifications();
             
@@ -1367,27 +1572,58 @@
 
         // =============== NOTIFICATIONS SYSTEM ===============
         let lastUnreadNotifications = 0;
+        let notificationAudioCtx = null;
+        let notificationAudioOk = false;
+
+        function prepareNotificationAudioFromUserGesture() {
+            if (notificationAudioOk) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new AC();
+                }
+                const ctx = notificationAudioCtx;
+                const markOk = function () {
+                    if (ctx.state === 'running') {
+                        notificationAudioOk = true;
+                    }
+                };
+                if (ctx.state === 'running') {
+                    notificationAudioOk = true;
+                    return;
+                }
+                const p = ctx.resume();
+                if (p && typeof p.then === 'function') {
+                    p.then(markOk).catch(function () {});
+                } else {
+                    markOk();
+                }
+            } catch (e) {
+                /* صوت اختياري */
+            }
+        }
 
         function playNotificationSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                
-                const ctx = new AudioContext();
+                if (!notificationAudioOk || !notificationAudioCtx || notificationAudioCtx.state !== 'running') {
+                    return;
+                }
+                const ctx = notificationAudioCtx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.type = 'sine';
                 osc.frequency.value = 880;
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 const now = ctx.currentTime;
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                
+
                 osc.start(now);
                 osc.stop(now + 0.5);
             } catch (e) {
@@ -1572,6 +1808,26 @@
         }
 
         // =============== SECURITY DASHBOARD ===============
+        function setSecurityPermitTab(tab) {
+            const valid = ['company', 'material', 'employee', 'rejected'];
+            const t = valid.includes(tab) ? tab : 'company';
+            document.querySelectorAll('.security-tab').forEach(btn => {
+                const on = btn.getAttribute('data-security-tab') === t;
+                btn.classList.toggle('active', on);
+                btn.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            document.querySelectorAll('.security-tab-panel').forEach(panel => {
+                if (panel.getAttribute('data-panel') === t) {
+                    panel.removeAttribute('hidden');
+                } else {
+                    panel.setAttribute('hidden', '');
+                }
+            });
+            try {
+                sessionStorage.setItem('securityDashboardPermitTab', t);
+            } catch (err) { /* ignore */ }
+        }
+        
         async function loadSecurityData() {
             const userData = JSON.parse(localStorage.getItem('user'));
             if (!userData) {
@@ -1603,47 +1859,26 @@
             // Load recently approved
             loadRecentlyApproved();
             
+            // سجل التصاريح المرفوضة من مكتب الأمن
+            loadSecurityRejectedArchive();
+            
             // 🔥 NEW: تحميل إشعارات الحارس عند بدء الصفحة
             updateRealTimeGuardNotifications();
         }
         
         async function loadStats(username) {
             try {
-                // جلب إحصائيات تصاريح الموظفين
-                const employeeStatsData = await fetchJson(`/api/stats/${username}`);
-                
-                // جلب إحصائيات تصاريح الشركات
-                let companyPendingCount = 0;
-                try {
-                    const companyData = await fetchJson('/api/permits/company-entry/security-pending');
-                    if (companyData.success) {
-                        companyPendingCount = (companyData.permits || []).length;
-                    }
-                } catch (e) {
-                    console.warn('⚠️ خطأ في جلب تصاريح الشركات:', e);
-                }
-                
-                // جلب إحصائيات تصاريح إخراج المواد
-                let materialExitPendingCount = 0;
-                try {
-                    const materialExitData = await fetchJson('/api/permits/material-exit/security-pending');
-                    if (materialExitData.success) {
-                        materialExitPendingCount = (materialExitData.permits || []).length;
-                    }
-                } catch (e) {
-                    console.warn('⚠️ خطأ في جلب تصاريح إخراج المواد:', e);
-                }
+                // scope=security: إحصائيات شاملة (موظفون + شركات + إخراج مواد) وتطابق قرارات اليوم مع الخادم
+                const employeeStatsData = await fetchJson(`/api/stats/${encodeURIComponent(username)}?scope=security`);
                 
                 if (employeeStatsData.success) {
                     const stats = employeeStatsData.stats;
                     
-                    // دمج عدد تصاريح الموظفين وتصاريح الشركات وتصاريح إخراج المواد
-                    const totalPending = (stats.pending_requests || 0) + companyPendingCount + materialExitPendingCount;
+                    const totalPending = Number(stats.pending_requests) || 0;
                     
                     document.getElementById('pendingRequests').textContent = totalPending;
-                    document.getElementById('todayApproved').textContent = stats.today_approved || 0;
-                    document.getElementById('todayRejected').textContent = stats.today_rejected || 0;
-                    document.getElementById('activePasses').textContent = stats.active_passes || 0;
+                    document.getElementById('todayApproved').textContent = Number(stats.today_approved) || 0;
+                    document.getElementById('todayRejected').textContent = Number(stats.today_rejected) || 0;
                     
                     // ✅ فقط تنبيه واحد مهم (طلبات بانتظار الموافقة)
                     const alertsContainer = document.getElementById('alertsContainer');
@@ -1734,6 +1969,15 @@
         }
         
         function createSecurityPendingPermitCard(permit) {
+            const timeFmt = formatPermitFromToWithTimes(permit);
+            const mgrRejected = permit.manager_decision === 'reject' || permit.manager_decision === 'deny';
+            const managerBadge = mgrRejected
+                ? `<div style="background: #fdebd0; color: #b9770e; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ⚠️ رفض المدير — قرار مكتب الأمن
+                        </div>`
+                : `<div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ✅ موافق من المدير
+                        </div>`;
             return `
                 <div class="permit-card">
                     <div class="permit-header">
@@ -1745,9 +1989,7 @@
                                 ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
                             </div>
                         </div>
-                        <div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                            ✅ موافق من المدير
-                        </div>
+                        ${managerBadge}
                     </div>
                     
                     <div class="employee-info">
@@ -1765,15 +2007,15 @@
                             <span class="detail-value">${permit.reason || 'لا يوجد'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">من تاريخ:</span>
-                            <span class="detail-value">${permit.start_date || 'غير محدد'}</span>
+                            <span class="detail-label">من (تاريخ ووقت):</span>
+                            <span class="detail-value">${timeFmt.fromLine || (permit.start_date || 'غير محدد')}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">إلى تاريخ:</span>
-                            <span class="detail-value">${permit.end_date || 'غير محدد'}</span>
+                            <span class="detail-label">إلى (تاريخ ووقت):</span>
+                            <span class="detail-value">${timeFmt.toLine || (permit.end_date || 'غير محدد')}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">وقت الانصراف:</span>
+                            <span class="detail-label">الوقت كما سجّله الموظف:</span>
                             <span class="detail-value">${permit.expected_exit_time || 'غير محدد'}</span>
                         </div>
                         <div class="detail-item">
@@ -1807,46 +2049,75 @@
         }
         
         async function loadRecentlyApproved() {
+            const container = document.getElementById('approvedContainer');
+            const countEl = document.getElementById('approvedCount');
             try {
-                const data = await fetchJson('/api/permits/search?q=&type=recent');
-                const container = document.getElementById('approvedContainer');
-                
-                if (data.success && data.permits) {
-                    const approvedPermits = data.permits.filter(p => 
-                        p.status === 'approved_security'
-                    ).slice(0, 5);
-                    
-                    if (approvedPermits.length === 0) {
-                        container.innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-icon">📋</div>
-                                <h3 class="empty-title">لا توجد تصاريح معتمدة مؤخراً</h3>
-                                <p class="empty-description">سيتم عرض التصاريح المعتمدة هنا</p>
-                            </div>
-                        `;
-                        document.getElementById('approvedCount').textContent = '0 تصريح';
-                        return;
-                    }
-                    
+                const [dataEmp, dataComp, dataMat] = await Promise.all([
+                    fetchJson('/api/permits/security-approved'),
+                    fetchJson('/api/permits/company-entry/security-approved'),
+                    fetchJson('/api/permits/material-exit/security-approved'),
+                ]);
+
+                const empList = (dataEmp.success && dataEmp.permits) ? dataEmp.permits : [];
+                const compList = (dataComp.success && dataComp.permits) ? dataComp.permits : [];
+                const matList = (dataMat.success && dataMat.permits) ? dataMat.permits : [];
+
+                const sortedEmp = [...empList].sort((a, b) => {
+                    const dateA = new Date(a.request_date || a.created_at || 0);
+                    const dateB = new Date(b.request_date || b.created_at || 0);
+                    return dateB - dateA;
+                });
+
+                const total = sortedEmp.length + compList.length + matList.length;
+                if (countEl) countEl.textContent = `${total} طلب`;
+
+                if (total === 0) {
                     container.innerHTML = `
-                        <div class="permits-grid">
-                            ${approvedPermits.map(permit => createApprovedPermitCard(permit)).join('')}
-                        </div>
-                    `;
-                    document.getElementById('approvedCount').textContent = `${approvedPermits.length} تصريح`;
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <h3 class="empty-title">لا يوجد سجل اعتماد بعد</h3>
+                            <p class="empty-description">يُحفظ هنا كل ما تمت معالجته من مكتب الأمن: تصاريح العمل الإضافي، دخول الشركات، وإخراج المواد</p>
+                        </div>`;
+                    return;
                 }
+
+                const blocks = [];
+                if (sortedEmp.length) {
+                    blocks.push(`
+                        <h4 style="width:100%;margin:20px 0 10px;padding:0 4px;font-size:16px;color:#2c3e50;border-right:4px solid #3498db;padding-right:10px;">
+                            👤 تصاريح العمل الإضافي (بعد الدوام)</h4>
+                        <div class="permits-grid">${sortedEmp.map(permit => createApprovedPermitCard(permit)).join('')}</div>`);
+                }
+                if (compList.length) {
+                    blocks.push(`
+                        <h4 style="width:100%;margin:24px 0 10px;padding:0 4px;font-size:16px;color:#2c3e50;border-right:4px solid #e74c3c;padding-right:10px;">
+                            🏢 تصاريح دخول الشركات</h4>
+                        <div class="permits-grid">${compList.map(permit => createSecurityApprovedCompanyArchiveCard(permit)).join('')}</div>`);
+                }
+                if (matList.length) {
+                    blocks.push(`
+                        <h4 style="width:100%;margin:24px 0 10px;padding:0 4px;font-size:16px;color:#2c3e50;border-right:4px solid #f39c12;padding-right:10px;">
+                            📦 إخراج المواد والأجهزة</h4>
+                        <div class="permits-grid">${matList.map(permit => createSecurityApprovedMaterialArchiveCard(permit)).join('')}</div>`);
+                }
+                container.innerHTML = blocks.join('');
             } catch (error) {
                 console.error('خطأ في تحميل التصاريح المعتمدة:', error);
-                document.getElementById('approvedContainer').innerHTML = `
+                if (container) {
+                    container.innerHTML = `
                     <div class="alert alert-error">
                         <span>❌</span>
-                        <span>حدث خطأ في تحميل التصاريح المعتمدة</span>
-                    </div>
-                `;
+                        <span>حدث خطأ في تحميل سجل الاعتمادات الأمنية</span>
+                    </div>`;
+                }
+                if (countEl) countEl.textContent = '—';
             }
         }
         
         function createApprovedPermitCard(permit) {
+            const statusLabel = permit.status === 'completed' ? 'مكتمل (خروج مسجّل)' :
+                permit.status === 'checked_in' ? 'داخل المبنى (مسجّل دخول)' :
+                'معتمد من الأمن (جاهز للحارس)';
             return `
                 <div class="permit-card">
                     <div class="permit-header">
@@ -1872,7 +2143,7 @@
                         <div class="detail-item">
                             <span class="detail-label">الحالة:</span>
                             <span class="detail-value" style="color: #27ae60;">
-                                معتمد نهائي
+                                ${statusLabel}
                             </span>
                         </div>
                         <div class="detail-item">
@@ -1887,6 +2158,371 @@
                     
                     <div class="action-buttons">
                         <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createSecurityApprovedCompanyArchiveCard(permit) {
+            let requestingDeptText = '';
+            try {
+                let dept = null;
+                if (permit.requesting_department) {
+                    dept = typeof permit.requesting_department === 'string' ? JSON.parse(permit.requesting_department) : permit.requesting_department;
+                }
+                if (dept && (dept.directorate || dept.department)) requestingDeptText = [dept.directorate, dept.department].filter(Boolean).join(' / ');
+            } catch (e) {}
+            const st = permit.status || '';
+            const statusText = st === 'completed' ? 'مكتمل' :
+                st === 'checked_in' ? 'داخل الموقع' :
+                st === 'rejected_security' ? 'مرفوض من الأمن' :
+                'معتمد — جاهز للحارس';
+            const statusBg = st === 'rejected_security' ? '#fadbd8' : st === 'completed' ? '#e8daef' : '#d4edda';
+            const statusColor = st === 'rejected_security' ? '#922b21' : '#155724';
+            const borderColor = st === 'rejected_security' ? '#c0392b' : '#27ae60';
+            const decDate = formatSecurityArchiveTimestamp(permit.security_decision_date);
+            return `
+                <div class="permit-card" style="border-left: 4px solid ${borderColor} !important;">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">🏢 شركة #${permit.permit_id}</div>
+                            <div class="permit-date">${new Date(permit.created_at || permit.expected_entry_date).toLocaleDateString('ar-SA')}</div>
+                        </div>
+                        <span class="permit-status" style="background: ${statusBg}; color: ${statusColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            ${statusText}
+                        </span>
+                    </div>
+                    <div class="employee-info">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);">🏢</div>
+                        <div class="employee-details">
+                            <h3>${permit.company_name || 'شركة'}</h3>
+                            <p>${permit.company_representative || ''}</p>
+                        </div>
+                    </div>
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">قرار الأمن:</span>
+                            <span class="detail-value">${decDate}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الدائرة الطالبة:</span>
+                            <span class="detail-value">${requestingDeptText || '—'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الفترة:</span>
+                            <span class="detail-value">${permit.expected_entry_date || '—'} → ${permit.expected_exit_date || '—'}</span>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="action-btn btn-view" onclick="viewCompanyEntryPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createSecurityApprovedMaterialArchiveCard(permit) {
+            const permitDate = permit.permit_date || permit.created_at || new Date().toISOString();
+            const st = permit.status || '';
+            const label = st === 'completed' ? '✅ مكتمل' :
+                st === 'rejected_security' ? '❌ مرفوض من الأمن' :
+                '✅ معتمد — عند الحارس';
+            const decDate = formatSecurityArchiveTimestamp(permit.security_decision_date);
+            return `
+                <div class="permit-card material-exit" style="border-left: 4px solid #f39c12 !important;">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">📦 إخراج مواد #${permit.permit_id}</div>
+                            <div class="permit-date">${new Date(permitDate).toLocaleDateString('ar-SA')}</div>
+                        </div>
+                        <span class="permit-status" style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            ${label}
+                        </span>
+                    </div>
+                    <div class="employee-info">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">📦</div>
+                        <div class="employee-details">
+                            <h3>${permit.employee_name || permit.full_name || permit.username || '—'}</h3>
+                            <p>${permit.job_number || ''}</p>
+                        </div>
+                    </div>
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">قرار الأمن:</span>
+                            <span class="detail-value">${decDate}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">نوع المادة:</span>
+                            <span class="detail-value">${permit.material_type || '—'}</span>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="action-btn btn-view" onclick="viewMaterialExitPermit(${permit.permit_id})">👁️ التفاصيل</button>
+                        <button type="button" class="action-btn btn-print" onclick="printMaterialExitPermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">🖨️ طباعة</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function securityRejectedEmployeePermitId(permit) {
+            if (!permit) return null;
+            if (permit.permit_id != null && permit.permit_id !== '') return permit.permit_id;
+            if (permit.overtime_permit_id != null) return permit.overtime_permit_id;
+            if (permit.rowid != null) return permit.rowid;
+            return null;
+        }
+
+        function formatSecurityArchiveTimestamp(iso) {
+            if (!iso) return '—';
+            try {
+                return new Date(iso).toLocaleString('ar-SA');
+            } catch (e) {
+                return String(iso);
+            }
+        }
+
+        async function loadSecurityRejectedArchive() {
+            const empC = document.getElementById('securityRejectedEmployeeContainer');
+            const compC = document.getElementById('securityRejectedCompanyContainer');
+            const matC = document.getElementById('securityRejectedMaterialContainer');
+            if (!empC || !compC || !matC) return;
+
+            try {
+                const data = await fetchJson('/api/permits/security-rejected');
+                if (!data.success) {
+                    const msg = data.message || 'تعذر تحميل السجل';
+                    const errHtml = `<div class="alert alert-error"><span>❌</span><span>${msg}</span></div>`;
+                    empC.innerHTML = errHtml;
+                    compC.innerHTML = errHtml;
+                    matC.innerHTML = errHtml;
+                    return;
+                }
+
+                const employees = data.employee_permits || [];
+                const companies = data.company_permits || [];
+                const materials = data.material_permits || [];
+
+                document.getElementById('securityRejectedEmployeeCount').textContent = `${employees.length} تصريح`;
+                document.getElementById('securityRejectedCompanyCount').textContent = `${companies.length} طلب`;
+                document.getElementById('securityRejectedMaterialCount').textContent = `${materials.length} طلب`;
+
+                if (employees.length === 0) {
+                    empC.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3 class="empty-title">لا توجد تصاريح موظفين مرفوضة</h3>
+                            <p class="empty-description">يُحفظ هنا كل رفض أمني نهائي لتصاريح بعد الدوام</p>
+                        </div>`;
+                } else {
+                    empC.innerHTML = `<div class="permits-grid">${employees.map(createRejectedEmployeeSecurityCard).join('')}</div>`;
+                }
+
+                if (companies.length === 0) {
+                    compC.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3 class="empty-title">لا توجد طلبات شركات مرفوضة</h3>
+                            <p class="empty-description">سجل رفض دخول الشركات من مكتب الأمن</p>
+                        </div>`;
+                } else {
+                    compC.innerHTML = `<div class="permits-grid">${companies.map(createRejectedCompanySecurityArchiveCard).join('')}</div>`;
+                }
+
+                if (materials.length === 0) {
+                    matC.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3 class="empty-title">لا توجد طلبات إخراج مواد مرفوضة</h3>
+                            <p class="empty-description">سجل رفض إخراج المواد من مكتب الأمن</p>
+                        </div>`;
+                } else {
+                    matC.innerHTML = `<div class="permits-grid">${materials.map(createRejectedMaterialSecurityArchiveCard).join('')}</div>`;
+                }
+            } catch (error) {
+                console.error('خطأ في تحميل سجل الرفض الأمني:', error);
+                const errHtml = `<div class="alert alert-error"><span>❌</span><span>${error.message || 'حدث خطأ'}</span></div>`;
+                empC.innerHTML = errHtml;
+                compC.innerHTML = errHtml;
+                matC.innerHTML = errHtml;
+            }
+        }
+
+        function createRejectedEmployeeSecurityCard(permit) {
+            const pid = securityRejectedEmployeePermitId(permit);
+            const pidNum = pid != null ? Number(pid) : NaN;
+            const viewId = Number.isFinite(pidNum) ? pidNum : null;
+            const decDate = formatSecurityArchiveTimestamp(permit.security_decision_date);
+            return `
+                <div class="permit-card" style="border-left: 4px solid #c0392b !important;">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">❌ تصريح موظف #${pid != null ? pid : '?'}</div>
+                            <div class="permit-date">${new Date(permit.request_date).toLocaleDateString('ar-SA')}</div>
+                        </div>
+                        <span class="permit-status" style="background: #fadbd8; color: #922b21; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            مرفوض من مكتب الأمن
+                        </span>
+                    </div>
+                    <div class="employee-info">
+                        <div class="employee-avatar">${(permit.full_name || 'م').charAt(0)}</div>
+                        <div class="employee-details">
+                            <h3>${permit.full_name || 'غير معروف'}</h3>
+                            <p>${permit.job_number || ''} ${permit.department_name ? '· ' + permit.department_name : ''}</p>
+                        </div>
+                    </div>
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">تاريخ القرار الأمني:</span>
+                            <span class="detail-value">${decDate}</span>
+                        </div>
+                        ${permit.manager_notes ? `
+                        <div class="detail-item" style="background: #e8f4ff; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #3498db;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات المدير:</span>
+                            <span class="detail-value" style="display:block;margin-top:4px;white-space:pre-wrap;">${permit.manager_notes}</span>
+                        </div>` : ''}
+                        ${permit.security_notes ? `
+                        <div class="detail-item" style="background: #fadbd8; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #c0392b;">
+                            <span class="detail-label" style="font-weight: 600;">سبب الرفض / ملاحظات الأمن:</span>
+                            <span class="detail-value" style="display:block;margin-top:4px;white-space:pre-wrap;">${permit.security_notes}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="action-buttons">
+                        ${viewId != null ? `
+                        <button type="button" class="action-btn btn-view" onclick="viewPermit(${viewId})">
+                            👁️ عرض التفاصيل
+                        </button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function createRejectedCompanySecurityArchiveCard(permit) {
+            let requestingDeptText = '';
+            try {
+                let dept = null;
+                if (permit.requesting_department) {
+                    dept = typeof permit.requesting_department === 'string' ? JSON.parse(permit.requesting_department) : permit.requesting_department;
+                } else if (permit.additional_notes) {
+                    const notes = typeof permit.additional_notes === 'string' ? JSON.parse(permit.additional_notes) : permit.additional_notes;
+                    if (notes && notes.requesting_department) {
+                        dept = typeof notes.requesting_department === 'string' ? JSON.parse(notes.requesting_department) : notes.requesting_department;
+                    }
+                }
+                if (dept && (dept.directorate || dept.department)) requestingDeptText = [dept.directorate, dept.department].filter(Boolean).join(' / ');
+            } catch (e) {}
+            if (!requestingDeptText && (permit.directorate || permit.department)) {
+                requestingDeptText = [permit.directorate, permit.department].filter(Boolean).join(' / ');
+            }
+            let workersList = [];
+            if (permit.workers && Array.isArray(permit.workers) && permit.workers.length > 0) {
+                workersList = permit.workers.map(w => ({ name: w.worker_name || 'غير محدد' }));
+            } else {
+                try {
+                    let wl = [];
+                    if (permit.employees && typeof permit.employees === 'string') wl = JSON.parse(permit.employees);
+                    else if (permit.employees && Array.isArray(permit.employees)) wl = permit.employees;
+                    workersList = (wl || []).map(e => ({ name: e.name || e.worker_name }));
+                } catch (e) { workersList = []; }
+            }
+            const entryDate = permit.expected_entry_date || permit.start_date;
+            const exitDate = permit.expected_exit_date || permit.end_date;
+            const decDate = formatSecurityArchiveTimestamp(permit.security_decision_date);
+            return `
+                <div class="permit-card" style="border-left: 4px solid #c0392b !important;">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">❌ شركة #${permit.permit_id}</div>
+                            <div class="permit-date">${new Date(permit.request_date || permit.created_at).toLocaleDateString('ar-SA')}</div>
+                        </div>
+                        <span class="permit-status" style="background: #fadbd8; color: #922b21; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            مرفوض من الأمن
+                        </span>
+                    </div>
+                    <div class="employee-info">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">🏢</div>
+                        <div class="employee-details">
+                            <h3>${permit.company_name || 'شركة'}</h3>
+                            <p>${permit.company_supervisor || ''}</p>
+                        </div>
+                    </div>
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">تاريخ القرار الأمني:</span>
+                            <span class="detail-value">${decDate}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الدائرة الطالبة:</span>
+                            <span class="detail-value">${requestingDeptText || '—'}</span>
+                        </div>
+                        ${workersList.length > 0 ? `
+                        <div class="detail-item" style="grid-column: 1 / -1;">
+                            <span class="detail-label">العمال:</span>
+                            <span class="detail-value" style="font-size: 12px;">${workersList.map(w => w.name).join('، ')}</span>
+                        </div>` : ''}
+                        <div class="detail-item">
+                            <span class="detail-label">الفترة:</span>
+                            <span class="detail-value">${entryDate || '—'} → ${exitDate || '—'}</span>
+                        </div>
+                        ${permit.security_notes ? `
+                        <div class="detail-item" style="background: #fadbd8; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #c0392b;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات الرفض:</span>
+                            <span class="detail-value" style="display:block;margin-top:4px;white-space:pre-wrap;">${permit.security_notes}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="action-btn btn-view" onclick="viewCompanyEntryPermit(${permit.permit_id})">
+                            👁️ عرض التفاصيل
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createRejectedMaterialSecurityArchiveCard(permit) {
+            const permitDate = permit.permit_date || permit.created_at || new Date().toISOString();
+            const decDate = formatSecurityArchiveTimestamp(permit.security_decision_date);
+            return `
+                <div class="permit-card material-exit" style="border-left: 4px solid #c0392b !important;">
+                    <div class="permit-header">
+                        <div>
+                            <div class="permit-id">❌ إخراج مواد #${permit.permit_id}</div>
+                            <div class="permit-date">${new Date(permitDate).toLocaleDateString('ar-SA')}</div>
+                        </div>
+                        <span class="permit-status" style="background: #fadbd8; color: #922b21; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            مرفوض من الأمن
+                        </span>
+                    </div>
+                    <div class="employee-info">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">📦</div>
+                        <div class="employee-details">
+                            <h3>${permit.employee_name || permit.username || '—'}</h3>
+                            <p>الرقم الوظيفي: ${permit.job_number || '—'}</p>
+                        </div>
+                    </div>
+                    <div class="permit-details">
+                        <div class="detail-item">
+                            <span class="detail-label">تاريخ القرار الأمني:</span>
+                            <span class="detail-value">${decDate}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">نوع المادة:</span>
+                            <span class="detail-value">${permit.material_type || '—'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">سبب الإخراج:</span>
+                            <span class="detail-value">${permit.exit_reason || '—'}</span>
+                        </div>
+                        ${permit.security_notes ? `
+                        <div class="detail-item" style="background: #fadbd8; padding: 8px 10px; border-radius: 8px; border-right: 4px solid #c0392b;">
+                            <span class="detail-label" style="font-weight: 600;">ملاحظات الرفض:</span>
+                            <span class="detail-value" style="display:block;margin-top:4px;white-space:pre-wrap;">${permit.security_notes}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="action-btn btn-view" onclick="viewMaterialExitPermit(${permit.permit_id})">
                             👁️ عرض التفاصيل
                         </button>
                     </div>
@@ -2004,59 +2640,20 @@
                 }
                 
                 if (decision === 'allow') {
-                    // 2️⃣ إذا كانت الموافقة، أرسل التصريح للحارس
+                    // 2️⃣ إذا كانت الموافقة، أرسل التصريح للحارس (يملأ localStorage ببيانات كاملة من الخادم)
                     const sentToGuard = await sendPermitToGuard(permitId, userData.username, notes);
                     
                     if (sentToGuard) {
                         showNotification('✅ تمت الموافقة وأُرسل التصريح إلى نقطة الحراسة!', 'success');
-                        
-                        // 🔥 NEW: إضافة تصريح للقائمة المحلية
-                        addPermitToGuardList(data.permit);
-                        
-                        // 🔥 NEW: تحديث مباشر للإشعارات
                         setTimeout(updateRealTimeGuardNotifications, 1000);
-                        
                     } else {
-                        showNotification('✅ تمت الموافقة، لكن حدث خطأ في إرساله للحارس', 'warning');
+                        showNotification('✅ تمت الموافقة، لكن تعذر مزامنة قائمة الحارس — يُفضّل إعادة تحميل صفحة الحارس', 'warning');
                     }
                     
-                    // 3️⃣ إرسال إشعار للموظف
-                    try {
-                        await fetch('/api/notifications/employee-security', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + localStorage.getItem('token')
-                            },
-                            body: JSON.stringify({
-                                permit_id: permitId,
-                                decision: 'allow'
-                            })
-                        });
-                    } catch (notifyError) {
-                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف:', notifyError);
-                    }
-                    
+                    // إشعار الموظف يُنشأ من الخادم في /api/permits/security-approve
                 } else {
-                    // إذا كان الرفض
                     showNotification('❌ تم رفض التصريح بنجاح', 'success');
-                    
-                    // إرسال إشعار للموظف
-                    try {
-                        await fetch('/api/notifications/employee-security', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + localStorage.getItem('token')
-                            },
-                            body: JSON.stringify({
-                                permit_id: permitId,
-                                decision: 'deny'
-                            })
-                        });
-                    } catch (notifyError) {
-                        console.log('⚠️ ملاحظة: لم يتم إرسال إشعار للموظف:', notifyError);
-                    }
+                    // إشعار الموظف يُنشأ من الخادم في /api/permits/security-approve
                 }
                 
                 // تحديث الصفحة بعد ثانيتين
@@ -2073,25 +2670,6 @@
         // 🔥🔥🔥 =============== NEW: SEND PERMIT TO GUARD =============== 🔥🔥🔥
         async function sendPermitToGuard(permitId, securityUsername, notes = '') {
             try {
-                const userData = JSON.parse(localStorage.getItem('user'));
-                const now = new Date().toLocaleTimeString('ar-SA', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                
-                // 1. إضافة التصريح للقائمة المحلية (للاستخدام الفوري)
-                const permit = {
-                    permit_id: permitId,
-                    approved_by_security: userData.name || userData.username,
-                    approval_time: now,
-                    security_notes: notes,
-                    sent_to_guard: true,
-                    sent_at: new Date().toISOString()
-                };
-                
-                addPermitToGuardList(permit);
-                
-                // 2. محاولة إرسال للخادم
                 const response = await fetch('/api/permits/send-to-guard', {
                     method: 'POST',
                     headers: {
@@ -2108,17 +2686,24 @@
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    console.log('✅ تم إرسال التصريح للحارس بنجاح');
+                if (data.success && data.permit) {
+                    addPermitToGuardList({
+                        ...data.permit,
+                        security_notes: data.permit.security_notes || notes || '',
+                        approved_by_security: data.permit.approved_by_security || securityUsername,
+                        sent_to_guard: true,
+                        sent_at: new Date().toISOString()
+                    });
+                    console.log('✅ تم إرسال التصريح للحارس مع بيانات كاملة');
                     return true;
-                } else {
-                    console.log('⚠️ تم حفظ التصريح محلياً فقط');
-                    return true; // نعتبره ناجحاً حتى مع فشل الاتصال
                 }
+                
+                console.warn('⚠️ فشل إرسال التصريح للحارس:', data.message || response.status);
+                return false;
                 
             } catch (error) {
                 console.error('⚠️ خطأ في إرسال التصريح للحارس:', error);
-                return true; // نعتبره ناجحاً حتى مع فشل الاتصال
+                return false;
             }
         }
 
@@ -2127,40 +2712,35 @@
             try {
                 console.log('📤 إضافة تصريح لقائمة الحارس:', permitData);
                 
-                // جلب التصاريح المرسلة سابقاً
-                const sentPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
-                
-                // البحث عن بيانات التصريح الكاملة
-                let fullPermitData = permitData;
-                
-                // إذا كان permitData يحتوي فقط على معرف التصريح
-                if (typeof permitData === 'number' || (permitData.permit_id && !permitData.employee_name)) {
-                    // نحتاج إلى جلب بيانات كاملة من التصاريح النشطة
-                    fullPermitData = {
-                        permit_id: typeof permitData === 'number' ? permitData : permitData.permit_id,
-                        employee_name: "موظف جديد",
-                        job_number: "EMP-NEW",
-                        department_name: "قسم جديد",
-                        reason: "تصريح معتمد من الأمن",
-                        expected_exit_time: "22:00",
-                        status: "approved_security",
-                        approved_by_security: JSON.parse(localStorage.getItem('user'))?.name || "مكتب الأمن",
-                        approval_time: new Date().toLocaleTimeString('ar-SA'),
-                        date: new Date().toLocaleDateString('ar-SA'),
-                        notes: permitData.notes || ""
-                    };
+                if (!permitData || permitData.permit_id == null) {
+                    console.warn('⚠️ addPermitToGuardList: بيانات غير صالحة');
+                    return false;
                 }
                 
-                // إضافة التصريح الجديد
+                const sentPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                
+                const idx = sentPermits.findIndex(p => String(p.permit_id) === String(permitData.permit_id));
+                const base = idx >= 0 ? sentPermits[idx] : {};
+                const fullPermitData = {
+                    ...base,
+                    ...permitData,
+                    employee_name: permitData.employee_name || permitData.full_name || base.employee_name || base.full_name,
+                    full_name: permitData.full_name || permitData.employee_name || base.full_name || base.employee_name
+                };
+                
                 const newPermit = {
                     ...fullPermitData,
-                    id: Date.now(),
-                    sent_at: new Date().toISOString(),
-                    status: 'approved_security',
+                    id: fullPermitData.id || Date.now(),
+                    sent_at: permitData.sent_at || new Date().toISOString(),
+                    status: fullPermitData.status || 'approved_security',
                     is_new: true
                 };
                 
-                sentPermits.unshift(newPermit);
+                if (idx >= 0) {
+                    sentPermits[idx] = newPermit;
+                } else {
+                    sentPermits.unshift(newPermit);
+                }
                 
                 // الاحتفاظ فقط بآخر 50 تصريح
                 const maxPermits = 50;
@@ -2192,9 +2772,6 @@
                     }
                 });
                 
-                // تأكيد للمستخدم
-                showNotification(`✅ تم إرسال تصريح #${newPermit.permit_id} إلى نقطة الحراسة`, 'success');
-                
                 return true;
                 
             } catch (error) {
@@ -2205,68 +2782,168 @@
         }
 
         // =============== UTILITY FUNCTIONS ===============
+        function parseOvertimeExitTimeRange(expected_exit_time) {
+            if (expected_exit_time == null || expected_exit_time === '') return { from: '', to: '', raw: '' };
+            const s = String(expected_exit_time).trim();
+            const parts = s.split(/\s*[-–—]\s*/).map(x => x.trim()).filter(Boolean);
+            if (parts.length >= 2) return { from: parts[0], to: parts[parts.length - 1], raw: s };
+            if (parts.length === 1) return { from: parts[0], to: '', raw: s };
+            return { from: '', to: '', raw: s };
+        }
+        
+        function formatPermitFromToWithTimes(permit) {
+            const t = parseOvertimeExitTimeRange(permit.expected_exit_time);
+            let fromLine = '';
+            let toLine = '';
+            if (permit.start_date) {
+                fromLine = permit.start_date;
+                if (t.from) fromLine += ' — من الساعة ' + t.from;
+            }
+            if (permit.end_date) {
+                toLine = permit.end_date;
+                if (t.to) toLine += ' — إلى الساعة ' + t.to;
+                else if (t.from && !t.to) toLine += ' — الساعة ' + t.from;
+            }
+            return { fromLine, toLine, raw: t.raw };
+        }
+        
+        function getPermitTypeSecurity(type) {
+            const types = {
+                'exit': { name: 'الدوام بعد ساعات العمل', icon: '⏰' },
+                'entry': { name: 'دخول إلى الشركة', icon: '🏢' },
+                'visit': { name: 'زيارة', icon: '👥' },
+                'delivery': { name: 'توصيل', icon: '📦' }
+            };
+            return types[type] || { name: type || 'تصريح', icon: '📋' };
+        }
+        
+        function escapeHtmlPermitSec(str) {
+            if (str == null) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        
+        function formatDetailTimestampSec(iso) {
+            if (!iso) return '—';
+            try {
+                return new Date(iso).toLocaleString('ar-SA');
+            } catch (e) {
+                return String(iso);
+            }
+        }
+        
+        function overtimePermitStatusLabelSec(status) {
+            const map = {
+                pending_manager: '⏳ بانتظار المدير',
+                pending_security: '⏳ بانتظار مكتب الأمن',
+                approved_security: '✅ معتمد من الأمن',
+                checked_in: '📍 داخل المبنى (مسجّل دخول)',
+                completed: '✅ مكتمل (مسجّل خروج)',
+                rejected_manager: '❌ مرفوض من المدير',
+                rejected_security: '❌ مرفوض من الأمن'
+            };
+            return map[status] || escapeHtmlPermitSec(status) || 'غير محدد';
+        }
+        
+        function buildEmployeeOvertimeDetailModalHtmlSec(permit, permitId) {
+            const requestDate = new Date(permit.request_date).toLocaleDateString('ar-SA');
+            const permitType = getPermitTypeSecurity(permit.type || 'exit');
+            const timeFmt = formatPermitFromToWithTimes(permit);
+            const mn = permit.manager_notes && String(permit.manager_notes).trim();
+            const sn = permit.security_notes && String(permit.security_notes).trim();
+            const en = permit.entry_notes && String(permit.entry_notes).trim();
+            const xn = permit.exit_notes && String(permit.exit_notes).trim();
+            const canPrint = permit.status !== 'rejected_manager' && permit.status !== 'rejected_security';
+            
+            return `
+                    <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
+                        <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
+                            📋 تفاصيل تصريح #${permitId}
+                        </h3>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الموظف</h4>
+                            <p><strong>اسم الموظف:</strong> ${escapeHtmlPermitSec(permit.full_name || permit.employee_name || 'غير محدد')}</p>
+                            <p><strong>الرقم الوظيفي:</strong> ${escapeHtmlPermitSec(permit.job_number || 'غير محدد')}</p>
+                            <p><strong>الإدارة:</strong> ${escapeHtmlPermitSec(permit.directorate || 'غير محدد')}</p>
+                            <p><strong>القسم:</strong> ${escapeHtmlPermitSec(permit.department_name || permit.department || 'غير محدد')}</p>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل التصريح</h4>
+                            <p><strong>نوع التصريح:</strong> ${permitType.icon} ${escapeHtmlPermitSec(permitType.name)}</p>
+                            <p><strong>السبب:</strong> ${escapeHtmlPermitSec(permit.reason || 'غير محدد')}</p>
+                            <p><strong>تاريخ الطلب:</strong> ${requestDate}</p>
+                            ${timeFmt.fromLine ? `<p><strong>من (تاريخ ووقت متوقع):</strong> ${escapeHtmlPermitSec(timeFmt.fromLine)}</p>` : ''}
+                            ${timeFmt.toLine ? `<p><strong>إلى (تاريخ ووقت متوقع):</strong> ${escapeHtmlPermitSec(timeFmt.toLine)}</p>` : ''}
+                            ${timeFmt.raw ? `<p><strong>الوقت كما سجّله الموظف:</strong> ${escapeHtmlPermitSec(timeFmt.raw)}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #3498db;">
+                            <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات المدير</h4>
+                            ${mn ? `<p style="white-space: pre-wrap; margin: 0;">${escapeHtmlPermitSec(mn)}</p>` : '<p style="color:#7f8c8d;">— لا توجد —</p>'}
+                            ${permit.manager_username ? `<p style="margin-top:8px;font-size:13px;color:#555;"><strong>اسم المستخدم:</strong> ${escapeHtmlPermitSec(permit.manager_username)}</p>` : ''}
+                            ${permit.manager_decision_date ? `<p style="font-size:13px;color:#555;"><strong>تاريخ القرار:</strong> ${formatDetailTimestampSec(permit.manager_decision_date)}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: #fff8e6; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #f39c12;">
+                            <h4 style="color: #d68910; margin-bottom: 10px;">ملاحظات مكتب الأمن</h4>
+                            ${sn ? `<p style="white-space: pre-wrap; margin: 0;">${escapeHtmlPermitSec(sn)}</p>` : '<p style="color:#7f8c8d;">— لا توجد —</p>'}
+                            ${permit.security_username ? `<p style="margin-top:8px;font-size:13px;color:#555;"><strong>مسؤول الأمن:</strong> ${escapeHtmlPermitSec(permit.security_username)}</p>` : ''}
+                            ${permit.security_decision_date ? `<p style="font-size:13px;color:#555;"><strong>تاريخ القرار:</strong> ${formatDetailTimestampSec(permit.security_decision_date)}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: #f5eef8; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #8e44ad;">
+                            <h4 style="color: #8e44ad; margin-bottom: 10px;">تسجيل الحارس (دخول وخروج)</h4>
+                            <p><strong>وقت الدخول الفعلي:</strong> ${permit.actual_entry_time ? `<span dir="ltr">${escapeHtmlPermitSec(permit.actual_entry_time)}</span>` : '—'}</p>
+                            <p><strong>وقت تسجيل الدخول:</strong> ${formatDetailTimestampSec(permit.checkin_timestamp)}</p>
+                            <p><strong>حارس الدخول:</strong> ${escapeHtmlPermitSec(permit.entry_guard_username || '—')}</p>
+                            <p><strong>ملاحظات الحارس (دخول):</strong> ${en ? `<span style="white-space:pre-wrap;">${escapeHtmlPermitSec(en)}</span>` : '—'}</p>
+                            <hr style="border:0;border-top:1px solid #dccae0;margin:12px 0;">
+                            <p><strong>وقت الخروج الفعلي:</strong> ${permit.actual_exit_time ? `<span dir="ltr">${escapeHtmlPermitSec(permit.actual_exit_time)}</span>` : '—'}</p>
+                            <p><strong>وقت تسجيل الخروج:</strong> ${formatDetailTimestampSec(permit.checkout_timestamp)}</p>
+                            <p><strong>حارس الخروج:</strong> ${escapeHtmlPermitSec(permit.exit_guard_username || '—')}</p>
+                            <p><strong>ملاحظات الحارس (خروج):</strong> ${xn ? `<span style="white-space:pre-wrap;">${escapeHtmlPermitSec(xn)}</span>` : '—'}</p>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <h4 style="color: #3498db; margin-bottom: 10px;">حالة التصريح</h4>
+                            <p><strong>الحالة:</strong> ${overtimePermitStatusLabelSec(permit.status)}</p>
+                        </div>
+                        
+                        ${canPrint ? `
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button type="button" onclick="printOvertimePermit(${permitId})" 
+                                    style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                                🖨️ طباعة التصريح
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+        }
+        
         async function viewPermit(permitId) {
             try {
-                // جلب تفاصيل التصريح من API
-                const response = await fetch(`/api/permits/search?q=${permitId}&type=security`, {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success && data.permits && data.permits.length > 0) {
-                    const permit = data.permits[0];
-                    const requestDate = new Date(permit.request_date).toLocaleDateString('ar-SA');
-                    
-                    const modalHTML = `
-                        <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
-                                📋 تفاصيل تصريح #${permitId}
-                            </h3>
-                            
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الموظف</h4>
-                                <p><strong>اسم الموظف:</strong> ${permit.full_name || permit.employee_name || 'غير محدد'}</p>
-                                <p><strong>الرقم الوظيفي:</strong> ${permit.job_number || 'غير محدد'}</p>
-                                <p><strong>الإدارة:</strong> ${permit.directorate || 'غير محدد'}</p>
-                                <p><strong>القسم:</strong> ${permit.department_name || permit.department || 'غير محدد'}</p>
-                            </div>
-                            
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل التصريح</h4>
-                                <p><strong>السبب:</strong> ${permit.reason || 'غير محدد'}</p>
-                                <p><strong>تاريخ الطلب:</strong> ${requestDate}</p>
-                                ${permit.start_date ? `<p><strong>من:</strong> ${permit.start_date} ${permit.start_time || ''}</p>` : ''}
-                                ${permit.end_date ? `<p><strong>إلى:</strong> ${permit.end_date} ${permit.end_time || ''}</p>` : ''}
-                            </div>
-                            
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <h4 style="color: #3498db; margin-bottom: 10px;">حالة التصريح</h4>
-                                <p><strong>الحالة:</strong> 
-                                    ${permit.status === 'pending' ? '⏳ بانتظار الموافقة' :
-                                      permit.status === 'approved' ? '✅ معتمد' :
-                                      permit.status === 'rejected' ? '❌ مرفوض' :
-                                      permit.status === 'approved_security' ? '✅ معتمد من الأمن' :
-                                      permit.status || 'غير محدد'}
-                                </p>
-                                ${permit.approved_by ? `<p><strong>المعتمد من:</strong> ${permit.approved_by}</p>` : ''}
-                                ${permit.approval_date ? `<p><strong>تاريخ الموافقة:</strong> ${new Date(permit.approval_date).toLocaleDateString('ar-SA')}</p>` : ''}
-                            </div>
-                        </div>
-                    `;
-                    
-                    showModal({
-                        title: `📋 تصريح #${permitId}`,
-                        html: modalHTML,
-                        confirmText: 'إغلاق',
-                        cancelText: null
-                    });
-                    
-                } else {
-                    showNotification('❌ تعذر العثور على التصريح', 'error');
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول', 'error');
+                    return;
                 }
+                const response = await fetch(`/api/permits/details/${permitId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success || !data.permit) {
+                    showNotification('❌ ' + (data.message || 'تعذر جلب تفاصيل التصريح'), 'error');
+                    return;
+                }
+                
+                showModal({
+                    title: `📋 تصريح #${permitId}`,
+                    html: buildEmployeeOvertimeDetailModalHtmlSec(data.permit, permitId),
+                    confirmText: 'إغلاق',
+                    cancelText: null
+                });
                 
             } catch (error) {
                 console.error('خطأ في جلب بيانات التصريح:', error);
@@ -2274,6 +2951,14 @@
             }
         }
 
+        function openSecurityGlobalSearchDetail(kind, id) {
+            const n = Number(id);
+            if (Number.isNaN(n)) return;
+            if (kind === 'employee') viewPermit(n);
+            else if (kind === 'company_entry') viewCompanyEntryPermit(n);
+            else if (kind === 'material_exit') viewMaterialExitPermit(n);
+        }
+        
         async function searchPermits() {
             const searchQuery = document.getElementById('searchInput').value.trim();
             
@@ -2283,54 +2968,67 @@
             }
             
             try {
-                const data = await fetchJson(`/api/permits/search?q=${encodeURIComponent(searchQuery)}&type=security`);
+                const data = await fetchJson(`/api/permits/global-search?q=${encodeURIComponent(searchQuery)}&context=security`);
                 
-                if (data.success) {
-                    const permits = data.permits || [];
-                    
-                    if (permits.length > 0) {
-                        // عرض نتائج البحث في نافذة منبثقة
-                        const resultsHtml = permits.map(permit => `
-                            <div style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-right: 4px solid #3498db;">
-                                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">
-                                    📋 تصريح #${permit.permit_id} - ${permit.full_name}
-                                </div>
-                                <div style="color: #7f8c8d; font-size: 14px;">
-                                    ${permit.job_number} | ${permit.department_name || 'غير محدد'}
-                                </div>
-                                <div style="margin-top: 10px;">
-                                    <button onclick="viewPermit(${permit.permit_id})" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
-                                        عرض التفاصيل
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('');
-                        
-                        showModal({
-                            title: '🔍 نتائج البحث',
-                            html: `
-                                <div style="margin-bottom: 15px;">
-                                    <p>تم العثور على ${permits.length} نتيجة:</p>
-                                </div>
-                                <div style="max-height: 300px; overflow-y: auto;">
-                                    ${resultsHtml}
-                                </div>
-                            `,
-                            confirmText: 'إغلاق',
-                            cancelText: null
-                        });
-                    } else {
-                        showModal({
-                            title: '🔍 نتائج البحث',
-                            html: '<p>لم يتم العثور على نتائج.</p>',
-                            confirmText: 'إغلاق',
-                            cancelText: null
-                        });
-                    }
+                if (!data.success) {
+                    showNotification('❌ ' + (data.message || 'تعذر البحث'), 'error');
+                    return;
                 }
+                
+                const rows = data.results || [];
+                
+                if (rows.length === 0) {
+                    showModal({
+                        title: '🔍 نتائج البحث',
+                        html: '<p>لم يتم العثور على تصاريح مطابقة.</p>',
+                        confirmText: 'إغلاق',
+                        cancelText: null
+                    });
+                    return;
+                }
+                
+                const kindBadge = {
+                    employee: '👤 بعد الدوام',
+                    company_entry: '🏢 شركة',
+                    material_exit: '📦 إخراج مواد'
+                };
+                
+                const resultsHtml = rows.map(r => {
+                    const badge = kindBadge[r.kind] || r.kind;
+                    const st = r.status ? `<div style="margin-top: 8px; font-size: 13px; color: #555;">${r.status}</div>` : '';
+                    return `
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-right: 4px solid #3498db;">
+                            <div style="font-size: 12px; color: #2980b9; margin-bottom: 6px; font-weight: 600;">${badge}</div>
+                            <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">
+                                ${r.title} — ${r.primary || ''}
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">${r.secondary || ''}</div>
+                            ${st}
+                            <div style="margin-top: 10px;">
+                                <button type="button" onclick="openSecurityGlobalSearchDetail('${r.kind}', ${r.id})" style="background: #3498db; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    عرض التفاصيل
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                showModal({
+                    title: '🔍 نتائج البحث — كل التصاريح',
+                    html: `
+                        <div style="margin-bottom: 15px;">
+                            <p>تم العثور على ${rows.length} نتيجة:</p>
+                        </div>
+                        <div style="max-height: 360px; overflow-y: auto;">
+                            ${resultsHtml}
+                        </div>
+                    `,
+                    confirmText: 'إغلاق',
+                    cancelText: null
+                });
             } catch (error) {
                 console.error('خطأ في البحث:', error);
-                showNotification('❌ حدث خطأ في البحث', 'error');
+                showNotification('❌ ' + (error.message || 'حدث خطأ في البحث'), 'error');
             }
         }
 
@@ -2391,8 +3089,9 @@
         // 🔥 NEW: دالة لتحديث الإشعارات في الوقت الحقيقي
         async function updateRealTimeGuardNotifications() {
             try {
-                // 1. جلب الإشعارات الجديدة من الخادم
-                const newNotifications = await loadGuardNotificationsFromServer();
+                // 1. جلب إشعارات من الخادم وتوحيد شكلها مع إشعارات الحارس المحلية
+                const rawServer = await loadGuardNotificationsFromServer();
+                const newNotifications = rawServer.map(normalizeGuardNotificationRow);
                 
                 // 2. جلب الإشعارات القديمة من localStorage
                 const oldNotifications = JSON.parse(localStorage.getItem('security_guard_notifications')) || [];
@@ -2405,7 +3104,9 @@
                 const seenIds = new Set();
                 
                 allNotifications.forEach(notification => {
-                    const id = notification.id || notification.timestamp + notification.type;
+                    const id = notification.notification_id != null ? `srv_${notification.notification_id}`
+                        : (notification.id != null ? `id_${notification.id}` : null)
+                        || `${notification.timestamp || ''}_${notification.type || ''}_${notification.data?.permit_id || ''}`;
                     if (!seenIds.has(id)) {
                         seenIds.add(id);
                         uniqueNotifications.push(notification);
@@ -2596,7 +3297,7 @@ function showGuardNotifications() {
             
             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; text-align: center;">
                 <button onclick="closeGuardNotificationsModal()" 
-                        style="padding: 12px 40px; background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3); transition: all 0.3s;">
+                        style="padding: 12px 40px; background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(70, 113, 145, 0.35); transition: all 0.3s;">
                     <span>❌</span>
                     <span>إغلاق النافذة</span>
                 </button>
@@ -2709,6 +3410,92 @@ function closeGuardNotificationsModal() {
     }
 }
 
+        function escapeHtmlGuardNotif(s) {
+            if (s == null || s === '') return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function stripHtmlToTextGuard(html) {
+            if (html == null || html === '') return '';
+            return String(html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        /** يوحّد صفوف جدول الإشعارات (من API) مع شكل إشعارات الحارس المحلية */
+        function normalizeGuardNotificationRow(n) {
+            if (n && n.data && typeof n.data === 'object' && (n.timestamp || n.created_at)) {
+                const out = { ...n };
+                if (!out.timestamp) out.timestamp = out.created_at;
+                return out;
+            }
+            const title = (n.title && String(n.title).trim()) || '';
+            const msgRaw = n.message != null ? String(n.message) : '';
+            const msgPlain = stripHtmlToTextGuard(msgRaw);
+            const combined = [title, msgPlain].filter(Boolean).join(' — ');
+            const body = combined || 'إشعار من النظام لمكتب الأمن';
+            const ts = n.created_at || n.timestamp || new Date().toISOString();
+            const permitId = n.permit_id != null ? n.permit_id : n.company_permit_id;
+            return {
+                id: n.notification_id != null ? `srv_${n.notification_id}` : (n.id || Date.now()),
+                notification_id: n.notification_id,
+                type: n.notification_type || n.type || 'system_notice',
+                guard_name: null,
+                data: {
+                    message: body,
+                    permit_id: permitId,
+                    employee_name: n.related_employee_name || ''
+                },
+                timestamp: ts,
+                is_read: !!n.is_read,
+                _fromServer: true
+            };
+        }
+
+        function formatGuardNotificationTime(notification) {
+            const raw = notification.timestamp || notification.created_at;
+            const d = raw ? new Date(raw) : new Date();
+            if (Number.isNaN(d.getTime())) {
+                return typeof raw === 'string' && raw.trim() ? escapeHtmlGuardNotif(raw) : '—';
+            }
+            return d.toLocaleString('ar-SA', {
+                hour: '2-digit',
+                minute: '2-digit',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function guardNotificationBodyText(notification) {
+            const d = notification.data;
+            if (d && d.message && String(d.message).trim()) return String(d.message).trim();
+            const title = notification.title && String(notification.title).trim();
+            const msg = notification.message != null ? stripHtmlToTextGuard(notification.message) : '';
+            return [title, msg].filter(Boolean).join(' — ') || 'تفاصيل الإشعار غير متوفرة';
+        }
+
+        function guardNotificationPermitId(notification) {
+            const d = notification.data;
+            if (d && d.permit_id != null && d.permit_id !== '') return d.permit_id;
+            if (notification.permit_id != null) return notification.permit_id;
+            if (notification.company_permit_id != null) return notification.company_permit_id;
+            return null;
+        }
+
+        function guardNotificationPerson(notification) {
+            const d = notification.data;
+            if (d && d.employee_name && d.material_type) {
+                return `${d.employee_name} — ${d.material_type}`;
+            }
+            if (d && d.employee_name) return d.employee_name;
+            if (d && d.company_name) return d.company_name;
+            if (notification.related_employee_name) return notification.related_employee_name;
+            return '';
+        }
+
 // 🔥 NEW: دالة مساعدة لإنشاء عنصر إشعار (محدثة)
 function createNotificationItem(notification, isUnread) {
     let icon = '📢';
@@ -2716,7 +3503,7 @@ function createNotificationItem(notification, isUnread) {
     let bgColor = isUnread ? '#f0f7ff' : '#f8f9fa';
     let borderColor = isUnread ? '#3498db' : '#e9ecef';
     
-    switch(notification.type) {
+    switch (notification.type) {
         case 'permit_approved':
             icon = '✅';
             typeText = 'تصريح جديد';
@@ -2727,24 +3514,55 @@ function createNotificationItem(notification, isUnread) {
             break;
         case 'employee_checkin':
             icon = '✅';
-            typeText = 'دخول موظف';
+            typeText = 'دخول موظف (نقطة الحراسة)';
             break;
         case 'employee_checkout':
             icon = '🚪';
-            typeText = 'خروج موظف';
+            typeText = 'خروج موظف (نقطة الحراسة)';
+            break;
+        case 'company_checkin':
+            icon = '🏢';
+            typeText = 'دخول شركة (نقطة الحراسة)';
+            break;
+        case 'company_checkout':
+            icon = '🏢';
+            typeText = 'خروج شركة (نقطة الحراسة)';
+            break;
+        case 'material_exit_completed':
+            icon = '📦';
+            typeText = 'إخراج مواد / أجهزة';
+            break;
+        case 'guard_name_set':
+            icon = '👮';
+            typeText = 'بداية مناوبة الحارس';
+            break;
+        case 'guard_name_changed':
+            icon = '🔄';
+            typeText = 'تغيير الحارس';
             break;
         case 'guard_sign_out':
             icon = '🏁';
             typeText = 'إنهاء مناوبة';
             break;
+        case 'system_notice':
+            icon = '📋';
+            typeText = 'إشعار النظام';
+            break;
+        default:
+            if (notification._fromServer) {
+                icon = '📋';
+                typeText = 'إشعار مرتبط بالتصاريح';
+            }
+            break;
     }
     
-    const time = new Date(notification.timestamp).toLocaleString('ar-SA', {
-        hour: '2-digit',
-        minute: '2-digit',
-        day: 'numeric',
-        month: 'short'
-    });
+    const time = formatGuardNotificationTime(notification);
+    const bodyText = escapeHtmlGuardNotif(guardNotificationBodyText(notification));
+    const permitId = guardNotificationPermitId(notification);
+    const person = escapeHtmlGuardNotif(guardNotificationPerson(notification));
+    const sourceBadge = notification.guard_name
+        ? `الحارس: ${escapeHtmlGuardNotif(notification.guard_name)}`
+        : (notification._fromServer ? 'من سجل النظام' : 'حارس (لم يُذكر الاسم)');
     
     return `
         <div style="margin-bottom: 12px; padding: 15px; background: ${bgColor}; border-radius: 12px; border-right: 4px solid ${borderColor}; transition: all 0.3s;">
@@ -2757,7 +3575,7 @@ function createNotificationItem(notification, isUnread) {
                         <div>
                             <div style="font-weight: bold; color: #2c3e50; margin-bottom: 2px; font-size: 15px;">${typeText}</div>
                             <div style="color: #3498db; font-size: 13px; background: rgba(52, 152, 219, 0.1); padding: 2px 8px; border-radius: 12px; display: inline-block;">
-                                ${notification.guard_name ? `الحارس: ${notification.guard_name}` : 'الحرس العام'}
+                                ${sourceBadge}
                             </div>
                         </div>
                         ${isUnread ? `
@@ -2771,20 +3589,20 @@ function createNotificationItem(notification, isUnread) {
                             </div>
                         `}
                     </div>
-                    <div style="color: #666; font-size: 14px; line-height: 1.5; margin: 8px 0; padding: 10px; background: white; border-radius: 8px;">
-                        ${notification.data?.message || 'إشعار جديد من الحرس'}
+                    <div style="color: #666; font-size: 14px; line-height: 1.6; margin: 8px 0; padding: 10px; background: white; border-radius: 8px; white-space: pre-wrap;">
+                        ${bodyText}
                     </div>
-                    <div style="font-size: 12px; color: #95a5a6; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 12px; color: #95a5a6; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             <span>🕒 ${time}</span>
-                            ${notification.data?.permit_id ? `
+                            ${permitId != null && permitId !== '' ? `
                                 <span style="color: #3498db; background: rgba(52, 152, 219, 0.1); padding: 2px 8px; border-radius: 12px;">
-                                    التصريح #${notification.data.permit_id}
+                                    التصريح #${escapeHtmlGuardNotif(permitId)}
                                 </span>
                             ` : ''}
                         </div>
                         <div style="font-size: 11px; color: #bdc3c7;">
-                            ${notification.data?.employee_name || ''}
+                            ${person}
                         </div>
                     </div>
                 </div>
@@ -2992,11 +3810,65 @@ function createNotificationItem(notification, isUnread) {
             }
         }
 
+        function escapeSecurityCardText(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
+        function buildSecurityCompanyWorkersTableHtml(permit) {
+            let rows = [];
+            if (permit.workers && Array.isArray(permit.workers) && permit.workers.length > 0) {
+                rows = permit.workers.map((w, i) => ({
+                    idx: i + 1,
+                    name: w.worker_name || '—',
+                    idn: w.worker_id_number || '—',
+                    prof: w.worker_profession || '—'
+                }));
+            } else {
+                let list = [];
+                try {
+                    if (permit.employees && typeof permit.employees === 'string') list = JSON.parse(permit.employees);
+                    else if (permit.employees && Array.isArray(permit.employees)) list = permit.employees;
+                } catch (e) { list = []; }
+                rows = (list || []).map((e, i) => ({
+                    idx: i + 1,
+                    name: e.name || e.worker_name || '—',
+                    idn: e.id_number || e.worker_id_number || '—',
+                    prof: e.profession || e.worker_profession || '—'
+                }));
+            }
+            if (!rows.length) return '';
+            const body = rows.map((r) => `
+                <tr>
+                    <td style="text-align:center;width:40px;">${r.idx}</td>
+                    <td>${escapeSecurityCardText(r.name)}</td>
+                    <td>${escapeSecurityCardText(r.idn)}</td>
+                    <td>${escapeSecurityCardText(r.prof)}</td>
+                </tr>
+            `).join('');
+            return `
+                <div class="security-company-workers-block">
+                    <span class="detail-label" style="display:block;margin-bottom:10px;">جدول العمال (${rows.length})</span>
+                    <table class="security-company-workers-table" dir="rtl">
+                        <thead>
+                            <tr>
+                                <th style="text-align:center;width:40px;">#</th>
+                                <th>اسم العامل</th>
+                                <th>الرقم المدني</th>
+                                <th>المهنة</th>
+                            </tr>
+                        </thead>
+                        <tbody>${body}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
         function createCompanyEntrySecurityCard(permit) {
             // استخراج الدائرة الطالبة من requesting_department أو additional_notes
             let requestingDeptText = '';
+            let dept = null;
             try {
-                let dept = null;
                 if (permit.requesting_department) {
                     dept = typeof permit.requesting_department === 'string' ? JSON.parse(permit.requesting_department) : permit.requesting_department;
                 } else if (permit.additional_notes) {
@@ -3006,7 +3878,9 @@ function createNotificationItem(notification, isUnread) {
                 if (dept && (dept.directorate || dept.department)) requestingDeptText = [dept.directorate, dept.department].filter(Boolean).join(' / ');
             } catch (e) {}
             if (!requestingDeptText && (permit.directorate || permit.department)) requestingDeptText = [permit.directorate, permit.department].filter(Boolean).join(' / ');
-            // أولوية لجدول العمال من الـ API (company_workers) كامل لمكتب الأمن
+            
+            const requestingEmployeeName = permit.employee_name || (dept && dept.employee_name) || 'غير معروف';
+            
             let workersList = [];
             if (permit.workers && Array.isArray(permit.workers) && permit.workers.length > 0) {
                 workersList = permit.workers.map(w => ({ name: w.worker_name || 'غير محدد', worker_name: w.worker_name }));
@@ -3017,11 +3891,32 @@ function createNotificationItem(notification, isUnread) {
                     workersList = (workersList || []).map(e => ({ name: e.name || e.worker_name }));
                 } catch (e) { workersList = []; }
             }
-            const totalEmployees = workersList.length;
+            const totalEmployees = permit.workers && permit.workers.length > 0
+                ? permit.workers.length
+                : (workersList.length || permit.number_of_visitors || 0);
+            
             const entryDate = permit.expected_entry_date || permit.start_date;
             const exitDate = permit.expected_exit_date || permit.end_date;
             const entryTime = permit.expected_entry_time || permit.entry_time;
             const exitTime = permit.expected_exit_time || permit.exit_time;
+            
+            const dateRaw = permit.request_date || permit.created_at;
+            let headerDateStr = '—';
+            if (dateRaw) {
+                const d = new Date(dateRaw);
+                if (!isNaN(d.getTime())) headerDateStr = d.toLocaleDateString('ar-SA');
+            }
+            
+            const companyName = permit.company_name || 'شركة غير معروفة';
+            const companyRep = permit.company_representative || permit.company_supervisor || 'غير محدد';
+            const companyPhone = permit.representative_phone || permit.company_phone || 'بدون رقم';
+            
+            const purposeRaw = permit.entry_purpose || permit.work_details || '';
+            const purposeDisplay = purposeRaw
+                ? (purposeRaw.length > 120 ? escapeSecurityCardText(purposeRaw.substring(0, 120)) + '…' : escapeSecurityCardText(purposeRaw))
+                : 'غير محدد';
+            
+            const workersTableHtml = buildSecurityCompanyWorkersTableHtml(permit);
             
             return `
                 <div class="permit-card" style="border-left: 4px solid #3498db !important;">
@@ -3031,7 +3926,7 @@ function createNotificationItem(notification, isUnread) {
                                 🏢 تصريح شركة #${permit.permit_id}
                             </div>
                             <div class="permit-date">
-                                ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
+                                ${headerDateStr}
                             </div>
                         </div>
                         <div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
@@ -3042,31 +3937,29 @@ function createNotificationItem(notification, isUnread) {
                     <div class="employee-info">
                         <div class="employee-avatar" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">🏢</div>
                         <div class="employee-details">
-                            <h3>${permit.company_name || 'شركة غير معروفة'}</h3>
-                            <p>${permit.company_supervisor || 'غير محدد'}</p>
-                            <p>${permit.company_phone || 'بدون رقم'}</p>
+                            <p class="company-card-label">اسم الشركة</p>
+                            <h3 class="company-card-value" style="margin-top:0;">${escapeSecurityCardText(companyName)}</h3>
+                            <p class="company-card-label">المسؤول عن الشركة (ممثل العمال)</p>
+                            <p class="company-card-value" style="font-weight:600;">${escapeSecurityCardText(companyRep)}</p>
+                            <p class="company-card-label">هاتف المسؤول</p>
+                            <p style="margin:0;color:#2c3e50;font-size:14px;">${escapeSecurityCardText(companyPhone)}</p>
                         </div>
                     </div>
                     
                     <div class="permit-details">
                         <div class="detail-item">
                             <span class="detail-label">الجهة الطالبة:</span>
-                            <span class="detail-value">${permit.employee_name || 'غير معروف'}</span>
+                            <span class="detail-value">${escapeSecurityCardText(requestingEmployeeName)}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">الدائرة الطالبة للتصريح:</span>
-                            <span class="detail-value">${requestingDeptText || 'غير محدد'}</span>
+                            <span class="detail-value">${escapeSecurityCardText(requestingDeptText || 'غير محدد')}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">عدد العمال:</span>
                             <span class="detail-value">${totalEmployees} عامل</span>
                         </div>
-                        ${workersList.length > 0 ? `
-                        <div class="detail-item" style="grid-column: 1 / -1;">
-                            <span class="detail-label">قائمة العمال:</span>
-                            <span class="detail-value" style="font-size: 12px;">${workersList.map(w => w.name || w.worker_name).join('، ')}</span>
-                        </div>
-                        ` : ''}
+                        ${workersTableHtml}
                         <div class="detail-item">
                             <span class="detail-label">التاريخ:</span>
                             <span class="detail-value">${entryDate || '-'} إلى ${exitDate || '-'}</span>
@@ -3077,17 +3970,17 @@ function createNotificationItem(notification, isUnread) {
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">ملاحظات المدير:</span>
-                            <span class="detail-value">${permit.manager_notes || 'لا توجد'}</span>
+                            <span class="detail-value">${escapeSecurityCardText(permit.manager_notes || 'لا توجد')}</span>
                         </div>
                         ${permit.security_notes ? `
                         <div class="detail-item" style="background: #fff8e6; padding: 10px; border-radius: 8px; margin-top: 8px; border-right: 4px solid #f39c12;">
                             <span class="detail-label" style="display: block; margin-bottom: 4px; font-weight: 600;">ملاحظات مكتب الأمن:</span>
-                            <span class="detail-value" style="white-space: pre-wrap;">${permit.security_notes}</span>
+                            <span class="detail-value" style="white-space: pre-wrap;">${escapeSecurityCardText(permit.security_notes)}</span>
                         </div>
                         ` : ''}
                         <div class="detail-item">
                             <span class="detail-label">الغرض:</span>
-                            <span class="detail-value">${permit.work_details ? (permit.work_details.length > 100 ? permit.work_details.substring(0, 100) + '...' : permit.work_details) : 'غير محدد'}</span>
+                            <span class="detail-value">${purposeDisplay}</span>
                         </div>
                     </div>
                     
@@ -3531,6 +4424,107 @@ function createNotificationItem(notification, isUnread) {
             }
         }
 
+        function escapeHtmlCompanyNote(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        
+        function formatCompanyEntryAdditionalNotesHtml(rawNotes) {
+            if (rawNotes == null || String(rawNotes).trim() === '') return '';
+            let obj = null;
+            try {
+                obj = typeof rawNotes === 'string' ? JSON.parse(rawNotes) : rawNotes;
+            } catch (e) {
+                return `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
+                        <p style="white-space: pre-wrap; line-height: 1.65; color: #2c3e50;">${escapeHtmlCompanyNote(String(rawNotes))}</p>
+                    </div>`;
+            }
+            if (!obj || typeof obj !== 'object') {
+                return `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
+                        <p style="white-space: pre-wrap; line-height: 1.65;">${escapeHtmlCompanyNote(String(rawNotes))}</p>
+                    </div>`;
+            }
+            let rd = {};
+            if (obj.requesting_department) {
+                if (typeof obj.requesting_department === 'string') {
+                    try { rd = JSON.parse(obj.requesting_department) || {}; } catch (e2) { rd = {}; }
+                } else if (typeof obj.requesting_department === 'object') {
+                    rd = obj.requesting_department;
+                }
+            }
+            const jobRef = rd.job_number || rd.number || '';
+            const fieldRows = [
+                ['اسم الموظف (من النموذج)', rd.employee_name],
+                ['المديرية', rd.directorate],
+                ['القسم', rd.department],
+                ['الرقم الوظيفي / الرقم', jobRef],
+                ['المسؤول المباشر', rd.supervisor_name],
+                ['تاريخ التصريح (النموذج)', rd.permit_date],
+                ['وقت التصريح (النموذج)', rd.permit_time],
+                ['عنوان الشركة / الموقع', rd.company_address],
+                ['ملاحظات نصية من مقدم الطلب', rd.additional_notes]
+            ].filter(([, v]) => v != null && String(v).trim() !== '');
+            let employeesBlock = '';
+            if (Array.isArray(obj.employees) && obj.employees.length > 0) {
+                const empRows = obj.employees.map((emp, i) => {
+                    const name = escapeHtmlCompanyNote(emp.name || emp.worker_name || '—');
+                    const idn = escapeHtmlCompanyNote(emp.id_number || emp.worker_id_number || '—');
+                    const prof = escapeHtmlCompanyNote(emp.profession || emp.worker_profession || '—');
+                    let cardTxt = '—';
+                    if (emp.has_id_card === true) cardTxt = 'نعم';
+                    else if (emp.has_id_card === false) cardTxt = 'لا';
+                    return `<tr>
+                        <td style="padding:8px;text-align:center;">${i + 1}</td>
+                        <td style="padding:8px;">${name}</td>
+                        <td style="padding:8px;">${idn}</td>
+                        <td style="padding:8px;">${prof}</td>
+                        <td style="padding:8px;text-align:center;">${cardTxt}</td>
+                    </tr>`;
+                }).join('');
+                employeesBlock = `
+                    <h5 style="color:#2c3e50;margin:18px 0 10px;font-size:15px;">العاملون كما أُدخلوا في نموذج الطلب (${obj.employees.length})</h5>
+                    <table dir="rtl" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="background:#5dade2;color:#fff;">
+                                <th style="padding:8px;">#</th>
+                                <th style="padding:8px;text-align:right;">الاسم</th>
+                                <th style="padding:8px;text-align:right;">الرقم المدني</th>
+                                <th style="padding:8px;text-align:right;">المهنة</th>
+                                <th style="padding:8px;">مرفق بطاقة</th>
+                            </tr>
+                        </thead>
+                        <tbody>${empRows}</tbody>
+                    </table>`;
+            }
+            const dlRows = fieldRows.map(([label, val]) => `
+                <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid #e9ecef;">
+                    <span style="color:#2980b9;font-weight:600;min-width:170px;">${escapeHtmlCompanyNote(label)}</span>
+                    <span style="flex:1;color:#2c3e50;white-space:pre-wrap;line-height:1.5;">${escapeHtmlCompanyNote(val)}</span>
+                </div>`).join('');
+            if (!dlRows && !employeesBlock) {
+                return `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <h4 style="color: #3498db; margin-bottom: 10px;">بيانات إضافية من الطلب</h4>
+                        <p style="color:#7f8c8d;font-size:14px;">لا توجد حقول منظّمة؛ النص الأصلي أدناه.</p>
+                        <pre style="margin-top:10px;white-space:pre-wrap;font-size:12px;color:#495057;background:#fff;padding:10px;border-radius:8px;border:1px solid #e9ecef;">${escapeHtmlCompanyNote(JSON.stringify(obj, null, 2))}</pre>
+                    </div>`;
+            }
+            return `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <h4 style="color: #3498db; margin-bottom: 12px;">ملاحظات وبيانات إضافية (من نموذج الطلب)</h4>
+                    ${dlRows ? `<div>${dlRows}</div>` : ''}
+                    ${employeesBlock}
+                </div>`;
+        }
+
         // 🔥 NEW: دالة لعرض تفاصيل تصريح الشركة
         async function viewCompanyEntryPermit(permitId) {
             try {
@@ -3595,8 +4589,8 @@ function createNotificationItem(notification, isUnread) {
                             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                                 <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الشركة</h4>
                                 <p><strong>اسم الشركة:</strong> ${permit.company_name || 'غير محدد'}</p>
-                                <p><strong>مسؤول الشركة:</strong> ${permit.company_supervisor || 'غير محدد'}</p>
-                                <p><strong>رقم الهاتف:</strong> ${permit.company_phone || 'غير محدد'}</p>
+                                <p><strong>المسؤول عن الشركة (ممثل العمال):</strong> ${permit.company_representative || permit.company_supervisor || 'غير محدد'}</p>
+                                <p><strong>رقم الهاتف:</strong> ${permit.representative_phone || permit.company_phone || 'غير محدد'}</p>
                                 <p><strong>العنوان:</strong> ${permit.company_address || 'غير محدد'}</p>
                             </div>
                             
@@ -3634,12 +4628,7 @@ function createNotificationItem(notification, isUnread) {
                                 </table>
                             </div>
                             
-                            ${permit.additional_notes ? `
-                                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                    <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
-                                    <p>${permit.additional_notes}</p>
-                                </div>
-                            ` : ''}
+                            ${formatCompanyEntryAdditionalNotesHtml(permit.additional_notes)}
                             
                             ${permit.manager_notes ? `
                                 <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
@@ -3826,8 +4815,79 @@ function createNotificationItem(notification, isUnread) {
         }
         
         async function viewMaterialExitPermit(permitId) {
-            // يمكن إضافة دالة عرض التفاصيل هنا إذا لزم الأمر
-            console.log('عرض تفاصيل تصريح إخراج مواد:', permitId);
+            try {
+                const response = await fetch(`/api/permits/material-exit/${permitId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                const data = await response.json();
+                if (!data.success || !data.permit) {
+                    showNotification('❌ تعذر جلب بيانات التصريح', 'error');
+                    return;
+                }
+                const permit = data.permit;
+                const permitDate = permit.permit_date || permit.created_at || new Date().toISOString();
+                const modalHTML = `
+                        <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
+                                📦 تفاصيل تصريح إخراج مواد #${permitId}
+                            </h3>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الموظف</h4>
+                                <p><strong>اسم الموظف:</strong> ${permit.employee_name || permit.full_name || 'غير محدد'}</p>
+                                <p><strong>الرقم الوظيفي:</strong> ${permit.job_number || 'غير محدد'}</p>
+                                <p><strong>الإدارة:</strong> ${permit.directorate || 'غير محدد'}</p>
+                                <p><strong>القسم:</strong> ${permit.department || 'غير محدد'}</p>
+                                <p><strong>المسؤول المباشر:</strong> ${permit.supervisor_name || 'غير محدد'}</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل المادة/الجهاز</h4>
+                                <p><strong>نوع المادة/الجهاز:</strong> ${permit.material_type || 'غير محدد'}</p>
+                                <p><strong>سبب الإخراج:</strong> ${permit.exit_reason || 'غير محدد'}</p>
+                                <p><strong>التاريخ المطلوب:</strong> ${new Date(permitDate).toLocaleDateString('ar-SA')}</p>
+                                ${permit.permit_time ? `<p><strong>الوقت المطلوب:</strong> ${permit.permit_time}</p>` : ''}
+                            </div>
+                            ${permit.manager_notes ? `
+                            <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #2c3e50; margin-bottom: 10px;">ملاحظات المدير</h4>
+                                <p>${permit.manager_notes}</p>
+                            </div>` : ''}
+                            ${permit.security_notes ? `
+                            <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #856404; margin-bottom: 10px;">ملاحظات الأمن</h4>
+                                <p>${permit.security_notes}</p>
+                            </div>` : ''}
+                            ${permit.guard_notes ? `
+                            <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #155724; margin-bottom: 10px;">ملاحظات الحارس</h4>
+                                <p>${permit.guard_notes}</p>
+                                ${permit.guard_verification_date ? `<p style="margin-top: 10px; font-size: 14px; color: #666;"><strong>وقت الخروج الفعلي:</strong> ${new Date(permit.guard_verification_date).toLocaleString('ar-SA')}</p>` : ''}
+                            </div>` : ''}
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">حالة التصريح</h4>
+                                <p><strong>الحالة:</strong>
+                                    ${permit.status === 'pending_manager' ? '⏳ بانتظار المدير' :
+                                      permit.status === 'pending_security' ? '⏳ بانتظار الأمن' :
+                                      permit.status === 'sent_to_guard' ? '📦 جاهز للحارس' :
+                                      permit.status === 'completed' ? '✅ مكتمل' :
+                                      permit.status === 'rejected_manager' ? '❌ مرفوض من المدير' :
+                                      permit.status === 'rejected_security' ? '❌ مرفوض من الأمن' :
+                                      permit.status || 'غير محدد'}
+                                </p>
+                                ${permit.created_at ? `<p style="margin-top: 10px; font-size: 14px; color: #666;"><strong>تاريخ الإنشاء:</strong> ${new Date(permit.created_at).toLocaleString('ar-SA')}</p>` : ''}
+                            </div>
+                        </div>`;
+                showModal({
+                    title: `📦 تصريح إخراج مواد #${permitId}`,
+                    html: modalHTML,
+                    confirmText: 'إغلاق',
+                    cancelText: null
+                });
+            } catch (error) {
+                console.error('خطأ في جلب بيانات التصريح:', error);
+                showNotification('❌ حدث خطأ في جلب البيانات', 'error');
+            }
         }
 
         // 🔥 NEW: إرسال إشعار للحرس

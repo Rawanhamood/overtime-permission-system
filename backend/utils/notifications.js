@@ -74,12 +74,104 @@ async function notifyAllManagers(permit_id, title, message, type = 'warning', co
     }
 }
 
-// إرسال إشعار لجميع موظفي الأمن
+/** معرفات الموظفين المعتمدين للموافقة الأمنية (حتى 3) — من الجدول أو أول 3 حسابات security */
+async function getSecurityOfficeApproverEmployeeIds() {
+    try {
+        const rows = await query(
+            `SELECT soa.employee_id FROM security_office_approvers soa
+             JOIN employees e ON e.employee_id = soa.employee_id
+             WHERE (e.is_active IS NULL OR e.is_active = 1)
+             ORDER BY soa.sort_order ASC`
+        );
+        const ids = (rows || []).map((r) => r.employee_id);
+        if (ids.length > 0) return ids;
+        const fallback = await query(
+            `SELECT employee_id FROM employees
+             WHERE user_type = 'security' AND (is_active IS NULL OR is_active = 1)
+             ORDER BY employee_id ASC LIMIT 3`
+        );
+        return (fallback || []).map((r) => r.employee_id);
+    } catch (error) {
+        console.error('❌ خطأ في getSecurityOfficeApproverEmployeeIds:', error.message);
+        return [];
+    }
+}
+
+async function isSecurityOfficeApprover(employeeId) {
+    if (employeeId == null || employeeId === '') return false;
+    const ids = await getSecurityOfficeApproverEmployeeIds();
+    if (ids.length === 0) {
+        const r = await query(
+            `SELECT 1 FROM employees WHERE employee_id = ? AND user_type = 'security' AND (is_active IS NULL OR is_active = 1)`,
+            [employeeId]
+        );
+        return r.length > 0;
+    }
+    return ids.includes(Number(employeeId));
+}
+
+/** إشعار مسؤولي مكتب الأمن المعتمدين فقط (طابور الموافقة) */
+async function notifySecurityOfficeApprovers(permit_id, title, message, type = 'info', company_permit_id = null) {
+    const ids = await getSecurityOfficeApproverEmployeeIds();
+    if (ids.length === 0) {
+        console.warn('⚠️ لا يوجد مسؤولو مكتب أمن معيّنون — إرسال إشعار لجميع حسابات security');
+        const fb = await query(
+            `SELECT employee_id FROM employees WHERE user_type = 'security' AND (is_active IS NULL OR is_active = 1)`
+        );
+        for (const r of fb || []) {
+            await createNotification({
+                user_id: r.employee_id,
+                permit_id,
+                company_permit_id,
+                title,
+                message,
+                type
+            });
+        }
+        return;
+    }
+    for (const user_id of ids) {
+        await createNotification({
+            user_id,
+            permit_id,
+            company_permit_id,
+            title,
+            message,
+            type
+        });
+    }
+    console.log(`✅ تم إرسال إشعار طابور الأمن لـ ${ids.length} مسؤول معتمد`);
+}
+
+/** إبلاغ باقي المعتمدين أن أحدهم أنهى الطلب (موافقة أو رفض) */
+async function notifyOtherSecurityOfficeApprovers(excludeEmployeeId, payload) {
+    const {
+        permit_id = null,
+        company_permit_id = null,
+        title,
+        message,
+        type = 'info'
+    } = payload;
+    const ids = await getSecurityOfficeApproverEmployeeIds();
+    const ex = Number(excludeEmployeeId);
+    for (const user_id of ids) {
+        if (user_id === ex) continue;
+        await createNotification({
+            user_id,
+            permit_id,
+            company_permit_id,
+            title,
+            message,
+            type
+        });
+    }
+}
+
+/** إشعار موظفي مكتب الأمن فقط (user_type = security) — الحارس منفصل ولا يُدرج هنا */
 async function notifyAllSecurityStaff(permit_id, title, message, type = 'info', company_permit_id = null) {
     try {
         const securityUsers = await query(
-            'SELECT employee_id FROM employees WHERE user_type IN (?, ?)', 
-            ['security', 'security_guard']
+            `SELECT employee_id FROM employees WHERE user_type = 'security' AND (is_active IS NULL OR is_active = 1)`
         );
         
         const notifications = securityUsers.map(security => ({
@@ -95,9 +187,9 @@ async function notifyAllSecurityStaff(permit_id, title, message, type = 'info', 
             await createNotification(notif);
         }
         
-        console.log(`✅ تم إرسال إشعار لـ ${securityUsers.length} من موظفي الأمن`);
+        console.log(`✅ تم إرسال إشعار لمكتب الأمن (${securityUsers.length} مستخدم security)`);
     } catch (error) {
-        console.error('❌ خطأ في إرسال إشعار لموظفي الأمن:', error.message);
+        console.error('❌ خطأ في إرسال إشعار لمكتب الأمن:', error.message);
     }
 }
 
@@ -128,39 +220,15 @@ async function notifyAllGuards(permit_id, title, message, type = 'info', company
     }
 }
 
-// إرسال إشعار لجميع مسؤولي الأمن والحراس
-async function notifyAllSecurityUsers(permit_id, title, message, type = 'info', company_permit_id = null) {
-    try {
-        const securityUsers = await query(
-            'SELECT employee_id FROM employees WHERE user_type IN (?, ?) AND is_active = 1', 
-            ['security', 'guard']
-        );
-        
-        const notifications = securityUsers.map(user => ({
-            user_id: user.employee_id,
-            permit_id: permit_id,
-            company_permit_id: company_permit_id,
-            title: title,
-            message: message,
-            type: type
-        }));
-
-        for (const notif of notifications) {
-            await createNotification(notif);
-        }
-        
-        console.log(`✅ تم إرسال إشعار لـ ${securityUsers.length} من مسؤولي الأمن والحراس`);
-    } catch (error) {
-        console.error('❌ خطأ في إرسال إشعار لمسؤولي الأمن:', error.message);
-    }
-}
-
 module.exports = {
     createNotification,
     getUserIdByUsername,
     notifyAllManagers,
     notifyAllSecurityStaff,
-    notifyAllGuards,
-    notifyAllSecurityUsers
+    notifySecurityOfficeApprovers,
+    notifyOtherSecurityOfficeApprovers,
+    getSecurityOfficeApproverEmployeeIds,
+    isSecurityOfficeApprover,
+    notifyAllGuards
 };
 

@@ -19,18 +19,34 @@
             min-height: 100vh;
         }
         
-        /* ========== NAVBAR STYLES ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 26px rgba(70, 113, 145, 0.38), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -39,18 +55,37 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         
         .logo-icon {
-            background: #fff;
-            color: #3498db;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            background: radial-gradient(
+                ellipse 100% 95% at 50% 42%,
+                #ffffff 0%,
+                rgba(255, 255, 255, 0.94) 28%,
+                rgba(255, 255, 255, 0.65) 58%,
+                rgba(255, 255, 255, 0.22) 82%,
+                transparent 100%
+            );
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        
+        .logo-icon img {
+            height: 60px;
+            width: auto;
+            max-width: min(220px, 40vw);
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 1;
         }
         
         .nav-links {
@@ -60,7 +95,7 @@
         }
         
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -72,23 +107,25 @@
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.16);
             transform: translateY(-2px);
         }
         
         .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             padding: 8px 20px;
             border-radius: 25px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
         }
         
         .user-details {
@@ -98,23 +135,25 @@
         .user-name {
             font-weight: 600;
             font-size: 16px;
+            color: #fff;
         }
         
         .user-role {
             font-size: 13px;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.88);
         }
         
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e4a6b;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         /* ========== MAIN CONTENT ========== */
@@ -519,42 +558,10 @@
 
             <!-- Form Content -->
             <form id="materialExitForm">
-                <!-- معلومات الموظف (للقراءة فقط) -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>👤</span>
-                            اسم الموظف
-                        </label>
-                        <input type="text" id="employeeName" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>🔢</span>
-                            الرقم الوظيفي
-                        </label>
-                        <input type="text" id="jobNumber" readonly>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>🏢</span>
-                            المديرية
-                        </label>
-                        <input type="text" id="directorate" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label required">
-                            <span>📍</span>
-                            الدائرة
-                        </label>
-                        <input type="text" id="department" readonly>
-                    </div>
-                </div>
+                <input type="hidden" id="employeeName" name="employee_name">
+                <input type="hidden" id="jobNumber" name="job_number">
+                <input type="hidden" id="directorate" name="directorate">
+                <input type="hidden" id="department" name="department">
                 
                 <div class="form-divider"></div>
                 
@@ -748,7 +755,12 @@
             const messageDiv = document.getElementById('message');
             
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '❌ هذه الصفحة للموظفين فقط';
+            // الحفاظ على عنصر btnText حتى لا يفشل handleFormSubmit عند null
+            submitBtn.replaceChildren();
+            const denied = document.createElement('span');
+            denied.id = 'btnText';
+            denied.textContent = '❌ هذه الصفحة للموظفين فقط';
+            submitBtn.appendChild(denied);
             
             showMessage(
                 `⚠️ هذه الصفحة مخصصة للموظفين فقط.<br>صلاحياتك الحالية: <strong>${getRoleName(userData.role || userData.user_type)}</strong>`,
@@ -784,48 +796,56 @@
             };
             
             // Validate form data
-            if (!permitData.material_type || !permitData.exit_reason || !permitData.supervisor_name) {
-                showMessage('❌ يرجى ملء جميع الحقول المطلوبة', 'error');
+            if (
+                !permitData.material_type ||
+                !permitData.exit_reason ||
+                !permitData.supervisor_name ||
+                !permitData.permit_date ||
+                !permitData.permit_time
+            ) {
+                showMessage('❌ يرجى ملء جميع الحقول المطلوبة (بما فيها التاريخ والوقت)', 'error');
                 return;
             }
-            
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.textContent = 'جاري إرسال الطلب...';
-            btnLoader.style.display = 'inline-block';
-            
+
+            const headers = getAuthHeaders();
+            if (!headers) {
+                return;
+            }
+
+            const FETCH_TIMEOUT_MS = 55000;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
             try {
-                // Send request to API
-                const headers = getAuthHeaders();
-                if (!headers) return;
-                
+                submitBtn.disabled = true;
+                if (btnText) btnText.textContent = 'جاري إرسال الطلب...';
+                if (btnLoader) btnLoader.style.display = 'inline-block';
+
                 const response = await fetch('/api/permits/material-exit', {
                     method: 'POST',
                     headers: headers,
-                    body: JSON.stringify(permitData)
+                    body: JSON.stringify(permitData),
+                    signal: controller.signal
                 });
-                
+
                 const responseText = await response.text();
                 let data;
-                
+
                 try {
                     data = JSON.parse(responseText);
                 } catch (e) {
                     showMessage('❌ استجابة غير صالحة من الخادم', 'error');
                     return;
                 }
-                
+
                 if (data.success) {
                     showMessage('✅ تم تقديم طلب إخراج المواد بنجاح!<br>سيتم مراجعته من قبل المدير.', 'success');
                     resetForm();
-                    
-                    // Redirect to dashboard after 3 seconds
+
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 3000);
-                    
                 } else {
-                    // Handle authentication errors
                     if (response.status === 401 || response.status === 403) {
                         showMessage('❌ صلاحية الدخول منتهية. يرجى تسجيل الدخول مرة أخرى.', 'error');
                         setTimeout(() => {
@@ -835,16 +855,21 @@
                         showMessage(`❌ ${data.message || 'حدث خطأ غير معروف'}`, 'error');
                     }
                 }
-                
             } catch (error) {
                 console.error('خطأ في الاتصال:', error);
-                showMessage('❌ حدث خطأ في الاتصال بالخادم.<br>تحقق من اتصال الإنترنت وحاول مرة أخرى.', 'error');
-                
+                if (error && error.name === 'AbortError') {
+                    showMessage(
+                        '❌ انتهت مهلة انتظار الخادم.<br>تأكد أن الخادم يعمل على المنفذ الصحيح، ثم أعد المحاولة.',
+                        'error'
+                    );
+                } else {
+                    showMessage('❌ حدث خطأ في الاتصال بالخادم.<br>تحقق من الاتصال وحاول مرة أخرى.', 'error');
+                }
             } finally {
-                // Reset button state
+                clearTimeout(timeoutId);
                 submitBtn.disabled = false;
-                btnText.textContent = '📤 تقديم الطلب';
-                btnLoader.style.display = 'none';
+                if (btnText) btnText.textContent = '📤 تقديم الطلب';
+                if (btnLoader) btnLoader.style.display = 'none';
             }
         }
 

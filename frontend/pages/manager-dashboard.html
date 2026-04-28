@@ -19,18 +19,34 @@
             min-height: 100vh;
         }
         
-        /* ========== NAVBAR STYLES ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 26px rgba(70, 113, 145, 0.38), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -39,18 +55,37 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         
         .logo-icon {
-            background: #fff;
-            color: #3498db;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            background: radial-gradient(
+                ellipse 100% 95% at 50% 42%,
+                #ffffff 0%,
+                rgba(255, 255, 255, 0.94) 28%,
+                rgba(255, 255, 255, 0.65) 58%,
+                rgba(255, 255, 255, 0.22) 82%,
+                transparent 100%
+            );
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        
+        .logo-icon img {
+            height: 60px;
+            width: auto;
+            max-width: min(220px, 40vw);
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 1;
         }
         
         .nav-links {
@@ -60,7 +95,7 @@
         }
         
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -72,23 +107,25 @@
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.16);
             transform: translateY(-2px);
         }
         
         .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             padding: 8px 20px;
             border-radius: 25px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
         }
         
         .user-details {
@@ -98,23 +135,25 @@
         .user-name {
             font-weight: 600;
             font-size: 16px;
+            color: #fff;
         }
         
         .user-role {
             font-size: 13px;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.88);
         }
         
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e4a6b;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         /* ========== NOTIFICATION SYSTEM ========== */
@@ -123,9 +162,9 @@
         }
         
         .notification-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -136,7 +175,7 @@
         }
         
         .notification-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
         
@@ -154,7 +193,7 @@
             justify-content: center;
             font-size: 11px;
             font-weight: bold;
-            border: 2px solid #2c3e50;
+            border: 2px solid #467191;
         }
         
         .notifications-panel {
@@ -184,7 +223,7 @@
         }
         
         .notifications-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
             padding: 20px;
             display: flex;
@@ -321,6 +360,38 @@
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 25px;
             margin-bottom: 40px;
+        }
+        
+        .stats-grid--two {
+            grid-template-columns: repeat(2, minmax(240px, 1fr));
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .stats-grid--three {
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        @media (max-width: 1024px) {
+            .stats-grid--three {
+                grid-template-columns: repeat(2, minmax(220px, 1fr));
+                max-width: 720px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid--two {
+                grid-template-columns: 1fr;
+                max-width: none;
+            }
+            .stats-grid--three {
+                grid-template-columns: 1fr;
+                max-width: none;
+            }
         }
         
         .stat-card {
@@ -480,6 +551,57 @@
         
         .permit-card.company-entry {
             border-right: 4px solid #9b59b6;
+        }
+        
+        .company-workers-details {
+            margin-top: 8px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        
+        .company-workers-summary {
+            cursor: pointer;
+            padding: 12px 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .company-workers-summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        .company-workers-table-wrap {
+            padding: 0 10px 12px;
+            overflow-x: auto;
+        }
+        
+        .company-workers-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        .company-workers-table th {
+            background: #3498db;
+            color: #fff;
+            padding: 8px 10px;
+            text-align: right;
+        }
+        
+        .company-workers-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #edf2f7;
+            text-align: right;
+        }
+        
+        .company-workers-table tbody tr:nth-child(even) {
+            background: #f8fafc;
         }
         
         .permit-card.employee-permit {
@@ -739,7 +861,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
         }
         
@@ -820,41 +942,108 @@
             box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
         }
         
-        /* ========== TABS STYLES ========== */
-        .tabs-container {
-            margin-bottom: 30px;
-        }
-        
-        .tabs {
+        /* ========== تبويبات التصاريح (نفس أسلوب لوحة الأمن) ========== */
+        .security-permit-tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 10px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 4px;
         }
         
-        .tab-btn {
-            padding: 12px 24px;
-            border: none;
+        .security-tab {
+            flex: 1;
+            min-width: 160px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 20px;
+            border: 2px solid #e8eef5;
+            border-radius: 14px;
+            background: #fff;
+            color: #2c3e50;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            font-family: inherit;
+        }
+        
+        .security-tab:hover {
+            border-color: #b8d4f0;
+            box-shadow: 0 4px 14px rgba(52, 152, 219, 0.12);
+        }
+        
+        .security-tab.active {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: #fff;
+            border-color: #2980b9;
+            box-shadow: 0 4px 16px rgba(52, 152, 219, 0.35);
+        }
+        
+        .security-tab-icon {
+            font-size: 1.25em;
+            line-height: 1;
+        }
+        
+        .security-tab-panels {
+            margin-bottom: 10px;
+        }
+        
+        .security-tab-panel[hidden] {
+            display: none !important;
+        }
+        
+        /* ========== SEARCH (تصاريح الموظفين — نفس لوحة الأمن) ========== */
+        .search-box {
             background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e8f4ff;
             border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-family: inherit;
         }
         
-        .tab-btn.active {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-            color: white;
-        }
-        
-        .tab-btn:hover:not(.active) {
-            background: #f8fafc;
+        .search-btn:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
         
         /* ========== RESPONSIVE DESIGN ========== */
@@ -911,6 +1100,23 @@
                 width: 100%;
             }
             
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-input, .search-btn {
+                width: 100%;
+            }
+            
+            .security-permit-tabs {
+                flex-direction: column;
+            }
+            
+            .security-tab {
+                width: 100%;
+                min-width: unset;
+            }
+            
             .modal-box {
                 max-width: 95%;
             }
@@ -944,7 +1150,9 @@
     <!-- ========== NAVBAR ========== -->
     <nav class="navbar">
         <div class="logo">
-            <div class="logo-icon">🚀</div>
+            <div class="logo-icon">
+                <img src="/assets/images/login-logo.png?v=5" alt="شعار محافظة الداخلية" decoding="async">
+            </div>
             <span>نظام تصاريح العمل</span>
         </div>
         
@@ -1020,17 +1228,12 @@
             </div>
         </header>
 
-        <!-- Statistics Cards -->
-        <div class="stats-grid">
+        <!-- إحصائيات: بانتظار الموافقة + قرارات اليوم -->
+        <div class="stats-grid stats-grid--three">
             <div class="stat-card">
                 <div class="stat-icon pending">⏳</div>
-                <div class="stat-number pending" id="pendingRequests">0</div>
-                <div class="stat-label">تصاريح موظفين معلقة</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon company-pending">🏢</div>
-                <div class="stat-number company-pending" id="companyPending">0</div>
-                <div class="stat-label">تصاريح شركات معلقة</div>
+                <div class="stat-number pending" id="pendingApprovalTotal">0</div>
+                <div class="stat-label">تصاريح جديدة بانتظار الموافقة</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon approved">✅</div>
@@ -1040,30 +1243,43 @@
             <div class="stat-card">
                 <div class="stat-icon rejected">❌</div>
                 <div class="stat-number rejected" id="todayRejected">0</div>
-                <div class="stat-label">تم الرفض اليوم</div>
+                <div class="stat-label">تم الرفض اليوم (قرار المدير)</div>
             </div>
         </div>
 
         <!-- Alerts Container -->
         <div class="alerts-container" id="alertsContainer"></div>
 
-        <!-- Tabs for Navigation (حسب الأولوية: شركات أولاً ثم إخراج مواد ثم موظفين) -->
-        <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="showTab('company-permits')">
-                    🏢 تصاريح الشركات
-                </button>
-                <button class="tab-btn" onclick="showTab('material-exit-permits')">
-                    📦 تصاريح إخراج المواد
-                </button>
-                <button class="tab-btn" onclick="showTab('employee-permits')">
-                    👤 تصاريح الموظفين
-                </button>
-            </div>
+        <!-- بحث موحّد: موظفين + شركات + إخراج مواد -->
+        <div class="search-box">
+            <input type="text" class="search-input" id="managerEmployeePermitSearchInput" placeholder="ابحث في كل التصاريح: موظف، شركة، مواد، رقم وظيفي، رقم تصريح، اسم شركة..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchEmployeePermitsForManager();}">
+            <button type="button" class="search-btn" onclick="searchEmployeePermitsForManager()">
+                <span>🔍</span> بحث
+            </button>
         </div>
 
+        <div class="security-permit-tabs" role="tablist" aria-label="تصنيف تصاريح المدير">
+            <button type="button" class="security-tab active" role="tab" aria-selected="true" data-manager-tab="company" id="managerTabBtnCompany" onclick="setManagerPermitTab('company')">
+                <span class="security-tab-label">تصاريح الشركات</span>
+                <span class="security-tab-icon" aria-hidden="true">🏢</span>
+            </button>
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-manager-tab="material" id="managerTabBtnMaterial" onclick="setManagerPermitTab('material')">
+                <span class="security-tab-label">تصاريح إخراج المواد</span>
+                <span class="security-tab-icon" aria-hidden="true">📦</span>
+            </button>
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-manager-tab="employee" id="managerTabBtnEmployee" onclick="setManagerPermitTab('employee')">
+                <span class="security-tab-label">تصاريح الموظفين</span>
+                <span class="security-tab-icon" aria-hidden="true">👤</span>
+            </button>
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-manager-tab="rejected" id="managerTabBtnRejected" onclick="setManagerPermitTab('rejected')">
+                <span class="security-tab-label">سجل رفض المدير</span>
+                <span class="security-tab-icon" aria-hidden="true">📛</span>
+            </button>
+        </div>
+
+        <div class="security-tab-panels">
         <!-- Company Permits Tab Content (أولاً حسب الأولوية) -->
-        <div id="company-permits" class="tab-content">
+        <div id="company-permits" class="security-tab-panel" data-panel="company" role="tabpanel" aria-labelledby="managerTabBtnCompany">
             <!-- Pending Company Entry Permits Section -->
             <div class="permits-section">
                 <div class="section-header">
@@ -1100,7 +1316,7 @@
         </div>
 
         <!-- Material Exit Permits Tab Content -->
-        <div id="material-exit-permits" class="tab-content" style="display: none;">
+        <div id="material-exit-permits" class="security-tab-panel" data-panel="material" role="tabpanel" aria-labelledby="managerTabBtnMaterial" hidden>
             <!-- Pending Material Exit Permits Section -->
             <div class="permits-section">
                 <div class="section-header">
@@ -1137,7 +1353,7 @@
         </div>
 
         <!-- Employee Permits Tab Content -->
-        <div id="employee-permits" class="tab-content" style="display: none;">
+        <div id="employee-permits" class="security-tab-panel" data-panel="employee" role="tabpanel" aria-labelledby="managerTabBtnEmployee" hidden>
             <!-- Pending Employee Permits Section -->
             <div class="permits-section">
                 <div class="section-header">
@@ -1160,7 +1376,7 @@
                 <div class="section-header">
                     <div class="section-title">
                         <span>✅</span>
-                        التصاريح المعتمدة مؤخراً للموظفين
+                        تصاريح الموظفين (بعد موافقة المدير / الأمن)
                     </div>
                     <span class="section-count" id="approvedCount">0 تصريح</span>
                 </div>
@@ -1172,78 +1388,132 @@
                 </div>
             </div>
         </div>
+
+        <!-- سجل رفض المدير (تبويب مستقل مثل لوحة الأمن) -->
+        <div id="manager-rejected-log" class="security-tab-panel" data-panel="rejected" role="tabpanel" aria-labelledby="managerTabBtnRejected" hidden>
+            <div class="permits-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>📛</span>
+                        تصاريح رفضها المدير (محفوظة في لوحتك)
+                    </div>
+                    <span class="section-count" id="managerRejectedCount">0 تصريح</span>
+                </div>
+                <div class="permits-list-container" id="managerRejectedContainer">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">جاري تحميل سجل الرفض...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
 
     <script>
         // =============== SYSTEM INITIALIZATION ===============
         let currentTab = 'company-permits';
+
+        function parseUserFromStorage() {
+            try {
+                return JSON.parse(localStorage.getItem('user') || 'null');
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /** للنائب: اسم مستخدم المدير المعني؛ وإلا اسم المستخدم الحالي */
+        function getManagerScopeUsername(ud) {
+            if (!ud) return '';
+            const m = ud.represented_manager_username;
+            if (m != null && String(m).trim() !== '') return String(m).trim();
+            const u = ud.username;
+            return (u != null && String(u).trim() !== '') ? String(u).trim() : '';
+        }
         
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            ['pointerdown', 'keydown'].forEach(function (ev) {
+                document.addEventListener(ev, prepareNotificationAudioFromUserGesture, {
+                    capture: true,
+                    passive: true
+                });
+            });
+
             console.log('🚀 بدء تحميل لوحة المدير...');
-            loadUserData();
+            setupEmployeeOvertimePermitClickDelegation();
+            await loadUserData();
             loadManagerData();
             loadNotifications();
             hideAdminLink();
             setupNotificationsClose();
             startNotificationPolling();
-            setupTabs();
-            showTab('company-permits');
+            try {
+                const saved = sessionStorage.getItem('managerDashboardPermitTab');
+                const validSaved = ['company', 'material', 'employee', 'rejected'].includes(saved) ? saved : 'company';
+                setManagerPermitTab(validSaved);
+            } catch (e) {
+                setManagerPermitTab('company');
+            }
         });
 
-        // =============== TAB MANAGEMENT ===============
-        function setupTabs() {
-            const tabs = document.querySelectorAll('.tab-btn');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Hide all tab contents
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.style.display = 'none';
-                    });
-                    
-                    // Show selected tab content
-                    const tabId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    document.getElementById(tabId).style.display = 'block';
-                    currentTab = tabId;
-                    
-                    // Load data for the selected tab if needed
-                    if (tabId === 'company-permits') {
-                        const userData = JSON.parse(localStorage.getItem('user'));
-                        loadCompanyPendingRequests(userData.username);
-                        loadRecentlyApprovedCompanyPermits(userData.username);
-                    }
-                });
+        // =============== TAB MANAGEMENT (نفس نمط لوحة الأمن) ===============
+        const MANAGER_TAB_PANEL_IDS = {
+            company: 'company-permits',
+            material: 'material-exit-permits',
+            employee: 'employee-permits',
+            rejected: 'manager-rejected-log'
+        };
+
+        function setManagerPermitTab(key) {
+            const validKeys = Object.keys(MANAGER_TAB_PANEL_IDS);
+            const k = validKeys.includes(key) ? key : 'company';
+            const panelId = MANAGER_TAB_PANEL_IDS[k];
+            currentTab = panelId;
+
+            document.querySelectorAll('.security-tab[data-manager-tab]').forEach(btn => {
+                const on = btn.getAttribute('data-manager-tab') === k;
+                btn.classList.toggle('active', on);
+                btn.setAttribute('aria-selected', on ? 'true' : 'false');
             });
-        }
-        
-        function showTab(tabId) {
-            // Update tabs
-            document.querySelectorAll('.tab-btn').forEach(tab => {
-                tab.classList.remove('active');
-                if (tab.getAttribute('onclick').includes(tabId)) {
-                    tab.classList.add('active');
+
+            Object.values(MANAGER_TAB_PANEL_IDS).forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (id === panelId) {
+                    el.removeAttribute('hidden');
+                } else {
+                    el.setAttribute('hidden', '');
                 }
             });
-            
-            // Show selected tab content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-            document.getElementById(tabId).style.display = 'block';
-            currentTab = tabId;
-            
-            // Load data for the selected tab if needed
-            if (tabId === 'company-permits') {
-                const userData = JSON.parse(localStorage.getItem('user'));
-                loadCompanyPendingRequests(userData.username);
-                loadRecentlyApprovedCompanyPermits(userData.username);
-            } else if (tabId === 'material-exit-permits') {
-                const userData = JSON.parse(localStorage.getItem('user'));
-                loadMaterialExitPendingRequestsForManager(userData.username);
-                loadMaterialExitApprovedRequestsForManager(userData.username);
+
+            try {
+                sessionStorage.setItem('managerDashboardPermitTab', k);
+            } catch (err) { /* ignore */ }
+
+            const userData = parseUserFromStorage();
+            const un = getManagerScopeUsername(userData);
+            if (!un) return;
+
+            if (k === 'company') {
+                loadCompanyPendingRequests(un);
+                loadRecentlyApprovedCompanyPermits(un);
+            } else if (k === 'material') {
+                loadMaterialExitPendingRequestsForManager(un);
+                loadMaterialExitApprovedRequestsForManager(un);
+            } else if (k === 'rejected') {
+                loadManagerRejectedPermits(un);
             }
+        }
+
+        /** للتوافق مع أي استدعاء قديم بمعرّف عنصر اللوحة */
+        function showTab(tabId) {
+            const rev = {
+                'company-permits': 'company',
+                'material-exit-permits': 'material',
+                'employee-permits': 'employee',
+                'manager-rejected-log': 'rejected'
+            };
+            setManagerPermitTab(rev[tabId] || 'company');
         }
 
         // =============== COMPANY ENTRY PERMITS MANAGEMENT ===============
@@ -1255,9 +1525,6 @@
                 
                 if (data.success) {
                     const permits = data.permits || [];
-                    
-                    // Update stats card
-                    document.getElementById('companyPending').textContent = permits.length;
                     
                     if (permits.length === 0) {
                         container.innerHTML = `
@@ -1296,6 +1563,144 @@
             }
         }
 
+        function buildInlineWorkersTableHtml(workers) {
+            if (!workers || !workers.length) return '';
+            const rows = workers.map((w, i) => `
+                <tr>
+                    <td style="text-align:center;width:36px;">${i + 1}</td>
+                    <td>${(w.worker_name || w.name || '—').replace(/</g, '&lt;')}</td>
+                    <td>${(w.worker_id_number || w.id_number || '—').replace(/</g, '&lt;')}</td>
+                    <td>${(w.worker_profession || '—').replace(/</g, '&lt;')}</td>
+                </tr>
+            `).join('');
+            return `
+                <details class="company-workers-details">
+                    <summary class="company-workers-summary">👷 جدول العمال (${workers.length}) — اضغط للعرض</summary>
+                    <div class="company-workers-table-wrap">
+                        <table class="company-workers-table" dir="rtl">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>اسم العامل</th>
+                                    <th>الرقم المدني</th>
+                                    <th>المهنة</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </details>
+            `;
+        }
+        
+        function escapeHtmlCompanyNote(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        
+        /** يحوّل حقل additional_notes (JSON من نموذج دخول الشركات) إلى عرض منسّق */
+        function formatCompanyEntryAdditionalNotesHtml(rawNotes) {
+            if (rawNotes == null || String(rawNotes).trim() === '') return '';
+            let obj = null;
+            try {
+                obj = typeof rawNotes === 'string' ? JSON.parse(rawNotes) : rawNotes;
+            } catch (e) {
+                return `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
+                        <p style="white-space: pre-wrap; line-height: 1.65; color: #2c3e50;">${escapeHtmlCompanyNote(String(rawNotes))}</p>
+                    </div>`;
+            }
+            if (!obj || typeof obj !== 'object') {
+                return `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
+                        <p style="white-space: pre-wrap; line-height: 1.65;">${escapeHtmlCompanyNote(String(rawNotes))}</p>
+                    </div>`;
+            }
+            
+            let rd = {};
+            if (obj.requesting_department) {
+                if (typeof obj.requesting_department === 'string') {
+                    try { rd = JSON.parse(obj.requesting_department) || {}; } catch (e2) { rd = {}; }
+                } else if (typeof obj.requesting_department === 'object') {
+                    rd = obj.requesting_department;
+                }
+            }
+            
+            const jobRef = rd.job_number || rd.number || '';
+            const fieldRows = [
+                ['اسم الموظف (من النموذج)', rd.employee_name],
+                ['المديرية', rd.directorate],
+                ['القسم', rd.department],
+                ['الرقم الوظيفي / الرقم', jobRef],
+                ['المسؤول المباشر', rd.supervisor_name],
+                ['تاريخ التصريح (النموذج)', rd.permit_date],
+                ['وقت التصريح (النموذج)', rd.permit_time],
+                ['عنوان الشركة / الموقع', rd.company_address],
+                ['ملاحظات نصية من مقدم الطلب', rd.additional_notes]
+            ].filter(([, v]) => v != null && String(v).trim() !== '');
+            
+            let employeesBlock = '';
+            if (Array.isArray(obj.employees) && obj.employees.length > 0) {
+                const empRows = obj.employees.map((emp, i) => {
+                    const name = escapeHtmlCompanyNote(emp.name || emp.worker_name || '—');
+                    const idn = escapeHtmlCompanyNote(emp.id_number || emp.worker_id_number || '—');
+                    const prof = escapeHtmlCompanyNote(emp.profession || emp.worker_profession || '—');
+                    let cardTxt = '—';
+                    if (emp.has_id_card === true) cardTxt = 'نعم';
+                    else if (emp.has_id_card === false) cardTxt = 'لا';
+                    return `<tr>
+                        <td style="padding:8px;text-align:center;">${i + 1}</td>
+                        <td style="padding:8px;">${name}</td>
+                        <td style="padding:8px;">${idn}</td>
+                        <td style="padding:8px;">${prof}</td>
+                        <td style="padding:8px;text-align:center;">${cardTxt}</td>
+                    </tr>`;
+                }).join('');
+                employeesBlock = `
+                    <h5 style="color:#2c3e50;margin:18px 0 10px;font-size:15px;">العاملون كما أُدخلوا في نموذج الطلب (${obj.employees.length})</h5>
+                    <table dir="rtl" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="background:#5dade2;color:#fff;">
+                                <th style="padding:8px;">#</th>
+                                <th style="padding:8px;text-align:right;">الاسم</th>
+                                <th style="padding:8px;text-align:right;">الرقم المدني</th>
+                                <th style="padding:8px;text-align:right;">المهنة</th>
+                                <th style="padding:8px;">مرفق بطاقة</th>
+                            </tr>
+                        </thead>
+                        <tbody>${empRows}</tbody>
+                    </table>`;
+            }
+            
+            const dlRows = fieldRows.map(([label, val]) => `
+                <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid #e9ecef;">
+                    <span style="color:#2980b9;font-weight:600;min-width:170px;">${escapeHtmlCompanyNote(label)}</span>
+                    <span style="flex:1;color:#2c3e50;white-space:pre-wrap;line-height:1.5;">${escapeHtmlCompanyNote(val)}</span>
+                </div>`).join('');
+            
+            if (!dlRows && !employeesBlock) {
+                return `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <h4 style="color: #3498db; margin-bottom: 10px;">بيانات إضافية من الطلب</h4>
+                        <p style="color:#7f8c8d;font-size:14px;">لا توجد حقول منظّمة؛ النص الأصلي أدناه.</p>
+                        <pre style="margin-top:10px;white-space:pre-wrap;font-size:12px;color:#495057;background:#fff;padding:10px;border-radius:8px;border:1px solid #e9ecef;">${escapeHtmlCompanyNote(JSON.stringify(obj, null, 2))}</pre>
+                    </div>`;
+            }
+            
+            return `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <h4 style="color: #3498db; margin-bottom: 12px;">ملاحظات وبيانات إضافية (من نموذج الطلب)</h4>
+                    ${dlRows ? `<div>${dlRows}</div>` : ''}
+                    ${employeesBlock}
+                </div>`;
+        }
+        
         function createPendingCompanyPermitCard(permit) {
             // تحليل البيانات الإضافية
             let additionalData = {};
@@ -1391,7 +1796,11 @@
                             <span class="detail-label">عدد الزوار:</span>
                             <span class="detail-value">${permit.number_of_visitors || 1} شخص</span>
                         </div>
-                        ${employeesList.length > 0 ? `
+                        ${permit.workers && permit.workers.length > 0 ? `
+                        <div class="detail-item" style="display:block;border:none;padding:0;">
+                            ${buildInlineWorkersTableHtml(permit.workers)}
+                        </div>
+                        ` : employeesList.length > 0 ? `
                         <div class="detail-item">
                             <span class="detail-label">قائمة العمال (${employeesList.length}):</span>
                             <span class="detail-value" style="font-size: 12px;">
@@ -1433,14 +1842,14 @@
                 const container = document.getElementById('companyApprovedContainer');
                 
                 if (data.success && data.permits) {
-                    const approvedPermits = data.permits.slice(0, 5);
+                    const approvedPermits = data.permits || [];
                     
                     if (approvedPermits.length === 0) {
                         container.innerHTML = `
                             <div class="empty-state">
                                 <div class="empty-icon">🏢</div>
-                                <h3 class="empty-title">لا توجد تصاريح شركات معتمدة</h3>
-                                <p class="empty-description">سيتم عرض تصاريح الشركات المعتمدة هنا</p>
+                                <h3 class="empty-title">لا توجد تصاريح شركات في مسار الاعتماد</h3>
+                                <p class="empty-description">تظهر هنا تصاريح الشركات بعد موافقتك وحتى اكتمالها</p>
                             </div>
                         `;
                         document.getElementById('companyApprovedCount').textContent = '0 تصريح';
@@ -1473,11 +1882,26 @@
         }
 
         function createApprovedCompanyPermitCard(permit) {
-            const statusColor = permit.status === 'approved_security' ? '#27ae60' : 
+            const statusColor = permit.status === 'completed' ? '#8e44ad' :
+                             permit.status === 'checked_in' ? '#2980b9' :
+                             permit.status === 'approved_security' ? '#27ae60' : 
+                             permit.status === 'rejected_security' ? '#c0392b' :
                              permit.status === 'pending_security' ? '#f39c12' : '#3498db';
             
-            const statusText = permit.status === 'approved_security' ? 'معتمد نهائي (جاهز للحارس)' :
-                            permit.status === 'pending_security' ? 'بإنتظار الأمن' : 'معتمد من المدير';
+            const statusText = permit.status === 'completed' ? 'مكتمل' :
+                            permit.status === 'checked_in' ? 'داخل الموقع' :
+                            permit.status === 'approved_security' ? 'معتمد نهائي (جاهز للحارس)' :
+                            permit.status === 'rejected_security' ? 'مرفوض من مكتب الأمن' :
+                            permit.status === 'pending_security' ? 'بانتظار الأمن' :
+                            permit.status === 'approved_manager' ? 'بانتظار مكتب الأمن' : (permit.status || '');
+            const compBadgeBg = permit.status === 'completed' ? '#ede7f6' :
+                permit.status === 'checked_in' ? '#d4e6f1' :
+                permit.status === 'rejected_security' ? '#fadbd8' :
+                statusColor === '#27ae60' ? '#d4edda' : statusColor === '#f39c12' ? '#fff3cd' : '#e8f4ff';
+            const compBadgeFg = permit.status === 'completed' ? '#5b2c6f' :
+                permit.status === 'checked_in' ? '#1a5276' :
+                permit.status === 'rejected_security' ? '#922b21' :
+                statusColor === '#27ae60' ? '#155724' : statusColor === '#f39c12' ? '#856404' : '#3498db';
             
             return `
                 <div class="permit-card company-entry approved">
@@ -1490,8 +1914,8 @@
                                 ${new Date(permit.request_date).toLocaleDateString('ar-SA')}
                             </div>
                         </div>
-                        <span class="permit-status" style="background: ${statusColor === '#27ae60' ? '#d4edda' : statusColor === '#f39c12' ? '#fff3cd' : '#e8f4ff'}; 
-                            color: ${statusColor === '#27ae60' ? '#155724' : statusColor === '#f39c12' ? '#856404' : '#3498db'}; 
+                        <span class="permit-status" style="background: ${compBadgeBg}; 
+                            color: ${compBadgeFg}; 
                             padding: 4px 12px; border-radius: 20px; font-size: 12px;">
                             ${statusText}
                         </span>
@@ -1532,6 +1956,11 @@
                             <span class="detail-value" style="display: block; margin-top: 4px;">${permit.security_notes}</span>
                         </div>
                         ` : ''}
+                        ${permit.workers && permit.workers.length > 0 ? `
+                        <div class="detail-item" style="display:block;border:none;padding:0;">
+                            ${buildInlineWorkersTableHtml(permit.workers)}
+                        </div>
+                        ` : ''}
                     </div>
                     
                     <div class="action-buttons">
@@ -1558,8 +1987,9 @@
                 return;
             }
             
-            const userData = JSON.parse(localStorage.getItem('user'));
+            const userData = parseUserFromStorage();
             const managerUsername = userData ? (userData.username || userData.name || 'unknown') : 'unknown';
+            const scope = getManagerScopeUsername(userData);
             
             try {
                 const data = await fetchJson('/api/permits/company-entry/approve', 'POST', {
@@ -1575,9 +2005,9 @@
                     // تحديث الصفحة مباشرة
                         if (currentTab === 'company-permits') {
                         await loadCompanyPendingRequests(userData.username);
-                        await loadRecentlyApprovedCompanyPermits(userData.username);
+                        await loadRecentlyApprovedCompanyPermits(scope);
                         }
-                    await loadStats(userData.username);
+                    await loadStats(scope);
                 } else {
                     showNotification(`❌ ${data.message || 'حدث خطأ في الموافقة'}`, 'error');
                 }
@@ -1596,8 +2026,9 @@
                 return;
             }
             
-            const userData = JSON.parse(localStorage.getItem('user'));
+            const userData = parseUserFromStorage();
             const managerUsername = userData ? (userData.username || userData.name || 'unknown') : 'unknown';
+            const scope = getManagerScopeUsername(userData);
             
             try {
                 const data = await fetchJson('/api/permits/company-entry/reject', 'POST', {
@@ -1613,9 +2044,9 @@
                     // تحديث الصفحة مباشرة
                     if (currentTab === 'company-permits') {
                         await loadCompanyPendingRequests(userData.username);
-                        await loadRecentlyApprovedCompanyPermits(userData.username);
+                        await loadRecentlyApprovedCompanyPermits(scope);
                     }
-                    await loadStats(userData.username);
+                    await loadStats(scope);
                     
                     // إرسال إشعار للموظف
                     try {
@@ -1638,7 +2069,7 @@
                         if (currentTab === 'company-permits') {
                             loadCompanyPendingRequests(userData.username);
                         }
-                        loadStats(userData.username);
+                        loadStats(scope);
                     }, 1500);
                 } else {
                     showNotification(`❌ ${data.message || 'حدث خطأ في الرفض'}`, 'error');
@@ -1728,9 +2159,34 @@
                     const permit = data.permit;
                     const workers = data.workers || [];
                     
+                    let reqD = {};
+                    try {
+                        if (permit.requesting_department) {
+                            reqD = typeof permit.requesting_department === 'string'
+                                ? JSON.parse(permit.requesting_department)
+                                : permit.requesting_department;
+                        }
+                    } catch (e) { reqD = {}; }
+                    
+                    const empName = permit.employee_name || reqD.employee_name || 'غير محدد';
+                    const dirName = permit.directorate || reqD.directorate || 'غير محدد';
+                    const deptName = permit.department || reqD.department || 'غير محدد';
+                    const jobNum = permit.job_number || reqD.job_number || 'غير محدد';
+                    const supName = permit.supervisor_name || reqD.supervisor_name || 'غير محدد';
+                    const startD = permit.expected_entry_date || permit.start_date || '—';
+                    const endD = permit.expected_exit_date || permit.end_date || '—';
+                    const tIn = permit.expected_entry_time || permit.entry_time || '—';
+                    const tOut = permit.expected_exit_time || permit.exit_time || '—';
+                    const purpose = permit.entry_purpose || permit.work_details || 'غير محدد';
+                    const compRep = permit.company_representative || permit.company_supervisor || 'غير محدد';
+                    const compPhone = permit.representative_phone || permit.company_phone || 'غير محدد';
+                    
+                    const wid = (w) => (w.worker_id != null && w.worker_id !== '' ? w.worker_id : 0);
+                    
                     // إنشاء HTML لعرض العمال مع البطاقات الشخصية
                     const workersHTML = workers.length > 0 ? workers.map((worker, index) => {
                         const hasIdCard = worker.id_card_file_name;
+                        const wId = wid(worker);
                         return `
                             <tr>
                                 <td style="padding: 10px; text-align: center;">${index + 1}</td>
@@ -1740,15 +2196,15 @@
                                 <td style="padding: 10px; text-align: center;">
                                     ${hasIdCard ? `
                                         <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-                                            <button onclick="viewWorkerIdCard(${permitId}, ${worker.worker_id})" 
+                                            <button type="button" onclick="viewWorkerIdCard(${permitId}, ${wId})" 
                                                     style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
                                                 👁️ عرض
                                             </button>
-                                            <button onclick="downloadWorkerIdCard(${permitId}, ${worker.worker_id})" 
+                                            <button type="button" onclick="downloadWorkerIdCard(${permitId}, ${wId})" 
                                                     style="background: #2ecc71; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
                                                 📥 تحميل
                                             </button>
-                                            <button onclick="printWorkerIdCard(${permitId}, ${worker.worker_id})" 
+                                            <button type="button" onclick="printWorkerIdCard(${permitId}, ${wId})" 
                                                     style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
                                                 🖨️ طباعة
                                             </button>
@@ -1757,10 +2213,10 @@
                                 </td>
                             </tr>
                         `;
-                    }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 10px;">لا توجد بيانات</td></tr>';
+                    }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 10px;">لا توجد بيانات عمال في السجل</td></tr>';
                     
                     const modalHTML = `
-                        <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
+                        <div dir="rtl" style="max-height: 80vh; overflow-y: auto; padding: 10px; text-align: right;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
                                 🏢 تفاصيل تصريح دخول الشركة #${permitId}
                             </h3>
@@ -1768,30 +2224,30 @@
                             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                                 <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الشركة</h4>
                                 <p><strong>اسم الشركة:</strong> ${permit.company_name || 'غير محدد'}</p>
-                                <p><strong>مسؤول الشركة:</strong> ${permit.company_supervisor || 'غير محدد'}</p>
-                                <p><strong>رقم الهاتف:</strong> ${permit.company_phone || 'غير محدد'}</p>
-                                <p><strong>العنوان:</strong> ${permit.company_address || 'غير محدد'}</p>
+                                <p><strong>الممثل / مسؤول الشركة:</strong> ${compRep}</p>
+                                <p><strong>رقم الهاتف:</strong> ${compPhone}</p>
                             </div>
                             
                             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                                 <h4 style="color: #3498db; margin-bottom: 10px;">الجهة الطالبة</h4>
-                                <p><strong>الموظف المكلف:</strong> ${permit.employee_name || 'غير محدد'}</p>
-                                <p><strong>الإدارة:</strong> ${permit.directorate || 'غير محدد'}</p>
-                                <p><strong>القسم:</strong> ${permit.department || 'غير محدد'}</p>
-                                <p><strong>الرقم الوظيفي:</strong> ${permit.job_number || 'غير محدد'}</p>
-                                <p><strong>المسؤول المباشر:</strong> ${permit.supervisor_name || 'غير محدد'}</p>
+                                <p><strong>الموظف المكلف:</strong> ${empName}</p>
+                                <p><strong>الإدارة:</strong> ${dirName}</p>
+                                <p><strong>القسم:</strong> ${deptName}</p>
+                                <p><strong>الرقم الوظيفي:</strong> ${jobNum}</p>
+                                <p><strong>المسؤول المباشر:</strong> ${supName}</p>
                             </div>
                             
                             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                                 <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل الدخول</h4>
-                                <p><strong>الفترة:</strong> ${permit.start_date} إلى ${permit.end_date}</p>
-                                <p><strong>أوقات الدخول:</strong> ${permit.entry_time} - ${permit.exit_time}</p>
-                                <p><strong>الغرض:</strong> ${permit.work_details || 'غير محدد'}</p>
+                                <p><strong>الفترة:</strong> ${startD} إلى ${endD}</p>
+                                <p><strong>أوقات الدخول:</strong> ${tIn} - ${tOut}</p>
+                                <p><strong>الغرض:</strong> ${purpose}</p>
+                                <p><strong>عدد الزوار:</strong> ${permit.number_of_visitors != null ? permit.number_of_visitors : '—'}</p>
                             </div>
                             
                             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <h4 style="color: #3498db; margin-bottom: 10px;">قائمة العمال (${workers.length} عامل)</h4>
-                                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                                <h4 style="color: #3498db; margin-bottom: 10px;">جدول العمال (${workers.length})</h4>
+                                <table dir="rtl" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                                     <thead>
                                         <tr style="background: #3498db; color: white;">
                                             <th style="padding: 10px; text-align: center;">#</th>
@@ -1807,12 +2263,7 @@
                                 </table>
                             </div>
                             
-                            ${permit.additional_notes ? `
-                                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                    <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات إضافية</h4>
-                                    <p>${permit.additional_notes}</p>
-                                </div>
-                            ` : ''}
+                            ${formatCompanyEntryAdditionalNotesHtml(permit.additional_notes)}
                             
                             ${permit.manager_notes ? `
                                 <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
@@ -2129,7 +2580,7 @@
         async function loadMaterialExitApprovedRequestsForManager(username) {
             try {
                 console.log('✅ تحميل تصاريح إخراج المواد المعتمدة...');
-                const data = await fetchJson('/api/permits/material-exit/approved');
+                const data = await fetchJson(`/api/permits/material-exit/approved?username=${encodeURIComponent(username)}`);
                 const container = document.getElementById('materialExitApprovedContainer');
                 
                 if (data.success) {
@@ -2177,10 +2628,12 @@
             const permitDate = permit.permit_date || permit.created_at || new Date().toISOString();
             const statusColor = permit.status === 'completed' ? '#d4edda' : 
                                permit.status === 'pending_security' ? '#fff3cd' : 
-                               permit.status === 'rejected_security' ? '#f8d7da' : '#d4edda';
+                               permit.status === 'rejected_security' ? '#f8d7da' :
+                               permit.status === 'sent_to_guard' ? '#d6eaf8' : '#d4edda';
             const statusText = permit.status === 'completed' ? '✅ مكتمل' : 
                              permit.status === 'pending_security' ? '⏳ بانتظار الأمن' : 
                              permit.status === 'rejected_security' ? '❌ مرفوض من الأمن' : 
+                             permit.status === 'sent_to_guard' ? '✅ معتمد أمنياً — عند الحارس' :
                              '✅ معتمد من المدير';
             
             return `
@@ -2261,40 +2714,6 @@
                     const permit = data.permit;
                     const permitDate = permit.permit_date || permit.created_at || new Date().toISOString();
                     
-                    // محاولة جلب العمال إذا كان هناك جدول مرتبط (حالياً لا يوجد، لكن نضيف القسم للتوافق)
-                    const workers = data.workers || [];
-                    
-                    // إنشاء HTML لعرض العمال
-                    const workersHTML = workers.length > 0 ? workers.map((worker, index) => {
-                        const hasIdCard = worker.id_card_file_name;
-                        return `
-                            <tr>
-                                <td style="padding: 10px; text-align: center;">${index + 1}</td>
-                                <td style="padding: 10px;">${worker.worker_name || 'غير محدد'}</td>
-                                <td style="padding: 10px;">${worker.worker_id_number || 'غير محدد'}</td>
-                                <td style="padding: 10px;">${worker.worker_profession || 'غير محدد'}</td>
-                                <td style="padding: 10px; text-align: center;">
-                                    ${hasIdCard ? `
-                                        <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-                                            <button onclick="viewWorkerIdCard(${permitId}, ${worker.worker_id})" 
-                                                    style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
-                                                👁️ عرض
-                                            </button>
-                                            <button onclick="downloadWorkerIdCard(${permitId}, ${worker.worker_id})" 
-                                                    style="background: #2ecc71; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
-                                                📥 تحميل
-                                            </button>
-                                            <button onclick="printWorkerIdCard(${permitId}, ${worker.worker_id})" 
-                                                    style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
-                                                🖨️ طباعة
-                                            </button>
-                                        </div>
-                                    ` : '<span style="color: #95a5a6;">لا توجد بطاقة</span>'}
-                                </td>
-                            </tr>
-                        `;
-                    }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 10px; color: #95a5a6;">لا توجد عمال مرتبطة بهذا التصريح</td></tr>';
-                    
                     const modalHTML = `
                         <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
@@ -2316,24 +2735,6 @@
                                 <p><strong>سبب الإخراج:</strong> ${permit.exit_reason || 'غير محدد'}</p>
                                 <p><strong>التاريخ المطلوب:</strong> ${new Date(permitDate).toLocaleDateString('ar-SA')}</p>
                                 ${permit.permit_time ? `<p><strong>الوقت المطلوب:</strong> ${permit.permit_time}</p>` : ''}
-                            </div>
-                            
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <h4 style="color: #3498db; margin-bottom: 10px;">قائمة العمال (${workers.length} عامل)</h4>
-                                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                                    <thead>
-                                        <tr style="background: #3498db; color: white;">
-                                            <th style="padding: 10px; text-align: center;">#</th>
-                                            <th style="padding: 10px; text-align: right;">اسم العامل</th>
-                                            <th style="padding: 10px; text-align: right;">الرقم المدني</th>
-                                            <th style="padding: 10px; text-align: right;">المهنة</th>
-                                            <th style="padding: 10px; text-align: center;">بطاقة الهوية</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${workersHTML}
-                                    </tbody>
-                                </table>
                             </div>
                             
                             ${permit.manager_notes ? `
@@ -2404,8 +2805,9 @@
                 return;
             }
             
-            const userData = JSON.parse(localStorage.getItem('user'));
+            const userData = parseUserFromStorage();
             const managerUsername = userData ? (userData.username || userData.name || 'unknown') : 'unknown';
+            const scope = getManagerScopeUsername(userData);
             
             try {
                 const data = await fetchJson('/api/permits/material-exit/manager-approve', 'POST', {
@@ -2424,12 +2826,12 @@
                     
                     // تحديث الصفحة مباشرة
                     if (currentTab === 'material-exit-permits') {
-                        await loadMaterialExitPendingRequestsForManager(userData.username);
+                        await loadMaterialExitPendingRequestsForManager(scope);
                         if (decision === 'approve') {
-                            await loadMaterialExitApprovedRequestsForManager(userData.username);
+                            await loadMaterialExitApprovedRequestsForManager(scope);
                         }
                     }
-                    await loadStats(userData.username);
+                    await loadStats(scope);
                 } else {
                     showNotification(`❌ ${data.message || 'حدث خطأ في العملية'}`, 'error');
                 }
@@ -2627,7 +3029,7 @@
         // =============== USER MANAGEMENT ===============
         async function loadUserData() {
             try {
-                const userData = JSON.parse(localStorage.getItem('user'));
+                let userData = parseUserFromStorage();
                 const token = localStorage.getItem('token');
                 
                 if (!userData || !token) {
@@ -2635,13 +3037,49 @@
                     return;
                 }
                 
-                // تحديث معلومات المستخدم في الـ navbar
+                try {
+                    const response = await fetch('/api/user/profile', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.user) {
+                            const u = data.user;
+                            userData = {
+                                ...userData,
+                                username: u.username || userData.username,
+                                name: u.full_name || u.name || userData.name,
+                                full_name: u.full_name || userData.full_name,
+                                role: u.role || userData.role,
+                                job_number: u.job_number,
+                                directorate: u.directorate,
+                                department_id: u.department_id,
+                                department: u.department || userData.department,
+                                email: u.email,
+                                phone: u.phone,
+                                employee_id: u.employee_id != null ? u.employee_id : userData.employee_id,
+                                deputy_for_manager_id: u.deputy_for_manager_id,
+                                represented_manager_username: u.represented_manager_username,
+                                represented_manager_full_name: u.represented_manager_full_name
+                            };
+                            localStorage.setItem('user', JSON.stringify(userData));
+                        }
+                    }
+                } catch (pe) {
+                    console.warn('تعذر تحديث الملف الشخصي من الخادم:', pe);
+                }
+                
                 const userInfoEl = document.getElementById('userInfo');
                 if (userInfoEl) {
+                    const deputyNote =
+                        userData.role === 'deputy_manager' && userData.represented_manager_full_name
+                            ? `<div class="user-role" style="font-size:12px;opacity:0.9;margin-top:2px;">نيابة عن: ${String(userData.represented_manager_full_name).replace(/</g, '&lt;')}</div>`
+                            : '';
                     userInfoEl.innerHTML = `
                         <div class="user-details">
                             <div class="user-name">${userData.name || userData.full_name || userData.username || 'مدير'}</div>
                             <div class="user-role">${getRoleName(userData.role)}</div>
+                            ${deputyNote}
                         </div>
                         <div class="user-avatar" id="userAvatar">
                             ${(userData.name || userData.full_name || userData.username || 'م').charAt(0)}
@@ -2660,6 +3098,7 @@
                 'admin': 'مسؤول النظام',
                 'employee': 'موظف',
                 'manager': 'مدير',
+                'deputy_manager': 'نائب المدير',
                 'security': 'مسؤول أمن',
                 'guard': 'حارس'
             };
@@ -2683,13 +3122,17 @@
         // =============== LOAD MANAGER DATA ===============
         async function loadManagerData() {
             try {
-                const userData = JSON.parse(localStorage.getItem('user'));
+                const userData = parseUserFromStorage();
                 if (!userData) {
                     console.error('❌ لا توجد بيانات مستخدم');
                     return;
                 }
                 
-                const username = userData.username;
+                const username = getManagerScopeUsername(userData);
+                if (!username) {
+                    console.error('❌ لا يمكن تحديد نطاق المدير (اسم المستخدم)');
+                    return;
+                }
                 console.log('📊 تحميل بيانات المدير:', username);
                 
                 // تحميل الإحصائيات
@@ -2700,6 +3143,9 @@
                 
                 // تحميل التصاريح المعتمدة مؤخراً
                 await loadRecentlyApproved(username);
+                
+                // سجل تصاريح الموظفين التي رفضها المدير
+                await loadManagerRejectedPermits(username);
                 
                 // تحميل تصاريح الشركات المعلقة
                 await loadCompanyPendingRequests(username);
@@ -2723,9 +3169,7 @@
                 if (data.success) {
                     const permits = data.permits || [];
                     
-                    // تحديث العداد
                     document.getElementById('pendingCount').textContent = `${permits.length} تصريح`;
-                    document.getElementById('pendingRequests').textContent = permits.length;
                     
                     if (permits.length === 0) {
                         container.innerHTML = `
@@ -2762,17 +3206,82 @@
             }
         }
         
+        /** يفك expected_exit_time من الطلب (مثل 17:00 - 19:00) لعرضه مع التواريخ */
+        function parseOvertimeExitTimeRange(expected_exit_time) {
+            if (expected_exit_time == null || expected_exit_time === '') return { from: '', to: '', raw: '' };
+            const s = String(expected_exit_time).trim();
+            const parts = s.split(/\s*[-–—]\s*/).map(x => x.trim()).filter(Boolean);
+            if (parts.length >= 2) return { from: parts[0], to: parts[parts.length - 1], raw: s };
+            if (parts.length === 1) return { from: parts[0], to: '', raw: s };
+            return { from: '', to: '', raw: s };
+        }
+        
+        function formatPermitFromToWithTimes(permit) {
+            const t = parseOvertimeExitTimeRange(permit.expected_exit_time);
+            let fromLine = '';
+            let toLine = '';
+            if (permit.start_date) {
+                fromLine = permit.start_date;
+                if (t.from) fromLine += ' — من الساعة ' + t.from;
+            }
+            if (permit.end_date) {
+                toLine = permit.end_date;
+                if (t.to) toLine += ' — إلى الساعة ' + t.to;
+                else if (t.from && !t.to) toLine += ' — الساعة ' + t.from;
+            }
+            return { fromLine, toLine, raw: t.raw };
+        }
+        
+        /** رقم تصريح الموظف من الاستجابة (يدعم اختلاف أسماء الحقول) */
+        function normalizeEmployeePermitId(permitOrRaw) {
+            if (permitOrRaw == null || permitOrRaw === '') return null;
+            if (typeof permitOrRaw === 'object') {
+                const raw = permitOrRaw.permit_id ?? permitOrRaw.overtime_permit_id ?? permitOrRaw.PERMIT_ID ?? permitOrRaw.permitId ?? permitOrRaw.id;
+                return normalizeEmployeePermitId(raw);
+            }
+            const s = String(permitOrRaw).trim().replace(/^#/, '');
+            if (s === '' || s === 'undefined' || s === 'null') return null;
+            const n = parseInt(s, 10);
+            return Number.isNaN(n) ? null : n;
+        }
+        
+        /** تفويض نقرات تصاريح الموظفين — يقرأ data-permit-id ولا يعتمد على onclick الذي قد يفقد المعرف */
+        function setupEmployeeOvertimePermitClickDelegation() {
+            if (window.__employeeOvertimePermitDelegation) return;
+            window.__employeeOvertimePermitDelegation = true;
+            document.body.addEventListener('click', function(e) {
+                const inPending = e.target.closest('#requestsContainer');
+                const inApproved = e.target.closest('#approvedContainer');
+                if (!inPending && !inApproved) return;
+                const btn = e.target.closest('.js-emp-approve, .js-emp-reject, .js-emp-view, .js-emp-print');
+                if (!btn) return;
+                const idNum = normalizeEmployeePermitId(btn.getAttribute('data-permit-id'));
+                if (idNum == null) {
+                    showNotification('❌ رقم التصريح غير صالح — حدّث الصفحة', 'error');
+                    return;
+                }
+                e.preventDefault();
+                if (btn.classList.contains('js-emp-approve')) approvePermit(idNum);
+                else if (btn.classList.contains('js-emp-reject')) rejectPermit(idNum);
+                else if (btn.classList.contains('js-emp-view')) viewPermit(idNum);
+                else if (btn.classList.contains('js-emp-print')) printOvertimePermit(idNum);
+            });
+        }
+        
         // =============== CREATE PENDING PERMIT CARD ===============
         function createPendingPermitCard(permit) {
             const permitType = getPermitType(permit.type || 'exit');
             const requestDate = new Date(permit.request_date).toLocaleDateString('ar-SA');
+            const timeFmt = formatPermitFromToWithTimes(permit);
+            const pid = normalizeEmployeePermitId(permit);
+            const pidAttr = pid != null ? String(pid) : '';
             
             return `
                 <div class="permit-card">
                     <div class="permit-header">
                         <div>
                             <div class="permit-id">
-                                📋 تصريح #${permit.permit_id}
+                                📋 تصريح #${pid != null ? pid : (permit.permit_id ?? '?')}
                                 <span class="type-badge">${permitType.icon} ${permitType.name}</span>
                             </div>
                             <div class="permit-date">${requestDate}</div>
@@ -2796,32 +3305,38 @@
                             <span class="detail-label">السبب:</span>
                             <span class="detail-value">${permit.reason || 'غير محدد'}</span>
                         </div>
-                        ${permit.start_date ? `
+                        ${timeFmt.fromLine ? `
                         <div class="detail-item">
                             <span class="detail-label">من:</span>
-                            <span class="detail-value">${permit.start_date} ${permit.start_time || ''}</span>
+                            <span class="detail-value">${timeFmt.fromLine}</span>
                         </div>
                         ` : ''}
-                        ${permit.end_date ? `
+                        ${timeFmt.toLine ? `
                         <div class="detail-item">
                             <span class="detail-label">إلى:</span>
-                            <span class="detail-value">${permit.end_date} ${permit.end_time || ''}</span>
+                            <span class="detail-value">${timeFmt.toLine}</span>
+                        </div>
+                        ` : ''}
+                        ${timeFmt.raw && (!timeFmt.fromLine || !timeFmt.toLine) ? `
+                        <div class="detail-item">
+                            <span class="detail-label">الوقت المتوقع:</span>
+                            <span class="detail-value">${timeFmt.raw}</span>
                         </div>
                         ` : ''}
                     </div>
                     
                     <div class="action-buttons">
-                        <button class="action-btn btn-approve" onclick="approvePermit(${permit.permit_id})">
+                        <button type="button" class="action-btn btn-approve js-emp-approve" data-permit-id="${pidAttr}">
                             ✅ قبول
                         </button>
-                        <button class="action-btn btn-reject" onclick="rejectPermit(${permit.permit_id})">
+                        <button type="button" class="action-btn btn-reject js-emp-reject" data-permit-id="${pidAttr}">
                             ❌ رفض
                         </button>
-                        <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
+                        <button type="button" class="action-btn btn-view js-emp-view" data-permit-id="${pidAttr}">
                             👁️ تفاصيل
                         </button>
                         ${permit.status === 'approved_security' ? `
-                        <button class="action-btn btn-print" onclick="printOvertimePermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                        <button type="button" class="action-btn btn-print js-emp-print" data-permit-id="${pidAttr}" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
                             🖨️ طباعة
                         </button>
                         ` : ''}
@@ -2848,14 +3363,18 @@
                 const container = document.getElementById('approvedContainer');
                 
                 if (data.success && data.permits) {
-                    const approvedPermits = data.permits.slice(0, 5);
+                    const rawList = data.permits || [];
+                    const approvedPermits = rawList.filter(p => {
+                        const mgrRej = p.status === 'pending_security' && (p.manager_decision === 'reject' || p.manager_decision === 'deny');
+                        return !mgrRej;
+                    });
                     
                     if (approvedPermits.length === 0) {
                         container.innerHTML = `
                             <div class="empty-state">
                                 <div class="empty-icon">✅</div>
-                                <h3 class="empty-title">لا توجد تصاريح معتمدة</h3>
-                                <p class="empty-description">سيتم عرض التصاريح المعتمدة هنا</p>
+                                <h3 class="empty-title">لا توجد تصاريح في مسار الاعتماد</h3>
+                                <p class="empty-description">تظهر هنا كل التصاريح المرسلة للأمن أو المعتمدة أو قيد التنفيذ لموظفي نطاق اختصاصك</p>
                             </div>
                         `;
                         document.getElementById('approvedCount').textContent = '0 تصريح';
@@ -2874,16 +3393,99 @@
             }
         }
         
+        async function loadManagerRejectedPermits(username) {
+            try {
+                const data = await fetchJson(`/api/permits/manager-rejected-employee/${encodeURIComponent(username)}`);
+                const container = document.getElementById('managerRejectedContainer');
+                if (!container) return;
+                
+                if (data.success && data.permits) {
+                    const list = data.permits || [];
+                    document.getElementById('managerRejectedCount').textContent = `${list.length} تصريح`;
+                    
+                    if (list.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon">📭</div>
+                                <h3 class="empty-title">لا يوجد سجل رفض مسجّل</h3>
+                                <p class="empty-description">تظهر هنا تصاريح الموظفين التي سجّلت عليها رفضاً (بما في ذلك المحالة لمكتب الأمن)</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="permits-grid">
+                            ${list.map(permit => createApprovedPermitCard(permit)).join('')}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="alert alert-error">
+                            <span>❌</span>
+                            <span>${data.message || 'تعذر تحميل سجل الرفض'}</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ خطأ في تحميل تصاريح رفض المدير:', error);
+                const container = document.getElementById('managerRejectedContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="alert alert-error">
+                            <span>❌</span>
+                            <span>${error.message || 'حدث خطأ'}</span>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
         function createApprovedPermitCard(permit) {
+            const pid = normalizeEmployeePermitId(permit);
+            const pidAttr = pid != null ? String(pid) : '';
+            const mdRej = permit.manager_decision === 'reject' || permit.manager_decision === 'deny';
+            const mgrRejected = permit.status === 'pending_security' && mdRej;
+            let empStatusLabel = permit.status || '';
+            let empStatusBg = '#d4edda';
+            let empStatusColor = '#155724';
+            if (mgrRejected) {
+                empStatusLabel = 'رفض المدير — بانتظار مكتب الأمن';
+                empStatusBg = '#fdebd0';
+                empStatusColor = '#b9770e';
+            } else if (permit.status === 'rejected_manager') {
+                empStatusLabel = '❌ مرفوض من المدير';
+                empStatusBg = '#fadbd8';
+                empStatusColor = '#922b21';
+            } else if (mdRej && permit.status === 'rejected_security') {
+                empStatusLabel = '❌ رفض نهائي (بعد رفض المدير)';
+                empStatusBg = '#fadbd8';
+                empStatusColor = '#922b21';
+            } else if (mdRej && permit.status === 'approved_security') {
+                empStatusLabel = '✅ معتمد من الأمن (بعد مسار رفض المدير)';
+                empStatusBg = '#e8daef';
+                empStatusColor = '#6c3483';
+            } else if (permit.status === 'pending_security') {
+                empStatusLabel = 'بانتظار مكتب الأمن';
+                empStatusBg = '#fff3cd';
+                empStatusColor = '#856404';
+            } else if (permit.status === 'approved_security') {
+                empStatusLabel = 'معتمد من الأمن';
+            } else if (permit.status === 'checked_in') {
+                empStatusLabel = 'داخل المبنى';
+            } else if (permit.status === 'completed') {
+                empStatusLabel = 'مكتمل';
+            }
+            const canPrintEmp = ['approved_security', 'checked_in', 'completed'].includes(permit.status);
             return `
                 <div class="permit-card approved">
                     <div class="permit-header">
                         <div>
-                            <div class="permit-id">📋 تصريح #${permit.permit_id}</div>
+                            <div class="permit-id">📋 تصريح #${pid != null ? pid : (permit.permit_id ?? '?')}</div>
                             <div class="permit-date">${new Date(permit.request_date).toLocaleDateString('ar-SA')}</div>
                         </div>
-                        <span class="permit-status" style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
-                            ✅ معتمد
+                        <span class="permit-status" style="background: ${empStatusBg}; color: ${empStatusColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            ${empStatusLabel}
                         </span>
                     </div>
                     <div class="employee-info">
@@ -2910,11 +3512,11 @@
                     </div>
                     ` : ''}
                     <div class="action-buttons">
-                        <button class="action-btn btn-view" onclick="viewPermit(${permit.permit_id})">
+                        <button type="button" class="action-btn btn-view js-emp-view" data-permit-id="${pidAttr}">
                             👁️ عرض التفاصيل
                         </button>
-                        ${permit.status === 'approved_security' ? `
-                        <button class="action-btn btn-print" onclick="printOvertimePermit(${permit.permit_id})" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                        ${canPrintEmp ? `
+                        <button type="button" class="action-btn btn-print js-emp-print" data-permit-id="${pidAttr}" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
                             🖨️ طباعة
                         </button>
                         ` : ''}
@@ -2925,20 +3527,30 @@
         
         // =============== PERMIT ACTIONS ===============
         async function approvePermit(permitId) {
-            const result = await showDecisionModal(permitId, 'approve', 'employee');
+            const idNum = normalizeEmployeePermitId(permitId);
+            if (idNum == null) {
+                showNotification('❌ رقم التصريح غير صالح', 'error');
+                return;
+            }
+            const result = await showDecisionModal(idNum, 'approve', 'employee');
             if (!result.confirmed) return;
             
-            const userData = JSON.parse(localStorage.getItem('user'));
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const managerUsername = (userData.username != null && String(userData.username).trim() !== '')
+                ? String(userData.username).trim()
+                : null;
+            const scope = getManagerScopeUsername(userData);
             try {
                 const data = await fetchJson('/api/permits/manager-approve', 'POST', {
-                    permit_id: permitId,
-                    manager_username: userData.username,
+                    permit_id: idNum,
+                    manager_username: managerUsername,
                     decision: 'approve',
-                    notes: result.notes || ''
+                    notes: (result.notes != null && String(result.notes).trim()) ? String(result.notes).trim() : ''
                 });
                 
                 if (data.success) {
                     showNotification('✅ تم قبول التصريح!', 'success');
+                    loadStats(scope);
                     setTimeout(() => {
                         loadManagerData();
                     }, 1500);
@@ -2951,20 +3563,30 @@
         }
         
         async function rejectPermit(permitId) {
-            const result = await showDecisionModal(permitId, 'reject', 'employee');
+            const idNum = normalizeEmployeePermitId(permitId);
+            if (idNum == null) {
+                showNotification('❌ رقم التصريح غير صالح', 'error');
+                return;
+            }
+            const result = await showDecisionModal(idNum, 'reject', 'employee');
             if (!result.confirmed) return;
             
-            const userData = JSON.parse(localStorage.getItem('user'));
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const managerUsername = (userData.username != null && String(userData.username).trim() !== '')
+                ? String(userData.username).trim()
+                : null;
+            const scope = getManagerScopeUsername(userData);
             try {
                 const data = await fetchJson('/api/permits/manager-approve', 'POST', {
-                    permit_id: permitId,
-                    manager_username: userData.username,
+                    permit_id: idNum,
+                    manager_username: managerUsername,
                     decision: 'reject',
-                    notes: result.notes || ''
+                    notes: (result.notes != null && String(result.notes).trim()) ? String(result.notes).trim() : ''
                 });
                 
                 if (data.success) {
-                    showNotification('❌ تم رفض التصريح!', 'success');
+                    showNotification('📤 تم تسجيل الرفض وإحالة التصريح لمكتب الأمن للقرار النهائي', 'success');
+                    loadStats(scope);
                     setTimeout(() => {
                         loadManagerData();
                     }, 1500);
@@ -2976,43 +3598,44 @@
             }
         }
         
-        async function viewPermit(permitId) {
+        function escapeHtmlPermit(str) {
+            if (str == null) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        
+        function formatDetailTimestamp(iso) {
+            if (!iso) return '—';
             try {
-                // البحث عن التصريح في القوائم المحلية
-                const userData = JSON.parse(localStorage.getItem('user'));
-                let permit = null;
-                
-                // البحث في التصاريح المعلقة
-                try {
-                    const pendingData = await fetchJson(`/api/permits/pending/${userData.username}`);
-                    if (pendingData.success && pendingData.permits) {
-                        permit = pendingData.permits.find(p => p.permit_id === permitId);
-                    }
-                } catch (e) {
-                    console.warn('خطأ في جلب التصاريح المعلقة:', e);
-                }
-                
-                // البحث في التصاريح المعتمدة
-                if (!permit) {
-                    try {
-                        const approvedData = await fetchJson(`/api/permits/approved/${userData.username}`);
-                        if (approvedData.success && approvedData.permits) {
-                            permit = approvedData.permits.find(p => p.permit_id === permitId);
-                        }
-                    } catch (e) {
-                        console.warn('خطأ في جلب التصاريح المعتمدة:', e);
-                    }
-                }
-                
-                if (!permit) {
-                    showNotification('❌ تعذر العثور على التصريح', 'error');
-                    return;
-                }
-                
-                const requestDate = new Date(permit.request_date).toLocaleDateString('ar-SA');
-                const permitType = getPermitType(permit.type || 'exit');
-                
-                const modalHTML = `
+                return new Date(iso).toLocaleString('ar-SA');
+            } catch (e) {
+                return String(iso);
+            }
+        }
+        
+        function overtimePermitStatusLabel(status) {
+            const map = {
+                pending_manager: '⏳ بانتظار المدير',
+                pending_security: '⏳ بانتظار مكتب الأمن',
+                approved_security: '✅ معتمد من الأمن',
+                checked_in: '📍 داخل المبنى (مسجّل دخول)',
+                completed: '✅ مكتمل (مسجّل خروج)',
+                rejected_manager: '❌ مرفوض من المدير',
+                rejected_security: '❌ مرفوض من الأمن'
+            };
+            return map[status] || escapeHtmlPermit(status) || 'غير محدد';
+        }
+        
+        function buildEmployeeOvertimeDetailModalHtml(permit, permitId) {
+            const requestDate = new Date(permit.request_date).toLocaleDateString('ar-SA');
+            const permitType = getPermitType(permit.type || 'exit');
+            const timeFmt = formatPermitFromToWithTimes(permit);
+            const mn = permit.manager_notes && String(permit.manager_notes).trim();
+            const sn = permit.security_notes && String(permit.security_notes).trim();
+            const en = permit.entry_notes && String(permit.entry_notes).trim();
+            const xn = permit.exit_notes && String(permit.exit_notes).trim();
+            const canPrint = permit.status !== 'rejected_manager' && permit.status !== 'rejected_security';
+            
+            return `
                     <div style="max-height: 80vh; overflow-y: auto; padding: 10px;">
                         <h3 style="text-align: center; color: #2c3e50; margin-bottom: 20px;">
                             📋 تفاصيل تصريح #${permitId}
@@ -3020,38 +3643,58 @@
                         
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                             <h4 style="color: #3498db; margin-bottom: 10px;">معلومات الموظف</h4>
-                            <p><strong>اسم الموظف:</strong> ${permit.full_name || permit.employee_name || 'غير محدد'}</p>
-                            <p><strong>الرقم الوظيفي:</strong> ${permit.job_number || 'غير محدد'}</p>
-                            <p><strong>الإدارة:</strong> ${permit.directorate || 'غير محدد'}</p>
-                            <p><strong>القسم:</strong> ${permit.department_name || permit.department || 'غير محدد'}</p>
+                            <p><strong>اسم الموظف:</strong> ${escapeHtmlPermit(permit.full_name || permit.employee_name || 'غير محدد')}</p>
+                            <p><strong>الرقم الوظيفي:</strong> ${escapeHtmlPermit(permit.job_number || 'غير محدد')}</p>
+                            <p><strong>الإدارة:</strong> ${escapeHtmlPermit(permit.directorate || 'غير محدد')}</p>
+                            <p><strong>القسم:</strong> ${escapeHtmlPermit(permit.department_name || permit.department || 'غير محدد')}</p>
                         </div>
                         
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                             <h4 style="color: #3498db; margin-bottom: 10px;">تفاصيل التصريح</h4>
-                            <p><strong>نوع التصريح:</strong> ${permitType.icon} ${permitType.name}</p>
-                            <p><strong>السبب:</strong> ${permit.reason || 'غير محدد'}</p>
+                            <p><strong>نوع التصريح:</strong> ${permitType.icon} ${escapeHtmlPermit(permitType.name)}</p>
+                            <p><strong>السبب:</strong> ${escapeHtmlPermit(permit.reason || 'غير محدد')}</p>
                             <p><strong>تاريخ الطلب:</strong> ${requestDate}</p>
-                            ${permit.start_date ? `<p><strong>من:</strong> ${permit.start_date} ${permit.start_time || ''}</p>` : ''}
-                            ${permit.end_date ? `<p><strong>إلى:</strong> ${permit.end_date} ${permit.end_time || ''}</p>` : ''}
+                            ${timeFmt.fromLine ? `<p><strong>من (تاريخ ووقت متوقع):</strong> ${escapeHtmlPermit(timeFmt.fromLine)}</p>` : ''}
+                            ${timeFmt.toLine ? `<p><strong>إلى (تاريخ ووقت متوقع):</strong> ${escapeHtmlPermit(timeFmt.toLine)}</p>` : ''}
+                            ${timeFmt.raw ? `<p><strong>الوقت كما سجّله الموظف:</strong> ${escapeHtmlPermit(timeFmt.raw)}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: #e8f4ff; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #3498db;">
+                            <h4 style="color: #3498db; margin-bottom: 10px;">ملاحظات المدير</h4>
+                            ${mn ? `<p style="white-space: pre-wrap; margin: 0;">${escapeHtmlPermit(mn)}</p>` : '<p style="color:#7f8c8d;">— لا توجد —</p>'}
+                            ${permit.manager_username ? `<p style="margin-top:8px;font-size:13px;color:#555;"><strong>اسم المستخدم:</strong> ${escapeHtmlPermit(permit.manager_username)}</p>` : ''}
+                            ${permit.manager_decision_date ? `<p style="font-size:13px;color:#555;"><strong>تاريخ القرار:</strong> ${formatDetailTimestamp(permit.manager_decision_date)}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: #fff8e6; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #f39c12;">
+                            <h4 style="color: #d68910; margin-bottom: 10px;">ملاحظات مكتب الأمن</h4>
+                            ${sn ? `<p style="white-space: pre-wrap; margin: 0;">${escapeHtmlPermit(sn)}</p>` : '<p style="color:#7f8c8d;">— لا توجد —</p>'}
+                            ${permit.security_username ? `<p style="margin-top:8px;font-size:13px;color:#555;"><strong>مسؤول الأمن:</strong> ${escapeHtmlPermit(permit.security_username)}</p>` : ''}
+                            ${permit.security_decision_date ? `<p style="font-size:13px;color:#555;"><strong>تاريخ القرار:</strong> ${formatDetailTimestamp(permit.security_decision_date)}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: #f5eef8; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #8e44ad;">
+                            <h4 style="color: #8e44ad; margin-bottom: 10px;">تسجيل الحارس (دخول وخروج)</h4>
+                            <p><strong>وقت الدخول الفعلي:</strong> ${permit.actual_entry_time ? `<span dir="ltr">${escapeHtmlPermit(permit.actual_entry_time)}</span>` : '—'}</p>
+                            <p><strong>وقت تسجيل الدخول:</strong> ${formatDetailTimestamp(permit.checkin_timestamp)}</p>
+                            <p><strong>حارس الدخول:</strong> ${escapeHtmlPermit(permit.entry_guard_username || '—')}</p>
+                            <p><strong>ملاحظات الحارس (دخول):</strong> ${en ? `<span style="white-space:pre-wrap;">${escapeHtmlPermit(en)}</span>` : '—'}</p>
+                            <hr style="border:0;border-top:1px solid #dccae0;margin:12px 0;">
+                            <p><strong>وقت الخروج الفعلي:</strong> ${permit.actual_exit_time ? `<span dir="ltr">${escapeHtmlPermit(permit.actual_exit_time)}</span>` : '—'}</p>
+                            <p><strong>وقت تسجيل الخروج:</strong> ${formatDetailTimestamp(permit.checkout_timestamp)}</p>
+                            <p><strong>حارس الخروج:</strong> ${escapeHtmlPermit(permit.exit_guard_username || '—')}</p>
+                            <p><strong>ملاحظات الحارس (خروج):</strong> ${xn ? `<span style="white-space:pre-wrap;">${escapeHtmlPermit(xn)}</span>` : '—'}</p>
                         </div>
                         
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                             <h4 style="color: #3498db; margin-bottom: 10px;">حالة التصريح</h4>
-                            <p><strong>الحالة:</strong> 
-                                ${permit.status === 'pending' ? '⏳ بانتظار الموافقة' :
-                                  permit.status === 'approved' ? '✅ معتمد' :
-                                  permit.status === 'rejected' ? '❌ مرفوض' :
-                                  permit.status === 'approved_security' ? '✅ معتمد من الأمن' :
-                                  permit.status || 'غير محدد'}
-                            </p>
-                            ${permit.approved_by ? `<p><strong>المعتمد من:</strong> ${permit.approved_by}</p>` : ''}
-                            ${permit.approval_date ? `<p><strong>تاريخ الموافقة:</strong> ${new Date(permit.approval_date).toLocaleDateString('ar-SA')}</p>` : ''}
-                            ${permit.rejection_reason ? `<p><strong>سبب الرفض:</strong> ${permit.rejection_reason}</p>` : ''}
+                            <p><strong>الحالة:</strong> ${overtimePermitStatusLabel(permit.status)}</p>
+                            ${permit.rejection_reason ? `<p><strong>سبب الرفض:</strong> ${escapeHtmlPermit(permit.rejection_reason)}</p>` : ''}
                         </div>
                         
-                        ${permit.status === 'approved_security' ? `
+                        ${canPrint ? `
                         <div style="text-align: center; margin-top: 20px;">
-                            <button onclick="printOvertimePermit(${permitId})" 
+                            <button type="button" onclick="printOvertimePermit(${permitId})" 
                                     style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
                                 🖨️ طباعة التصريح
                             </button>
@@ -3059,10 +3702,124 @@
                         ` : ''}
                     </div>
                 `;
+        }
+        
+        function openManagerGlobalSearchDetail(kind, id) {
+            const n = Number(id);
+            if (Number.isNaN(n)) return;
+            if (kind === 'employee') viewPermit(n);
+            else if (kind === 'company_entry') viewCompanyPermit(n);
+            else if (kind === 'material_exit') viewMaterialExitPermit(n);
+        }
+        
+        async function searchEmployeePermitsForManager() {
+            const input = document.getElementById('managerEmployeePermitSearchInput');
+            const searchQuery = input ? input.value.trim() : '';
+            
+            if (!searchQuery) {
+                showNotification('⚠️ يرجى إدخال كلمة للبحث (موظف، شركة، مواد، رقم، اسم...)', 'warning');
+                return;
+            }
+            
+            try {
+                const data = await fetchJson(`/api/permits/global-search?q=${encodeURIComponent(searchQuery)}&context=manager`);
+                
+                if (!data.success) {
+                    showNotification('❌ ' + (data.message || 'تعذر البحث'), 'error');
+                    return;
+                }
+                
+                const rows = data.results || [];
+                
+                if (rows.length === 0) {
+                    showModal({
+                        title: '🔍 نتائج البحث',
+                        html: '<p>لم يتم العثور على تصاريح مطابقة.</p>',
+                        confirmText: 'إغلاق',
+                        cancelText: null
+                    });
+                    return;
+                }
+                
+                const kindBadge = {
+                    employee: '👤 بعد الدوام',
+                    company_entry: '🏢 شركة',
+                    material_exit: '📦 إخراج مواد'
+                };
+                
+                const empStatusLabel = {
+                    pending_manager: '⏳ بانتظار المدير',
+                    approved_manager: '✅ اعتماد المدير — بانتظار الأمن',
+                    pending_security: '⏳ بانتظار الأمن',
+                    approved_security: '✅ معتمد أمنياً',
+                    rejected_manager: '❌ مرفوض من المدير',
+                    rejected_security: '❌ مرفوض أمنياً',
+                    checked_in: '🚪 داخل المبنى',
+                    completed: '✓ مكتمل'
+                };
+                
+                const resultsHtml = rows.map(r => {
+                    let st = r.kind === 'employee' ? (empStatusLabel[r.status] || r.status || '') : (r.status || '');
+                    if (r.kind === 'employee' && r.status === 'pending_security' && (r.manager_decision === 'reject' || r.manager_decision === 'deny')) {
+                        st = '⚠️ رفض المدير — بانتظار مكتب الأمن';
+                    }
+                    const badge = kindBadge[r.kind] || r.kind;
+                    return `
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border-right: 4px solid #3498db;">
+                            <div style="font-size: 12px; color: #2980b9; margin-bottom: 6px; font-weight: 600;">${badge}</div>
+                            <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">
+                                ${r.title} — ${r.primary || ''}
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">${r.secondary || ''}</div>
+                            ${st ? `<div style="margin-top: 8px; font-size: 13px; color: #555;">${st}</div>` : ''}
+                            <div style="margin-top: 10px;">
+                                <button type="button" onclick="openManagerGlobalSearchDetail('${r.kind}', ${r.id})" style="background: #3498db; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    عرض التفاصيل
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                showModal({
+                    title: '🔍 نتائج البحث — كل التصاريح',
+                    html: `
+                        <div style="margin-bottom: 15px;">
+                            <p>تم العثور على ${rows.length} نتيجة:</p>
+                        </div>
+                        <div style="max-height: 360px; overflow-y: auto;">
+                            ${resultsHtml}
+                        </div>
+                    `,
+                    confirmText: 'إغلاق',
+                    cancelText: null
+                });
+            } catch (error) {
+                console.error('خطأ في البحث الموحّد:', error);
+                showNotification('❌ ' + (error.message || 'حدث خطأ في البحث'), 'error');
+            }
+        }
+        
+        async function viewPermit(permitId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('❌ يرجى تسجيل الدخول', 'error');
+                    return;
+                }
+                const response = await fetch(`/api/permits/details/${permitId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success || !data.permit) {
+                    showNotification('❌ ' + (data.message || 'تعذر جلب تفاصيل التصريح'), 'error');
+                    return;
+                }
+                const permit = data.permit;
                 
                 showModal({
                     title: `📋 تصريح #${permitId}`,
-                    html: modalHTML,
+                    html: buildEmployeeOvertimeDetailModalHtml(permit, permitId),
                     confirmText: 'إغلاق',
                     cancelText: null
                 });
@@ -3075,27 +3832,58 @@
         
         // =============== NOTIFICATIONS ===============
         let lastUnreadNotifications = 0;
+        let notificationAudioCtx = null;
+        let notificationAudioOk = false;
+
+        function prepareNotificationAudioFromUserGesture() {
+            if (notificationAudioOk) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new AC();
+                }
+                const ctx = notificationAudioCtx;
+                const markOk = function () {
+                    if (ctx.state === 'running') {
+                        notificationAudioOk = true;
+                    }
+                };
+                if (ctx.state === 'running') {
+                    notificationAudioOk = true;
+                    return;
+                }
+                const p = ctx.resume();
+                if (p && typeof p.then === 'function') {
+                    p.then(markOk).catch(function () {});
+                } else {
+                    markOk();
+                }
+            } catch (e) {
+                /* صوت اختياري */
+            }
+        }
 
         function playNotificationSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                
-                const ctx = new AudioContext();
+                if (!notificationAudioOk || !notificationAudioCtx || notificationAudioCtx.state !== 'running') {
+                    return;
+                }
+                const ctx = notificationAudioCtx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.type = 'sine';
                 osc.frequency.value = 880;
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 const now = ctx.currentTime;
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                
+
                 osc.start(now);
                 osc.stop(now + 0.5);
             } catch (e) {
@@ -3327,25 +4115,24 @@
                     console.warn('⚠️ خطأ في جلب إحصائيات إخراج المواد:', e);
                 }
                 
-                if (employeeStatsData.success) {
-                    const employeeStats = employeeStatsData.stats;
-                    
-                    // إحصائيات التصاريح العادية
-                    document.getElementById('pendingRequests').textContent = employeeStats.pending_requests || 0;
-                    
-                    // دمج إحصائيات الموافقات والرفوض اليوم من تصاريح الموظفين وتصاريح الشركات
-                    const todayApproved = (employeeStats.today_approved || 0) + (companyStatsData.success ? (companyStatsData.stats.today_approved || 0) : 0);
-                    const todayRejected = (employeeStats.today_rejected || 0) + (companyStatsData.success ? (companyStatsData.stats.today_rejected || 0) : 0);
-                    
-                    document.getElementById('todayApproved').textContent = todayApproved;
-                    document.getElementById('todayRejected').textContent = todayRejected;
-                }
-                
-                // تحميل إحصائيات تصاريح الشركات
-                if (companyStatsData.success) {
-                    const companyStats = companyStatsData.stats;
-                    document.getElementById('companyPending').textContent = companyStats.pending || 0;
-                }
+                const employeeStats = employeeStatsData.success ? employeeStatsData.stats : {};
+                const companyStats = companyStatsData.success ? companyStatsData.stats : {};
+                const empPending = Number(employeeStats.pending_requests) || 0;
+                const compPending = Number(companyStats.pending) || 0;
+                const totalPendingApproval = empPending + compPending + materialExitPending;
+                const pendingEl = document.getElementById('pendingApprovalTotal');
+                if (pendingEl) pendingEl.textContent = totalPendingApproval;
+
+                const empTodayApp = Number(employeeStats.today_approved) || 0;
+                const empTodayRej = Number(employeeStats.today_rejected) || 0;
+                const matTodayApp = Number(employeeStats.material_today_approved) || 0;
+                const matTodayRej = Number(employeeStats.material_today_rejected) || 0;
+                const compTodayApp = companyStatsData.success ? (Number(companyStats.today_approved) || 0) : 0;
+                const compTodayRej = companyStatsData.success ? (Number(companyStats.today_rejected) || 0) : 0;
+                const todayApproved = empTodayApp + matTodayApp + compTodayApp;
+                const todayRejected = empTodayRej + matTodayRej + compTodayRej;
+                document.getElementById('todayApproved').textContent = todayApproved;
+                document.getElementById('todayRejected').textContent = todayRejected;
                 
             } catch (error) {
                 console.error('خطأ في تحميل الإحصائيات:', error);
@@ -3355,18 +4142,6 @@
                         <span>حدث خطأ في تحميل الإحصائيات</span>
                     </div>
                 `;
-            }
-        }
-
-        async function loadCompanyStats() {
-            try {
-                const data = await fetchJson('/api/permits/company-entry/stats');
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('companyPending').textContent = stats.pending || 0;
-                }
-            } catch (error) {
-                console.error('⚠️ خطأ في تحميل إحصائيات الشركات:', error);
             }
         }
 

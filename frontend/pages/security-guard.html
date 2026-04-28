@@ -18,17 +18,36 @@
             padding: 20px;
         }
         
-        /* ========== NAVBAR ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 25px;
             border-radius: 12px;
             margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 22px rgba(70, 113, 145, 0.32), 0 1px 0 rgba(255, 255, 255, 0.15) inset;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo-section {
@@ -558,6 +577,9 @@
                 </div>
                 <span id="approvedCount">0 تصريح</span>
             </div>
+            <p style="margin: -8px 0 16px 0; padding: 0 4px; font-size: 14px; color: #5a6c7d; line-height: 1.5;">
+                سجّل <strong>الدخول</strong> من البطاقات أدناه؛ وبعد مغادرة المبنى سجّل <strong>الخروج</strong> من قسم «الموظفين داخل المبنى حالياً» في أسفل الصفحة.
+            </p>
             <div class="permits-grid" id="approvedPermits">
                 <div style="text-align: center; padding: 40px; color: #7f8c8d;">
                     <div style="font-size: 50px; margin-bottom: 15px;">👤</div>
@@ -576,6 +598,9 @@
                 </div>
                 <span id="companyPermitsCount">0 تصريح</span>
             </div>
+            <p style="margin: -8px 0 16px 0; padding: 0 4px; font-size: 14px; color: #5a6c7d; line-height: 1.5;">
+                سجّل <strong>دخول</strong> الشركة عند الوصول، ثم <strong>خروج</strong>ها من نفس البطاقة بعد انتهاء الزيارة.
+            </p>
             <div class="permits-grid company-entry-grid" id="companyPermitsContainer">
                 <div style="text-align: center; padding: 40px; color: #7f8c8d;">
                     <div style="font-size: 50px; margin-bottom: 15px;">🏢</div>
@@ -612,6 +637,9 @@
                 </div>
                 <span id="checkedInCount">0 موظف</span>
             </div>
+            <p style="margin: -8px 0 16px 0; padding: 0 4px; font-size: 14px; color: #5a6c7d; line-height: 1.5;">
+                موظفو تصاريح <strong>بعد الدوام</strong> المسجَّل دخولهم فقط — من هنا يُسجَّل <strong>الخروج</strong>.
+            </p>
             <div class="permits-grid" id="checkedInPermits">
                 <div style="text-align: center; padding: 40px; color: #7f8c8d;">
                     <div style="font-size: 50px; margin-bottom: 15px;">👥</div>
@@ -645,6 +673,13 @@
         
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', function() {
+            ['pointerdown', 'keydown'].forEach(function (ev) {
+                document.addEventListener(ev, prepareNotificationAudioFromUserGesture, {
+                    capture: true,
+                    passive: true
+                });
+            });
+
             loadGuardName();
             loadPermitsFromSecurity();
             loadCompanyPermits(); // ✅ إضافة جلب تصاريح الشركات
@@ -854,7 +889,7 @@ window.simulateNewPermit = function() {
                         type: 'guard_name_set',
                         guard_name: guardName,
                         data: {
-                            message: `بدأ الحارس ${guardName} المناوبة`,
+                            message: `بدأت مناوبة حارس عند نقطة الحراسة.\nاسم الحارس المُسجَّل: ${guardName}\nالتاريخ والوقت: ${new Date().toLocaleString('ar-SA')}`,
                             action: 'guard_start_duty',
                             time: new Date().toLocaleTimeString('ar-SA')
                         }
@@ -879,14 +914,16 @@ window.simulateNewPermit = function() {
         }
         
         function changeGuardName() {
+            const previousGuardName = localStorage.getItem('guard_name') || '';
             localStorage.removeItem('guard_name');
             loadGuardName();
             
-            // إرسال إشعار لمكتب الأمن
+            // إرسال إشعار لمكتب الأمن — نص واضح لمن سجّل في المناوبة
             const notificationData = {
                 type: 'guard_name_changed',
+                guard_name: previousGuardName || 'غير مُسجّل',
                 data: {
-                    message: 'تم تغيير اسم الحارس المناوب',
+                    message: `طلب إعادة إدخال اسم الحارس في نقطة الحراسة.\nالاسم الذي كان مُستخدماً: ${previousGuardName || 'لم يُحفَظ بعد'}.\nالوقت: ${new Date().toLocaleString('ar-SA')}.`,
                     action: 'guard_change',
                     time: new Date().toLocaleTimeString('ar-SA')
                 }
@@ -896,6 +933,33 @@ window.simulateNewPermit = function() {
         }
         
         // ========== LOAD EMPLOYEE PERMITS FROM SECURITY ==========
+        function parseOvertimeExitTimeRange(expected_exit_time) {
+            if (expected_exit_time == null || expected_exit_time === '') return { from: '', to: '', raw: '' };
+            const s = String(expected_exit_time).trim();
+            const parts = s.split(/\s*[-–—]\s*/).map(x => x.trim()).filter(Boolean);
+            if (parts.length >= 2) return { from: parts[0], to: parts[parts.length - 1], raw: s };
+            if (parts.length === 1) return { from: parts[0], to: '', raw: s };
+            return { from: '', to: '', raw: s };
+        }
+        
+        function formatPermitFromToWithTimes(permit) {
+            const t = parseOvertimeExitTimeRange(permit.expected_exit_time);
+            let fromLine = '';
+            let toLine = '';
+            const startD = permit.start_date || permit.request_date || '';
+            const endD = permit.end_date || permit.start_date || permit.request_date || '';
+            if (startD) {
+                fromLine = startD;
+                if (t.from) fromLine += ' — من الساعة ' + t.from;
+            }
+            if (endD) {
+                toLine = endD;
+                if (t.to) toLine += ' — إلى الساعة ' + t.to;
+                else if (t.from && !t.to) toLine += ' — الساعة ' + t.from;
+            }
+            return { fromLine, toLine, raw: t.raw };
+        }
+        
         async function loadPermitsFromSecurity() {
             try {
                 console.log('🔍 جاري جلب تصاريح الموظفين من مكتب الأمن...');
@@ -924,28 +988,49 @@ window.simulateNewPermit = function() {
                         
                         if (data.success) {
                             if (data.permits && data.permits.length > 0) {
-                                approvedPermits = data.permits;
-                                // حفظ في localStorage للاستخدام المستقبلي
-                                localStorage.setItem('security_to_guard_permits', JSON.stringify(data.permits));
+                                approvedPermits = data.permits.map(p => ({
+                                    ...p,
+                                    employee_name: p.employee_name || p.full_name,
+                                    full_name: p.full_name || p.employee_name
+                                }));
+                                localStorage.setItem('security_to_guard_permits', JSON.stringify(approvedPermits));
                                 console.log('💾 تم حفظ تصاريح الموظفين في localStorage:', data.permits.length);
                             } else {
-                                // لا توجد تصاريح - استخدام قائمة فارغة
-                                approvedPermits = [];
-                                localStorage.setItem('security_to_guard_permits', JSON.stringify([]));
-                                console.log('📋 لا توجد تصاريح موظفين جاهزة للحارس');
+                                const cached = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                                approvedPermits = cached.map(p => ({
+                                    ...p,
+                                    employee_name: p.employee_name || p.full_name,
+                                    full_name: p.full_name || p.employee_name
+                                }));
+                                console.log('📋 الخادم لم يُرجع تصاريح لهذا اليوم — عرض المخزن المحلي إن وُجد:', approvedPermits.length);
                             }
                         } else {
                             console.error('❌ خطأ في استجابة الخادم:', data.message);
-                            approvedPermits = [];
+                            const cached = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                            approvedPermits = cached.map(p => ({
+                                ...p,
+                                employee_name: p.employee_name || p.full_name,
+                                full_name: p.full_name || p.employee_name
+                            }));
                         }
                     } else {
                         const errorText = await response.text();
                         console.error('❌ خطأ في جلب التصاريح:', response.status, response.statusText, errorText);
-                        approvedPermits = [];
+                        const cached = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                        approvedPermits = cached.map(p => ({
+                            ...p,
+                            employee_name: p.employee_name || p.full_name,
+                            full_name: p.full_name || p.employee_name
+                        }));
                     }
                 } catch (serverError) {
                     console.error('❌ خطأ في الاتصال بالخادم:', serverError);
-                    approvedPermits = [];
+                    const cached = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
+                    approvedPermits = cached.map(p => ({
+                        ...p,
+                        employee_name: p.employee_name || p.full_name,
+                        full_name: p.full_name || p.employee_name
+                    }));
                 }
                 
                 // 2. جلب الموظفين المسجل دخولهم (من API الموجود)
@@ -984,9 +1069,9 @@ window.simulateNewPermit = function() {
                 console.log('📊 تصاريح الموظفين المتاحة:', approvedPermits.length);
                 console.log('👥 الموظفون المسجل دخولهم:', checkedInEmployees.length);
                 
-                // 3. عرض البيانات
                 displayApprovedPermits(approvedPermits);
                 displayCheckedInPermits(checkedInEmployees);
+                if (typeof updateAllCounts === 'function') updateAllCounts();
                 
             } catch (error) {
                 console.error('❌ خطأ في جلب تصاريح الموظفين:', error);
@@ -1009,114 +1094,6 @@ window.simulateNewPermit = function() {
                     status: "checked_in"
                 }
             ];
-        }
-        
-        // ========== DISPLAY FUNCTIONS ==========
-        function displayApprovedPermits(permits) {
-            const container = document.getElementById('approvedPermits');
-            const countElement = document.getElementById('approvedCount');
-            
-            if (!container || !countElement) {
-                console.error('❌ عناصر DOM غير موجودة');
-                return;
-            }
-            
-            if (!permits || permits.length === 0) {
-                container.innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
-                        <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">👤</div>
-                        <h3 style="margin-bottom: 10px; color: #2c3e50;">لا توجد تصاريح موظفين</h3>
-                        <p>لم يتم إرسال أي تصاريح موظفين من مكتب الأمن</p>
-                    </div>
-                `;
-                countElement.textContent = '0 تصريح';
-                return;
-            }
-            
-            let html = '';
-            permits.forEach(permit => {
-                // التحقق إذا كان الموظف قد سجل دخول بالفعل
-                const isAlreadyCheckedIn = checkedInEmployees.some(
-                    emp => emp.permit_id === permit.permit_id
-                );
-                
-                html += `
-                    <div class="permit-card">
-                        <div style="position: relative;">
-                            <div style="background: #e8f5e9; color: #155724; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px;">
-                                ✅ معتمد من الأمن
-                            </div>
-                        </div>
-                        
-                        <div class="employee-info">
-                            <div class="employee-avatar">${(permit.employee_name || permit.full_name)?.charAt(0) || 'م'}</div>
-                            <div class="employee-details">
-                                <h3>${permit.employee_name || permit.full_name || 'غير معروف'}</h3>
-                                <p>${permit.job_number || ''}</p>
-                                <p>${permit.department_name || permit.directorate || ''}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="permit-details">
-                            <div class="detail-item">
-                                <span class="detail-label">رقم التصريح:</span>
-                                <span class="detail-value">${permit.permit_id}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">تاريخ التصريح:</span>
-                                <span class="detail-value">${permit.start_date || permit.request_date || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">تاريخ الانتهاء:</span>
-                                <span class="detail-value">${permit.end_date || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">الوقت المسموح:</span>
-                                <span class="detail-value">${permit.expected_exit_time || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">السبب:</span>
-                                <span class="detail-value">${permit.reason || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">الهاتف:</span>
-                                <span class="detail-value">${permit.phone || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">وافق عليه:</span>
-                                <span class="detail-value">${permit.security_username || permit.approved_by_security || 'مكتب الأمن'}</span>
-                            </div>
-                            ${permit.manager_notes ? `
-                            <div class="detail-item">
-                                <span class="detail-label">ملاحظات المدير:</span>
-                                <span class="detail-value">${permit.manager_notes}</span>
-                            </div>
-                            ` : ''}
-                            ${permit.security_notes ? `
-                            <div class="detail-item">
-                                <span class="detail-label">ملاحظات الأمن:</span>
-                                <span class="detail-value">${permit.security_notes}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="action-buttons">
-                            ${!isAlreadyCheckedIn ? `
-                                <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name || permit.full_name || 'غير معروف'}', 'employee')">
-                                    <span>✅</span> تسجيل دخول
-                                </button>
-                            ` : `
-                                <button class="action-btn btn-checkin" style="background: #95a5a6; cursor: not-allowed;" disabled>
-                                    <span>✅</span> مسجل دخول
-                                </button>
-                            `}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            countElement.textContent = `${permits.length} تصريح`;
         }
         
         function displayCheckedInPermits(employees) {
@@ -1177,7 +1154,7 @@ window.simulateNewPermit = function() {
                         </div>
                         
                         <div class="action-buttons">
-                            <button class="action-btn btn-checkout" onclick="openCheckOutModal(${employee.permit_id}, '${employee.employee_name || employee.full_name || 'غير معروف'}')">
+                            <button type="button" class="action-btn btn-checkout js-employee-checkout" data-permit-id="${employee.permit_id}">
                                 <span>🚪</span> تسجيل خروج
                             </button>
                         </div>
@@ -1187,6 +1164,7 @@ window.simulateNewPermit = function() {
             
             container.innerHTML = html;
             countElement.textContent = `${employees.length} موظف`;
+            ensureEmployeeCheckOutDelegation();
         }
         
         function calculateDuration(checkInTime) {
@@ -1264,25 +1242,89 @@ function updatePermitsCount(count) {
 }
         
         // ========== CHECK IN/OUT FUNCTIONS ==========
+        let guardModalListenersBound = false;
+        
+        /** أزرار تسجيل الدخول كانت تستخدم onclick مع JSON.stringify للاسم — يكسر HTML عند وجود " في الاسم. */
+        function ensureEmployeeCheckInDelegation() {
+            const container = document.getElementById('approvedPermits');
+            if (!container || container.dataset.checkinDelegation === '1') return;
+            container.dataset.checkinDelegation = '1';
+            container.addEventListener('click', (e) => {
+                const btn = e.target.closest('.js-employee-checkin');
+                if (!btn) return;
+                e.preventDefault();
+                const permitId = btn.getAttribute('data-permit-id');
+                if (permitId == null || permitId === '') return;
+                const permit = approvedPermits.find(p => String(p.permit_id) === String(permitId));
+                const name = permit ? (permit.employee_name || permit.full_name || 'غير معروف') : 'غير معروف';
+                openCheckInModal(permitId, name, 'employee');
+            });
+        }
+        
+        function ensureEmployeeCheckOutDelegation() {
+            const container = document.getElementById('checkedInPermits');
+            if (!container || container.dataset.checkoutDelegation === '1') return;
+            container.dataset.checkoutDelegation = '1';
+            container.addEventListener('click', (e) => {
+                const btn = e.target.closest('.js-employee-checkout');
+                if (!btn) return;
+                e.preventDefault();
+                const permitId = btn.getAttribute('data-permit-id');
+                if (permitId == null || permitId === '') return;
+                const emp = checkedInEmployees.find(x => String(x.permit_id) === String(permitId));
+                const name = emp ? (emp.employee_name || emp.full_name || 'غير معروف') : 'غير معروف';
+                openCheckOutModal(permitId, name);
+            });
+        }
+        
+        function ensureCompanyCheckDelegation() {
+            const container = document.getElementById('companyPermitsContainer');
+            if (!container || container.dataset.companyCheckDelegation === '1') return;
+            container.dataset.companyCheckDelegation = '1';
+            container.addEventListener('click', (e) => {
+                const inBtn = e.target.closest('.js-company-checkin');
+                const outBtn = e.target.closest('.js-company-checkout');
+                if (inBtn) {
+                    e.preventDefault();
+                    const id = inBtn.getAttribute('data-permit-id');
+                    const p = companyPermits.find(x => String(x.permit_id) === String(id));
+                    openCompanyCheckInModal(id, p ? (p.company_name || '') : '');
+                } else if (outBtn) {
+                    e.preventDefault();
+                    const id = outBtn.getAttribute('data-permit-id');
+                    const p = companyPermits.find(x => String(x.permit_id) === String(id));
+                    openCompanyCheckOutModal(id, p ? (p.company_name || '') : '');
+                }
+            });
+        }
+        
         function setupModalListeners() {
+            if (guardModalListenersBound) return;
+            guardModalListenersBound = true;
+            
             const modal = document.getElementById('actionModal');
             const modalCancel = document.getElementById('modalCancel');
             const modalConfirm = document.getElementById('modalConfirm');
+            
+            ensureEmployeeCheckInDelegation();
+            ensureEmployeeCheckOutDelegation();
+            ensureCompanyCheckDelegation();
             
             modalCancel.addEventListener('click', () => {
                 modal.style.display = 'none';
             });
             
-            modalConfirm.addEventListener('click', () => {
+            modalConfirm.addEventListener('click', async () => {
                 const permitId = modal.getAttribute('data-permit-id');
                 const action = modal.getAttribute('data-action');
                 const employeeName = modal.getAttribute('data-employee-name');
                 
                 if (action === 'checkin') {
-                    processCheckIn(permitId, employeeName);
+                    const ok = await processCheckIn(permitId, employeeName);
+                    if (!ok) return;
                 } else if (action === 'checkout') {
                     const notes = document.getElementById('checkOutNotes')?.value || '';
-                    processCheckOut(permitId, employeeName, notes);
+                    await processCheckOut(permitId, employeeName, notes);
                 }
                 
                 modal.style.display = 'none';
@@ -1332,9 +1374,14 @@ function updatePermitsCount(count) {
             modal.setAttribute('data-employee-name', employeeName);
             modal.setAttribute('data-permit-type', permitType);
             modal.style.display = 'flex';
+            const timeInp = document.getElementById('checkInTimeInput');
+            if (timeInp && !timeInp.value) {
+                const now = new Date();
+                timeInp.value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            }
         }
         
-        function openCheckOutModal(permitId, employeeName) {
+        function openCheckOutModal(permitId, employeeName, permitType = 'employee') {
             const guardName = localStorage.getItem('guard_name');
             if (!guardName) {
                 showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
@@ -1342,22 +1389,22 @@ function updatePermitsCount(count) {
             }
             
             const modal = document.getElementById('actionModal');
-            const now = new Date().toLocaleTimeString('ar-SA', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
             
-            document.getElementById('modalTitle').textContent = 'تسجيل خروج الموظف';
+            document.getElementById('modalTitle').textContent = permitType === 'company' ? 'تسجيل خروج الشركة' : 'تسجيل خروج الموظف';
+            const whoLabel = permitType === 'company' ? 'الشركة:' : 'الموظف:';
             document.getElementById('modalContent').innerHTML = `
                 <div style="margin-bottom: 20px;">
-                    <p style="margin-bottom: 10px; color: #666;">الموظف: <strong>${employeeName}</strong></p>
+                    <p style="margin-bottom: 10px; color: #666;">${whoLabel} <strong>${employeeName}</strong></p>
                     <p style="margin-bottom: 10px; color: #666;">رقم التصريح: <strong>${permitId}</strong></p>
                     <p style="margin-bottom: 10px; color: #666;">الحارس المسجل: <strong>${guardName}</strong></p>
                 </div>
                 
                 <div style="background: #f0f7ff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                    <p style="color: #3498db; font-weight: 600; margin-bottom: 5px;">الوقت الحالي:</p>
-                    <p style="font-size: 18px; color: #2c3e50;">${now}</p>
+                    <label style="display: block; color: #3498db; font-weight: 600; margin-bottom: 8px;">
+                        وقت الخروج (يُحدده الحارس):
+                    </label>
+                    <input type="time" id="checkOutTimeInput"
+                           style="width: 200px; padding: 10px 12px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 15px; direction: ltr;">
                 </div>
                 
                 <div style="margin-bottom: 15px;">
@@ -1379,58 +1426,114 @@ function updatePermitsCount(count) {
             modal.setAttribute('data-permit-id', permitId);
             modal.setAttribute('data-action', 'checkout');
             modal.setAttribute('data-employee-name', employeeName);
+            modal.setAttribute('data-permit-type', permitType);
             modal.style.display = 'flex';
+            const checkOutTimeEl = document.getElementById('checkOutTimeInput');
+            if (checkOutTimeEl && !checkOutTimeEl.value) {
+                const t = new Date();
+                checkOutTimeEl.value = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+            }
         }
         
-        // 🔥 MODIFIED: دالة processCheckIn - الإصدار المحسن
+        function normalizeGuardTimeHHMM(raw) {
+            const s = String(raw || '').trim();
+            const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?/i);
+            if (!m) return '';
+            let h = parseInt(m[1], 10);
+            const mi = Math.min(59, parseInt(m[2], 10));
+            const ap = (m[3] || '').toLowerCase();
+            if (ap === 'pm' && h < 12) h += 12;
+            if (ap === 'am' && h === 12) h = 0;
+            h = Math.min(23, Math.max(0, h));
+            return String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0');
+        }
+        
+        // 🔥 MODIFIED: دالة processCheckIn — تسجيل الخادم أولاً ثم تحديث الواجهة (بدون إزالة التصريح قبل النجاح)
 async function processCheckIn(permitId, employeeName) {
     const guardName = localStorage.getItem('guard_name');
     if (!guardName) {
         showNotification('يرجى إدخال اسم الحارس أولاً', 'error');
-        return;
+        return false;
     }
     
-    // وقت الدخول يحدده الحارس
+    const actionModal = document.getElementById('actionModal');
+    const permitType = (actionModal && actionModal.getAttribute('data-permit-type')) || 'employee';
+    
     const checkInTimeInput = document.getElementById('checkInTimeInput');
-    const manualTime = checkInTimeInput ? checkInTimeInput.value.trim() : '';
+    const manualTime = normalizeGuardTimeHHMM(checkInTimeInput ? checkInTimeInput.value : '');
     if (!manualTime) {
         showNotification('يرجى إدخال وقت الدخول (الحارس يحدد)', 'error');
-        return;
+        return false;
     }
     const notes = document.getElementById('checkInNotes')?.value || '';
     
-    console.log('🔄 بدء تسجيل دخول لـ:', employeeName, 'رقم التصريح:', permitId);
-    console.log('📋 التصاريح الحالية قبل:', approvedPermits.length);
-    
-    // 1. 🔥 البحث عن التصريح وإزالته من approvedPermits
-    let removedPermit = null;
     const permitIndex = approvedPermits.findIndex(p => p.permit_id == permitId);
+    const permitSnapshot = permitIndex >= 0 ? approvedPermits[permitIndex] : null;
     
-    if (permitIndex !== -1) {
-        // 🔥 إزالة التصريح من القائمة
-        removedPermit = approvedPermits[permitIndex];
-        approvedPermits.splice(permitIndex, 1);
-        
-        console.log('✅ تم إزالة التصريح من القائمة:', removedPermit);
-        console.log('📋 التصاريح المتبقية بعد:', approvedPermits.length);
-        
-        // 2. 🔥 تحديث localStorage فوراً
-        localStorage.setItem('security_to_guard_permits', JSON.stringify(approvedPermits));
-        
-        // 3. 🔥 تحديث القائمة المحلية مباشرة
-        const localPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
-        const localIndex = localPermits.findIndex(p => p.permit_id == permitId);
-        if (localIndex !== -1) {
-            localPermits.splice(localIndex, 1);
-            localStorage.setItem('security_to_guard_permits', JSON.stringify(localPermits));
-        }
-    } else {
-        console.log('⚠️ التصريح غير موجود في approvedPermits:', permitId);
+    console.log('🔄 بدء تسجيل دخول لـ:', employeeName, 'رقم التصريح:', permitId, 'النوع:', permitType);
+    
+    if (!localStorage.getItem('token')) {
+        showNotification('❌ انتهت الجلسة — سجّل الدخول مرة أخرى', 'error');
+        return false;
     }
     
-    // 4. إرسال البيانات للخادم لتسجيل الدخول
+    const token = localStorage.getItem('token');
+    
+    // ========== تصريح شركة: واجهة منفصلة عن تصاريح الموظفين ==========
+    if (permitType === 'company') {
+        const pid = parseInt(permitId, 10);
+        if (Number.isNaN(pid)) {
+            showNotification('❌ رقم تصريح الشركة غير صالح', 'error');
+            return false;
+        }
+        try {
+            const response = await fetch('/api/permits/company-entry/guard-checkin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    permit_id: pid,
+                    guard_username: guardName,
+                    actual_entry_time: manualTime,
+                    entry_notes: notes
+                })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                console.error('خطأ في تسجيل دخول الشركة:', data.message || response.status);
+                showNotification('❌ ' + (data.message || 'حدث خطأ في تسجيل دخول الشركة'), 'error');
+                return false;
+            }
+        } catch (error) {
+            console.error('خطأ في الاتصال بالخادم:', error);
+            showNotification('❌ تعذر الاتصال بالخادم', 'error');
+            return false;
+        }
+        
+        await loadCompanyPermits();
+        
+        sendNotificationToSecurity({
+            type: 'company_checkin',
+            guard_name: guardName,
+            data: {
+                message: `تسجيل دخول شركة عند الحارس.\nالشركة: ${employeeName}\nرقم تصريح الدخول: #${permitId}\nوقت الدخول المُدوَّن: ${manualTime}${notes ? `\nملاحظات الحارس: ${notes}` : ''}`,
+                company_name: employeeName,
+                permit_id: permitId,
+                check_in_time: manualTime,
+                guard_notes: notes,
+                guard_name: guardName
+            }
+        });
+        
+        showNotification(`✅ تم تسجيل دخول الشركة ${employeeName}`, 'success');
+        updateAllCounts();
+        return true;
+    }
+    
+    // ========== تصريح موظف (كما كان) ==========
     try {
-        const token = localStorage.getItem('token');
         const response = await fetch('/api/permits/guard-checkin', {
             method: 'POST',
             headers: {
@@ -1438,88 +1541,68 @@ async function processCheckIn(permitId, employeeName) {
                 'Authorization': 'Bearer ' + token
             },
             body: JSON.stringify({
-                permit_id: permitId,
+                permit_id: parseInt(permitId, 10) || permitId,
                 guard_username: guardName,
                 actual_entry_time: manualTime,
                 entry_notes: notes
             })
         });
         
-        const data = await response.json();
-        if (!data.success) {
-            console.error('خطأ في تسجيل الدخول:', data.message);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            console.error('خطأ في تسجيل الدخول:', data.message || response.status);
             showNotification('❌ ' + (data.message || 'حدث خطأ في تسجيل الدخول'), 'error');
-            return;
+            return false;
         }
     } catch (error) {
         console.error('خطأ في الاتصال بالخادم:', error);
-        // الاستمرار في العملية حتى لو فشل الاتصال بالخادم
+        showNotification('❌ تعذر الاتصال بالخادم', 'error');
+        return false;
     }
     
-    // 5. 🔥 إضافة الموظف إلى قائمة الداخلين
+    if (permitIndex !== -1) {
+        approvedPermits.splice(permitIndex, 1);
+        localStorage.setItem('security_to_guard_permits', JSON.stringify(approvedPermits));
+    }
+    
     const newEmployee = {
         id: Date.now(),
         permit_id: permitId,
         employee_name: employeeName,
-        job_number: removedPermit?.job_number || '',
-        department_name: removedPermit?.department_name || '',
+        job_number: permitSnapshot?.job_number || '',
+        department_name: permitSnapshot?.department_name || '',
         check_in_time: manualTime,
         check_in_by: guardName,
         status: 'checked_in',
         notes: notes,
-        original_permit_data: removedPermit || {}
+        original_permit_data: permitSnapshot || {}
     };
     
     console.log('👤 بيانات الموظف الجديد:', newEmployee);
     
-    // 🔥 تحديث checkedInEmployees مباشرة
     checkedInEmployees.push(newEmployee);
     localStorage.setItem('checked_in_employees', JSON.stringify(checkedInEmployees));
     
-    // 6. 🔥 تحديث العرض مباشرة وفوراً - بدون تأخير
     displayApprovedPermits(approvedPermits);
     displayCheckedInPermits(checkedInEmployees);
     
-    // 7. إرسال إشعار لمكتب الأمن
-    const notificationData = {
+    sendNotificationToSecurity({
         type: 'employee_checkin',
         guard_name: guardName,
         data: {
-            message: `دخل الموظف ${employeeName} الساعة ${manualTime}`,
+            message: `تسجيل دخول موظف (بعد الدوام) عند الحارس.\nالموظف: ${employeeName}\nرقم التصريح: #${permitId}\nوقت الدخول المُدوَّن: ${manualTime}${notes ? `\nملاحظات الحارس: ${notes}` : ''}`,
             employee_name: employeeName,
             permit_id: permitId,
             check_in_time: manualTime,
             guard_notes: notes,
             guard_name: guardName
         }
-    };
-    
-    sendNotificationToSecurity(notificationData);
+    });
     
     showNotification(`✅ تم تسجيل دخول ${employeeName}`, 'success');
     
-    // 🔥🔥🔥 NEW: إغلاق نافذة المودال فوراً
-    setTimeout(() => {
-        // 1. إغلاق النافذة المنبثقة
-        const modal = document.getElementById('actionModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-        
-        // 2. مسح الحقول
-        const notesField = document.getElementById('checkInNotes');
-        if (notesField) notesField.value = '';
-        
-        // 3. 🔥 التأكد من تحديث القوائم مرة أخرى
-        setTimeout(() => {
-            displayApprovedPermits(approvedPermits);
-            displayCheckedInPermits(checkedInEmployees);
-        }, 100);
-        
-    }, 800); // انتظار قصير جداً ثم الإغلاق
-    
-    // 🔥 تحديث جميع العدادات
     updateAllCounts();
+    return true;
 }
 
 // 🔥 NEW: دالة لتحديث جميع العدادات
@@ -1599,6 +1682,12 @@ function displayApprovedPermits(permits) {
     
     let html = '';
     filteredPermits.forEach(permit => {
+        const timeFmt = formatPermitFromToWithTimes(permit);
+        const dispName = permit.employee_name || permit.full_name || 'غير معروف';
+        const dept = permit.department_name || permit.directorate || '—';
+        const mgrN = (permit.manager_notes && String(permit.manager_notes).trim()) ? permit.manager_notes : '—';
+        const secN = (permit.security_notes && String(permit.security_notes).trim()) ? permit.security_notes : '—';
+        const approver = permit.security_username || permit.approved_by_security || 'مكتب الأمن';
         html += `
             <div class="permit-card" id="permit-${permit.permit_id}">
                 <div style="position: relative;">
@@ -1608,11 +1697,11 @@ function displayApprovedPermits(permits) {
                 </div>
                 
                 <div class="employee-info">
-                    <div class="employee-avatar">${permit.employee_name?.charAt(0) || 'م'}</div>
+                    <div class="employee-avatar">${dispName.charAt(0) || 'م'}</div>
                     <div class="employee-details">
-                        <h3>${permit.employee_name}</h3>
-                        <p>${permit.job_number}</p>
-                        <p>${permit.department_name}</p>
+                        <h3>${dispName}</h3>
+                        <p>الرقم الوظيفي: ${permit.job_number || '—'}</p>
+                        <p>${dept}</p>
                     </div>
                 </div>
                 
@@ -1622,21 +1711,41 @@ function displayApprovedPermits(permits) {
                         <span class="detail-value">${permit.permit_id}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">الوقت المسموح:</span>
-                        <span class="detail-value">${permit.expected_exit_time}</span>
+                        <span class="detail-label">من (تاريخ ووقت):</span>
+                        <span class="detail-value">${timeFmt.fromLine || (permit.start_date || permit.request_date || '—')}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">إلى (تاريخ ووقت):</span>
+                        <span class="detail-value">${timeFmt.toLine || (permit.end_date || permit.start_date || '—')}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">الوقت كما سجّله الموظف:</span>
+                        <span class="detail-value">${permit.expected_exit_time || '—'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">السبب:</span>
-                        <span class="detail-value">${permit.reason}</span>
+                        <span class="detail-value">${permit.reason || '—'}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">وافق عليه:</span>
-                        <span class="detail-value">${permit.approved_by_security || 'مكتب الأمن'}</span>
+                        <span class="detail-label">الهاتف:</span>
+                        <span class="detail-value">${permit.phone || '—'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">ملاحظات المدير:</span>
+                        <span class="detail-value">${mgrN}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">ملاحظات مكتب الأمن:</span>
+                        <span class="detail-value">${secN}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">وافق عليه (أمن):</span>
+                        <span class="detail-value">${approver}</span>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
-                    <button class="action-btn btn-checkin" onclick="openCheckInModal(${permit.permit_id}, '${permit.employee_name}', 'employee')">
+                    <button type="button" class="action-btn btn-checkin js-employee-checkin" data-permit-id="${permit.permit_id}">
                         <span>✅</span> تسجيل دخول
                     </button>
                 </div>
@@ -1647,6 +1756,8 @@ function displayApprovedPermits(permits) {
     container.innerHTML = html;
     countElement.textContent = `${filteredPermits.length} ${filteredPermits.length === 1 ? 'تصريح' : 'تصريح'}`;
     
+    ensureEmployeeCheckInDelegation();
+    
     // 🔥 تحديث العداد الجديد
     const badge = document.getElementById('newPermitsBadge');
     if (badge) {
@@ -1656,118 +1767,6 @@ function displayApprovedPermits(permits) {
         } else {
             badge.style.display = 'none';
         }
-    }
-}
-
-// 🔥 MODIFIED: دالة displayCheckedInPermits
-function displayCheckedInPermits(employees) {
-    const container = document.getElementById('checkedInPermits');
-    const countElement = document.getElementById('checkedInCount');
-    
-    console.log('🎯 عرض الموظفين الداخلين:', employees?.length || 0);
-    
-    if (!employees || employees.length === 0) {
-        container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
-                <div style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;">👥</div>
-                <h3 style="margin-bottom: 10px; color: #2c3e50;">لا يوجد موظفين داخل المبنى</h3>
-                <p>لم يتم تسجيل دخول أي موظف</p>
-                <p style="margin-top: 15px; font-size: 14px; color: #95a5a6;">
-                    <span>💡</span> عند تسجيل دخول موظف، سيظهر هنا تلقائياً
-                </p>
-            </div>
-        `;
-        countElement.textContent = '0 موظف';
-        return;
-    }
-    
-    let html = '';
-    employees.forEach(employee => {
-        // حساب المدة منذ الدخول
-        const duration = calculateDuration(employee.check_in_time);
-        
-        html += `
-            <div class="permit-card" style="border-color: #2ecc71; background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%); animation: slideIn 0.5s;">
-                <div style="position: relative;">
-                    <div style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px;">
-                        🟢 داخل المبنى - ${duration}
-                    </div>
-                </div>
-                
-                <div class="employee-info">
-                    <div class="employee-avatar" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
-                        ${employee.employee_name?.charAt(0) || 'م'}
-                    </div>
-                    <div class="employee-details">
-                        <h3>${employee.employee_name}</h3>
-                        <p>📋 التصريح: #${employee.permit_id}</p>
-                        <p>🏢 ${employee.department_name || 'غير محدد'}</p>
-                        <p>👮 سجل بواسطة: ${employee.check_in_by || 'الحارس'}</p>
-                        <p>🕒 وقت الدخول: ${employee.check_in_time}</p>
-                        ${employee.notes ? `
-                            <div style="margin-top: 8px; padding: 8px; background: white; border-radius: 6px; border-right: 3px solid #3498db;">
-                                <p style="color: #666; font-size: 13px; margin: 0;">
-                                    <span>📝</span> ${employee.notes}
-                                </p>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="action-buttons">
-                            <button class="action-btn btn-checkout" onclick="openCheckOutModal(${employee.permit_id}, '${employee.employee_name || employee.full_name || 'غير معروف'}')">
-                        <span>🚪</span> تسجيل خروج
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-    countElement.textContent = `${employees.length} ${employees.length === 1 ? 'موظف' : 'موظف'}`;
-}
-
-// 🔥 NEW: دالة للتحميل الأولي مع تأخير
-async function loadPermitsFromSecurity() {
-    try {
-        console.log('🔄 تحميل التصاريح...');
-        
-        // 1. جلب التصاريح من localStorage
-        const localPermits = JSON.parse(localStorage.getItem('security_to_guard_permits')) || [];
-        
-        if (localPermits.length > 0) {
-            approvedPermits = localPermits;
-        } else {
-            approvedPermits = getMockApprovedPermits();
-        }
-        
-        // 2. جلب الموظفين المسجل دخولهم
-        const localCheckedIn = JSON.parse(localStorage.getItem('checked_in_employees')) || [];
-        checkedInEmployees = localCheckedIn;
-        
-        console.log('📊 التصاريح المحملة:', approvedPermits.length);
-        console.log('👥 الموظفون المسجل دخولهم:', checkedInEmployees.length);
-        
-        // 3. 🔥 تصفية التصاريح التي تم تسجيل دخولها
-        approvedPermits = approvedPermits.filter(permit => {
-            const isCheckedIn = checkedInEmployees.some(emp => emp.permit_id == permit.permit_id);
-            return !isCheckedIn; // 🔥 إرجاع فقط التصاريح غير المسجلة
-        });
-        
-        console.log('🎯 التصاريح بعد التصفية:', approvedPermits.length);
-        
-        // 4. حفظ التصاريح المصفاة
-        localStorage.setItem('security_to_guard_permits', JSON.stringify(approvedPermits));
-        
-        // 5. عرض البيانات
-        displayApprovedPermits(approvedPermits);
-        displayCheckedInPermits(checkedInEmployees);
-        
-        // 6. تحديث العدادات
-        updateAllCounts();
-        
-    } catch (error) {
-        console.error('❌ خطأ في تحميل التصاريح:', error);
     }
 }
 
@@ -2084,6 +2083,20 @@ async function materialExitGuardApprove(permitId) {
             showNotification('❌ ' + (data.message || 'حدث خطأ في تسجيل الخروج'), 'error');
             return;
         }
+        
+        sendNotificationToSecurity({
+            type: 'material_exit_completed',
+            guard_name: guardName,
+            data: {
+                message: `تسجيل خروج مواد/أجهزة عند الحارس.\nالمادة/الجهاز: ${materialName}\nالموظف: ${employeeName}\nرقم الطلب: #${permitId}\nتاريخ الخروج: ${exitDate} — الوقت: ${exitTime}${notes ? `\nملاحظات الحارس: ${notes}` : ''}`,
+                employee_name: employeeName,
+                permit_id: permitId,
+                material_type: materialName,
+                exit_date: exitDate,
+                exit_time: exitTime,
+                guard_notes: notes || ''
+            }
+        });
         
         showNotification('✅ تم تسجيل خروج المواد/الأجهزة بنجاح!', 'success');
         playNotificationSound();
@@ -2425,11 +2438,11 @@ function displayCompanyPermits(permits) {
                 
                 <div class="action-buttons">
                     ${!isCheckedIn ? `
-                        <button class="action-btn btn-checkin" onclick="openCompanyCheckInModal(${permit.permit_id}, '${permit.company_name}')">
+                        <button type="button" class="action-btn btn-checkin js-company-checkin" data-permit-id="${permit.permit_id}">
                             <span>✅</span> تسجيل دخول
                         </button>
                     ` : `
-                        <button class="action-btn btn-checkout" onclick="openCompanyCheckOutModal(${permit.permit_id}, '${permit.company_name}')">
+                        <button type="button" class="action-btn btn-checkout js-company-checkout" data-permit-id="${permit.permit_id}">
                             <span>🚪</span> تسجيل خروج
                         </button>
                     `}
@@ -2440,6 +2453,7 @@ function displayCompanyPermits(permits) {
     
     container.innerHTML = html;
     countElement.textContent = `${permits.length} ${permits.length === 1 ? 'تصريح' : 'تصريح'}`;
+    ensureCompanyCheckDelegation();
 }
 
 // ========== ✅ دالة فتح modal إضافة عامل ==========
@@ -2474,11 +2488,11 @@ function openAddWorkerModal(permitId) {
                        style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
             </div>
             <div style="margin-bottom: 22px;">
-                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية الشخصية</label>
-                <input type="file" id="workerIdCard" accept="image/*,.pdf,application/pdf" 
+                <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية الشخصية <span style="color:#c0392b;">*</span> (إلزامي)</label>
+                <input type="file" id="workerIdCard" accept="image/*,.pdf,application/pdf" capture="environment"
                        style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px;">
                 <small style="display: block; color: #666; font-size: 12px; margin-top: 6px;">
-                    تصوير (صورة) أو إرفاق ملف PDF
+                    التقط صورة بالكاميرا أو ارفع PDF — مطلوب لكل عامل تضيفه كحارس
                 </small>
             </div>
         </div>
@@ -2494,8 +2508,11 @@ function openAddWorkerModal(permitId) {
         }
         
         const idCardFile = document.getElementById('workerIdCard')?.files[0];
+        if (!idCardFile) {
+            showNotification('❌ يجب إرفاق صورة بطاقة الهوية أو ملف PDF (إلزامي على الحارس)', 'error');
+            return;
+        }
         
-        // إرسال البيانات باستخدام FormData إذا كان هناك ملف
         const formData = new FormData();
         formData.append('worker_name', workerName);
         formData.append('worker_profession', document.getElementById('workerProfession').value.trim() || '');
@@ -2503,9 +2520,7 @@ function openAddWorkerModal(permitId) {
         formData.append('worker_phone', document.getElementById('workerPhone').value.trim() || '');
         formData.append('added_by', JSON.parse(localStorage.getItem('user'))?.username || 'guard');
         
-        if (idCardFile) {
-            formData.append('id_card', idCardFile);
-        }
+        formData.append('id_card', idCardFile);
         
         try {
             const token = localStorage.getItem('token');
@@ -2645,20 +2660,20 @@ async function openEditWorkerModal(permitId, workerId) {
                            style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; transition: all 0.3s;">
                 </div>
                 <div style="margin-bottom: 22px;">
-                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية الشخصية</label>
+                    <label style="display: block; margin-bottom: 10px; color: #2c3e50; font-weight: 600; font-size: 14px;">بطاقة الهوية ${worker.id_card_file_name ? '' : '<span style="color:#c0392b;">*</span> (إلزامي — لا توجد بطاقة بعد)'}</label>
                     ${worker.id_card_file_name ? `
                         <div style="margin-bottom: 10px; padding: 12px; background: #e8f5e9; border-radius: 8px; font-size: 14px; color: #2e7d32; border: 1px solid #c3e6cb;">
                             📄 الملف الحالي: ${worker.id_card_file_name}
                         </div>
                     ` : `
                         <div style="margin-bottom: 10px; padding: 12px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; border: 1px solid #ffeaa7;">
-                            ⚠️ لا توجد بطاقة هوية مرفوعة
+                            ⚠️ لا توجد بطاقة هوية — يجب إرفاقها قبل حفظ التعديل
                         </div>
                     `}
-                    <input type="file" id="editWorkerIdCard" accept="image/*,.pdf,application/pdf" 
+                    <input type="file" id="editWorkerIdCard" accept="image/*,.pdf,application/pdf" capture="environment"
                            style="width: 100%; padding: 14px 18px; border: 2px solid #e3f2fd; border-radius: 8px; font-size: 14px; cursor: pointer;">
                     <small style="display: block; color: #666; font-size: 13px; margin-top: 6px; line-height: 1.5;">
-                        ${worker.id_card_file_name ? 'اختر ملف جديد لاستبدال الملف الحالي (تصوير أو PDF)' : 'تصوير (صورة) أو إرفاق ملف PDF'}
+                        ${worker.id_card_file_name ? 'اختر ملف جديد لاستبدال الملف الحالي (كاميرا أو PDF)' : 'إلزامي: صورة بالكاميرا أو PDF'}
                     </small>
                 </div>
             </div>
@@ -2674,6 +2689,10 @@ async function openEditWorkerModal(permitId, workerId) {
             }
             
             const idCardFile = document.getElementById('editWorkerIdCard')?.files[0];
+            if (!worker.id_card_file_name && !idCardFile) {
+                showNotification('❌ يجب إرفاق صورة أو PDF لبطاقة الهوية (إلزامي على الحارس)', 'error');
+                return;
+            }
             
             // إرسال البيانات باستخدام FormData
             const formData = new FormData();
@@ -2733,7 +2752,6 @@ function openCompanyCheckInModal(permitId, companyName) {
 
 // ========== ✅ دالة فتح modal تسجيل خروج شركة ==========
 function openCompanyCheckOutModal(permitId, companyName) {
-    // يمكن استخدام نفس modal تسجيل الخروج العادي مع تعديلات بسيطة
     openCheckOutModal(permitId, companyName, 'company');
 }
 
@@ -2769,14 +2787,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const now = new Date().toLocaleTimeString('ar-SA', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
+            const actionModal = document.getElementById('actionModal');
+            const permitType = (actionModal && actionModal.getAttribute('data-permit-type')) || 'employee';
             
-            // 1. إرسال البيانات للخادم لتسجيل الخروج
+            const checkOutTimeInput = document.getElementById('checkOutTimeInput');
+            const exitTime = normalizeGuardTimeHHMM(checkOutTimeInput ? checkOutTimeInput.value : '');
+            if (!exitTime) {
+                showNotification('يرجى إدخال وقت الخروج (يحدده الحارس)', 'error');
+                return;
+            }
+            
             try {
                 const token = localStorage.getItem('token');
+                
+                if (permitType === 'company') {
+                    const pid = parseInt(permitId, 10);
+                    if (Number.isNaN(pid)) {
+                        showNotification('❌ رقم تصريح الشركة غير صالح', 'error');
+                        return;
+                    }
+                    const response = await fetch('/api/permits/company-entry/guard-checkout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            permit_id: pid,
+                            guard_username: guardName,
+                            actual_exit_time: exitTime,
+                            exit_notes: notes
+                        })
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.success) {
+                        showNotification('❌ ' + (data.message || 'حدث خطأ في تسجيل خروج الشركة'), 'error');
+                        return;
+                    }
+                    await loadCompanyPermits();
+                    sendNotificationToSecurity({
+                        type: 'company_checkout',
+                        guard_name: guardName,
+                        data: {
+                            message: `تسجيل خروج شركة عند الحارس.\nالشركة: ${employeeName}\nرقم تصريح الدخول: #${permitId}\nوقت الخروج المُدوَّن: ${exitTime}${notes ? `\nملاحظات الحارس: ${notes}` : ''}`,
+                            company_name: employeeName,
+                            permit_id: permitId,
+                            check_out_time: exitTime,
+                            guard_notes: notes,
+                            guard_name: guardName
+                        }
+                    });
+                    showNotification(`✅ تم تسجيل خروج الشركة ${employeeName}`, 'success');
+                    setTimeout(() => {
+                        displayApprovedPermits(approvedPermits);
+                        displayCheckedInPermits(checkedInEmployees);
+                    }, 300);
+                    return;
+                }
+                
                 const response = await fetch('/api/permits/guard-checkout', {
                     method: 'POST',
                     headers: {
@@ -2786,7 +2854,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         permit_id: permitId,
                         guard_username: guardName,
-                        actual_exit_time: now,
+                        actual_exit_time: exitTime,
                         exit_notes: notes
                     })
                 });
@@ -2799,10 +2867,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('خطأ في الاتصال بالخادم:', error);
-                // الاستمرار في العملية حتى لو فشل الاتصال بالخادم
+                return;
             }
             
-            // 2. إزالة الموظف من قائمة الموجودين
             checkedInEmployees = checkedInEmployees.filter(emp => emp.permit_id !== permitId);
             localStorage.setItem('checked_in_employees', JSON.stringify(checkedInEmployees));
             
@@ -2811,10 +2878,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: 'employee_checkout',
                 guard_name: guardName,
                 data: {
-                    message: `غادر الموظف ${employeeName} الساعة ${now}`,
+                    message: `تسجيل خروج موظف (بعد الدوام) عند الحارس.\nالموظف: ${employeeName}\nرقم التصريح: #${permitId}\nوقت الخروج المُدوَّن: ${exitTime}${notes ? `\nملاحظات الحارس: ${notes}` : ''}`,
                     employee_name: employeeName,
                     permit_id: permitId,
-                    check_out_time: now,
+                    check_out_time: exitTime,
                     guard_notes: notes,
                     guard_name: guardName
                 }
@@ -2822,7 +2889,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             sendNotificationToSecurity(notificationData);
             
-            showNotification(`✅ تم تسجيل خروج ${employeeName} الساعة ${now}`, 'success');
+            showNotification(`✅ تم تسجيل خروج ${employeeName} الساعة ${exitTime}`, 'success');
             
             // 4. تحديث العرض
             setTimeout(() => {
@@ -2874,26 +2941,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // ========== HELPER FUNCTIONS ==========
+        let notificationAudioCtx = null;
+        let notificationAudioOk = false;
+
+        function prepareNotificationAudioFromUserGesture() {
+            if (notificationAudioOk) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new AC();
+                }
+                const ctx = notificationAudioCtx;
+                const markOk = function () {
+                    if (ctx.state === 'running') {
+                        notificationAudioOk = true;
+                    }
+                };
+                if (ctx.state === 'running') {
+                    notificationAudioOk = true;
+                    return;
+                }
+                const p = ctx.resume();
+                if (p && typeof p.then === 'function') {
+                    p.then(markOk).catch(function () {});
+                } else {
+                    markOk();
+                }
+            } catch (e) {
+                /* صوت اختياري */
+            }
+        }
+
         function playNotificationSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                
-                const ctx = new AudioContext();
+                if (!notificationAudioOk || !notificationAudioCtx || notificationAudioCtx.state !== 'running') {
+                    return;
+                }
+                const ctx = notificationAudioCtx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.type = 'sine';
                 osc.frequency.value = 880;
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 const now = ctx.currentTime;
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                
+
                 osc.start(now);
                 osc.stop(now + 0.5);
             } catch (e) {

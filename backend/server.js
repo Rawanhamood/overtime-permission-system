@@ -26,14 +26,16 @@ const {
 } = require('./middleware/auth');
 
 // Import database and utilities
-const { db, query, run } = require('./database');
+const { db, query, run, get } = require('./database');
 const {
     createNotification,
     getUserIdByUsername,
     notifyAllManagers,
     notifyAllSecurityStaff,
-    notifyAllGuards,
-    notifyAllSecurityUsers
+    notifySecurityOfficeApprovers,
+    notifyOtherSecurityOfficeApprovers,
+    isSecurityOfficeApprover,
+    notifyAllGuards
 } = require('./utils/notifications');
 const {
     checkDatabaseTables,
@@ -43,14 +45,135 @@ const {
 } = require('./utils/database-init');
 
 // ============== تهيئة قاعدة البيانات ==============
-// Database connection is handled by database.js module
-// Initialize database tables on startup
-checkDatabaseTables();
-
+// Database connection is handled by database.js module.
+// checkDatabaseTables() يُستدعى قبل app.listen لتفادي SQLITE_BUSY مع طلبات HTTP المبكرة
 
 // Database initialization functions are now in utils/database-init.js
 
 // Notification functions are now in utils/notifications.js
+
+/** اسم المعتمد الظاهر في الإشعارات: الاسم الكامل واسم المستخدم */
+async function getSecurityActorDisplayLabel(req, bodySecurityUsername) {
+    const fb = req.user?.name || bodySecurityUsername || req.user?.username || 'مسؤول';
+    const eid = req.user?.employee_id;
+    if (eid == null) return fb;
+    try {
+        const rows = await query('SELECT full_name, username FROM employees WHERE employee_id = ?', [eid]);
+        if (!rows.length) return fb;
+        const fn = String(rows[0].full_name || '').trim();
+        const un = String(rows[0].username || '').trim();
+        if (fn && un) return `${fn} (${un})`;
+        return fn || un || fb;
+    } catch {
+        return fb;
+    }
+}
+
+async function assertManagerOrDeputyCanActOnEmployee(req, employeeId, res) {
+    if (req.user.role === 'admin') return true;
+    let mgrEmpId = null;
+    if (req.user.role === 'manager') {
+        const r = await query('SELECT employee_id FROM employees WHERE username = ?', [req.user.username]);
+        mgrEmpId = r[0]?.employee_id;
+    } else if (req.user.role === 'deputy_manager') {
+        const r = await query('SELECT deputy_for_manager_id FROM employees WHERE username = ?', [req.user.username]);
+        mgrEmpId = r[0]?.deputy_for_manager_id;
+    } else {
+        res.status(403).json({ success: false, message: 'غير مصرح' });
+        return false;
+    }
+    if (!mgrEmpId) {
+        res.status(403).json({ success: false, message: 'لم يُعرَّف المدير لحسابك' });
+        return false;
+    }
+    const ok = await query(
+        `SELECT 1 FROM employees e WHERE e.employee_id = ? AND (e.manager_id = ? OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?))`,
+        [employeeId, mgrEmpId, mgrEmpId]
+    );
+    if (!ok.length) {
+        res.status(403).json({
+            success: false,
+            message: 'التصريح خارج نطاق صلاحيتك أو نطاق المدير الذي تنيب عنه'
+        });
+        return false;
+    }
+    return true;
+}
+
+async function notifyRepresentedManagerIfDeputy(req, payload) {
+    if (req.user.role !== 'deputy_manager' || req.user.employee_id == null) return;
+    const r = await query('SELECT deputy_for_manager_id FROM employees WHERE employee_id = ?', [req.user.employee_id]);
+    const mgrId = r[0]?.deputy_for_manager_id;
+    if (!mgrId) return;
+    const deputyLabel = await getSecurityActorDisplayLabel(req, req.user.username);
+    const msg =
+        typeof payload.buildMessage === 'function' ? payload.buildMessage(deputyLabel) : payload.message;
+    await createNotification({
+        user_id: mgrId,
+        permit_id: payload.permit_id ?? null,
+        company_permit_id: payload.company_permit_id ?? null,
+        title: payload.title,
+        message: msg,
+        type: payload.type || 'info'
+    });
+}
+
+async function getManagerFilterRowForDashboard(requestUsername) {
+    const rows = await query(
+        `SELECT 
+            e.employee_id AS self_id,
+            e.user_type,
+            COALESCE(mgr.employee_id, e.employee_id) AS mgr_id,
+            COALESCE(mgr.username, e.username) AS mgr_username
+        FROM employees e
+        LEFT JOIN employees mgr ON e.deputy_for_manager_id = mgr.employee_id
+        WHERE e.username = ?`,
+        [requestUsername]
+    );
+    return rows[0] || null;
+}
+
+async function assertDeputyCanUseManagerUsername(req, managerUsername) {
+    if (req.user.role !== 'deputy_manager') return true;
+    const rows = await query(
+        `SELECT m.username FROM employees d JOIN employees m ON d.deputy_for_manager_id = m.employee_id WHERE d.username = ?`,
+        [req.user.username]
+    );
+    return rows.length > 0 && rows[0].username === managerUsername;
+}
+
+async function assertStatsUsernameAllowed(req, username) {
+    if (req.user.username === username || req.user.role === 'admin') return true;
+    if (req.user.role === 'deputy_manager') {
+        const rows = await query(
+            `SELECT m.username FROM employees d JOIN employees m ON d.deputy_for_manager_id = m.employee_id WHERE d.username = ?`,
+            [req.user.username]
+        );
+        return rows.length > 0 && rows[0].username === username;
+    }
+    return false;
+}
+
+async function assertSecurityOfficeApproverOrAdmin(req, res) {
+    if (!req.user) {
+        res.status(401).json({ success: false, message: 'غير مصرح' });
+        return false;
+    }
+    if (req.user.role === 'admin') return true;
+    if (req.user.role !== 'security') {
+        res.status(403).json({ success: false, message: 'ليس لديك صلاحية لهذا الإجراء' });
+        return false;
+    }
+    const ok = await isSecurityOfficeApprover(req.user.employee_id);
+    if (!ok) {
+        res.status(403).json({
+            success: false,
+            message: 'الموافقة الأمنية مخصّصة لثلاثة مسؤولي مكتب الأمن المعيّنين. يحددها مدير النظام من واجهة الإدارة أو عبر API.'
+        });
+        return false;
+    }
+    return true;
+}
 
 // ============== Helper Functions ==============
 
@@ -223,6 +346,65 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// المسؤولون الثلاثة المعتمدون لمكتب الأمن (موافقة التصاريح + إشعارات الطابور)
+app.get('/api/admin/security-office-approvers', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const list = await query(`
+            SELECT soa.sort_order, e.employee_id, e.username, e.full_name
+            FROM security_office_approvers soa
+            JOIN employees e ON e.employee_id = soa.employee_id
+            ORDER BY soa.sort_order
+        `);
+        const candidates = await query(`
+            SELECT employee_id, username, full_name FROM employees
+            WHERE user_type = 'security' AND (is_active IS NULL OR is_active = 1)
+            ORDER BY full_name
+        `);
+        res.json({ success: true, approvers: list || [], security_employees: candidates || [] });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.put('/api/admin/security-office-approvers', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        let { employee_ids } = req.body;
+        if (!Array.isArray(employee_ids)) {
+            return res.status(400).json({ success: false, message: 'employee_ids يجب أن يكون مصفوفة' });
+        }
+        const ids = [...new Set(employee_ids.map((x) => parseInt(x, 10)).filter((n) => !Number.isNaN(n)))].slice(0, 3);
+        if (ids.length < 1) {
+            return res.status(400).json({ success: false, message: 'حدد معرف موظف واحد على الأقل (حتى 3)' });
+        }
+        for (const id of ids) {
+            const rows = await query(
+                `SELECT employee_id FROM employees WHERE employee_id = ? AND user_type = 'security' AND (is_active IS NULL OR is_active = 1)`,
+                [id]
+            );
+            if (!rows.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: `المعرف ${id} ليس موظف أمن نشطاً (user_type = security)`
+                });
+            }
+        }
+        await run('DELETE FROM security_office_approvers');
+        let order = 1;
+        for (const id of ids) {
+            await run('INSERT INTO security_office_approvers (sort_order, employee_id) VALUES (?, ?)', [order++, id]);
+        }
+        const list = await query(`
+            SELECT soa.sort_order, e.employee_id, e.username, e.full_name
+            FROM security_office_approvers soa
+            JOIN employees e ON e.employee_id = soa.employee_id
+            ORDER BY soa.sort_order
+        `);
+        res.json({ success: true, approvers: list || [] });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // 3. API للحصول على ملف المستخدم الشخصي (محمي)
 app.get('/api/user/profile', authenticateToken, (req, res) => {
     const username = req.user?.username;
@@ -238,20 +420,26 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
     
     const query = `
         SELECT 
-            employee_id,
-            username,
-            full_name,
-            user_type as role,
-            job_number,
-            directorate,
-            department_id,
-            email,
-            phone,
-            position,
-            is_active,
-            created_at
-        FROM employees 
-        WHERE username = ? AND is_active = 1
+            e.employee_id,
+            e.username,
+            e.full_name,
+            e.user_type as role,
+            e.job_number,
+            e.directorate,
+            e.department_id,
+            d.name as department_name,
+            e.email,
+            e.phone,
+            e.position,
+            e.is_active,
+            e.created_at,
+            e.deputy_for_manager_id,
+            mgr_rep.username as represented_manager_username,
+            mgr_rep.full_name as represented_manager_full_name
+        FROM employees e
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees mgr_rep ON e.deputy_for_manager_id = mgr_rep.employee_id
+        WHERE e.username = ? AND e.is_active = 1
     `;
     
     db.get(query, [username], (err, user) => {
@@ -285,10 +473,14 @@ app.get('/api/user/profile', authenticateToken, (req, res) => {
                 job_number: user.job_number,
                 directorate: user.directorate,
                 department_id: user.department_id,
+                department: user.department_name || '',
                 email: user.email,
                 phone: user.phone,
                 position: user.position,
-                is_active: user.is_active
+                is_active: user.is_active,
+                deputy_for_manager_id: user.deputy_for_manager_id ?? null,
+                represented_manager_username: user.represented_manager_username ?? null,
+                represented_manager_full_name: user.represented_manager_full_name ?? null
             }
         });
     });
@@ -436,37 +628,72 @@ app.post('/api/permits/company-entry/new', authenticateToken, async (req, res) =
                     const permitId = this.lastID;
                     console.log(`✅ تم إنشاء تصريح الشركة رقم: ${permitId}`);
                     
-                    // ======= ⭐⭐ التحسين: إنشاء إشعارات بشكل صحيح ⭐⭐ =======
-                    try {
-                        // 1. إشعار للموظف نفسه
-                        createNotification({
-                            user_id: user.employee_id,
-                            company_permit_id: permitId,
-                            title: '🏢 تم تقديم طلب تصريح الشركة',
-                            message: `تم استلام طلب تصريح الشركة ${company_name} وسيتم مراجعته من قبل المدير.`,
-                            type: 'info'
+                    const sendPermitResponse = () => {
+                        // ======= ⭐⭐ التحسين: إنشاء إشعارات بشكل صحيح ⭐⭐ =======
+                        try {
+                            createNotification({
+                                user_id: user.employee_id,
+                                company_permit_id: permitId,
+                                title: '🏢 تم تقديم طلب تصريح الشركة',
+                                message: `تم استلام طلب تصريح الشركة ${company_name} وسيتم مراجعته من قبل المدير.`,
+                                type: 'info'
+                            });
+                            
+                            notifyAllManagers(
+                                null,
+                                '🏢 طلب تصريح شركة جديد بانتظار الموافقة',
+                                `طلب تصريح شركة جديد من الموظف ${employee_name || user.full_name} (${company_name}) ينتظر موافقتك.`,
+                                'warning',
+                                permitId
+                            );
+                        } catch (notificationError) {
+                            console.warn('⚠️ حدث خطأ في إنشاء الإشعارات:', notificationError.message);
+                        }
+                        
+                        res.json({
+                            success: true,
+                            message: 'تم تقديم طلب تصريح الشركة بنجاح',
+                            permit_id: permitId,
+                            timestamp: new Date().toISOString()
                         });
-                        
-                        // 2. ✅ إشعار لجميع المديرين (وليس المدير المباشر فقط)
-                        notifyAllManagers(
-                            null, // permit_id للتصاريح الشخصية فقط
-                            '🏢 طلب تصريح شركة جديد بانتظار الموافقة',
-                            `طلب تصريح شركة جديد من الموظف ${employee_name || user.full_name} (${company_name}) ينتظر موافقتك.`,
-                            'warning',
-                            permitId // ✅ إضافة company_permit_id
-                        );
-                        
-                    } catch (notificationError) {
-                        console.warn('⚠️ حدث خطأ في إنشاء الإشعارات:', notificationError.message);
-                        // لا نوقف العملية بسبب خطأ في الإشعارات
-                    }
+                    };
                     
-                    res.json({
-                        success: true,
-                        message: 'تم تقديم طلب تصريح الشركة بنجاح',
-                        permit_id: permitId,
-                        timestamp: new Date().toISOString()
-                    });
+                    // ✅ مزامنة جدول company_workers ليظهر عند المدير والأمن والحارس
+                    if (workersData && workersData.length > 0) {
+                        ensureCompanyWorkersTable((cwErr) => {
+                            if (cwErr) {
+                                console.error('❌ ensureCompanyWorkersTable:', cwErr);
+                                return sendPermitResponse();
+                            }
+                            const cname = company_name || '';
+                            let idx = 0;
+                            const insertNextWorker = () => {
+                                if (idx >= workersData.length) {
+                                    return sendPermitResponse();
+                                }
+                                const w = workersData[idx++];
+                                db.run(`
+                                    INSERT INTO company_workers 
+                                    (permit_id, worker_name, worker_id_number, worker_profession, worker_phone, added_by, company_name, is_original)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                                `, [
+                                    permitId,
+                                    w.name || w.worker_name || '',
+                                    w.id_number || w.worker_id_number || null,
+                                    w.profession || w.worker_profession || 'عامل',
+                                    w.phone || w.worker_phone || null,
+                                    finalEmployeeUsername,
+                                    cname
+                                ], (insErr) => {
+                                    if (insErr) console.error('❌ إدراج عامل في company_workers:', insErr);
+                                    insertNextWorker();
+                                });
+                            };
+                            insertNextWorker();
+                        });
+                    } else {
+                        sendPermitResponse();
+                    }
                 });
                 
             } catch (error) {
@@ -661,7 +888,7 @@ app.post('/api/permits/company-entry', authenticateToken, authorizeRoles('employ
 // ============== API لطباعة التصاريح - يجب أن يأتي قبل routes العامة ==============
 // API لطباعة تصريح الدوام (Overtime Permit)
 // ⚠️ مهم: هذا route يجب أن يأتي قبل أي routes أخرى تحتوي على /api/permits/:parameter
-app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('employee', 'manager', 'security', 'admin', 'guard'), (req, res) => {
+app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('employee', 'manager', 'security', 'admin', 'guard', 'security_guard'), (req, res) => {
     console.log('🔍 [DEBUG] تم استدعاء route الطباعة - /api/permits/print/:permit_id');
     console.log('🔍 [DEBUG] req.path:', req.path);
     console.log('🔍 [DEBUG] req.params:', req.params);
@@ -677,24 +904,46 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
         
         console.log(`🖨️ طلب طباعة تصريح الدوام: ${permit_id}`);
         
-        // جلب التصريح من قاعدة البيانات
+        // جلب التصريح من قاعدة البيانات (اسم القسم من departments — عمود department غير موجود في employees)
         db.get(`
-            SELECT p.*, e.full_name, e.job_number, e.department, e.directorate, e.email, e.phone
+            SELECT p.*, e.full_name, e.job_number, e.directorate, e.email, e.phone,
+                   d.name AS department
             FROM permits p
             JOIN employees e ON p.employee_id = e.employee_id
+            LEFT JOIN departments d ON e.department_id = d.id
             WHERE p.permit_id = ?
         `, [permit_id], (err, permit) => {
-            if (err || !permit) {
-                console.error('❌ تصريح غير موجود:', permit_id, err || '');
+            if (err) {
+                console.error('❌ خطأ SQL عند طباعة التصريح:', permit_id, err.message || err);
+                return res.status(500).json({ success: false, message: 'حدث خطأ في الخادم عند جلب التصريح' });
+            }
+            if (!permit) {
+                console.error('❌ تصريح غير موجود:', permit_id);
                 return res.status(404).json({ success: false, message: 'التصريح غير موجود. حدّث صفحة تصاريحي وحاول مرة أخرى.' });
             }
+            
+            // فك حقل expected_exit_time المحفوظ من الطلب كـ "من - إلى" (مثال: 17:00 - 19:00)
+            let exitTimeFrom = '';
+            let exitTimeTo = '';
+            const rawExit = permit.expected_exit_time != null ? String(permit.expected_exit_time).trim() : '';
+            if (rawExit) {
+                const parts = rawExit.split(/\s*[-–—]\s*/).map((x) => x.trim()).filter(Boolean);
+                if (parts.length >= 2) {
+                    exitTimeFrom = parts[0];
+                    exitTimeTo = parts[parts.length - 1];
+                } else if (parts.length === 1) {
+                    exitTimeFrom = parts[0];
+                }
+            }
+            const fromDisplay = [permit.start_date || '', exitTimeFrom ? `من الساعة ${exitTimeFrom}` : ''].filter(Boolean).join(' — ');
+            const toDisplay = [permit.end_date || '', exitTimeTo ? `إلى الساعة ${exitTimeTo}` : (exitTimeFrom && !exitTimeTo ? `الساعة ${exitTimeFrom}` : '')].filter(Boolean).join(' — ');
             
             // التحقق من الصلاحية: الموظف يطبع تصاريحه فقط، المدير/الأمن/الحارس/المسؤول يطبعون أي تصريح
             const userRole = req.user.role;
             const userEmployeeId = req.user.employee_id;
             let hasAccess = false;
             
-            if (userRole === 'admin' || userRole === 'manager' || userRole === 'security' || userRole === 'guard') {
+            if (userRole === 'admin' || userRole === 'manager' || userRole === 'security' || userRole === 'guard' || userRole === 'security_guard') {
                 hasAccess = true;
             } else if (userRole === 'employee' && userEmployeeId != null && Number(permit.employee_id) === Number(userEmployeeId)) {
                 hasAccess = true;
@@ -851,12 +1100,18 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
                         </div>
                         <div class="row">
                             <div class="label">من:</div>
-                            <div class="value">${permit.start_date || ''} ${permit.start_time || ''}</div>
+                            <div class="value">${fromDisplay || (permit.start_date || '—')}</div>
                         </div>
                         <div class="row">
                             <div class="label">إلى:</div>
-                            <div class="value">${permit.end_date || ''} ${permit.end_time || ''}</div>
+                            <div class="value">${toDisplay || (permit.end_date || '—')}</div>
                         </div>
+                        ${rawExit ? `
+                        <div class="row">
+                            <div class="label">الوقت المتوقع للانصراف (كما سجّله الموظف):</div>
+                            <div class="value">${rawExit}</div>
+                        </div>
+                        ` : ''}
                         <div class="row">
                             <div class="label">تاريخ الطلب:</div>
                             <div class="value">${new Date(permit.request_date || permit.created_at).toLocaleDateString('ar-SA')}</div>
@@ -864,8 +1119,8 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
                         <div class="row">
                             <div class="label">حالة التصريح:</div>
                             <div class="value">
-                                <span class="status-badge ${permit.status === 'approved_security' ? 'status-approved' : permit.status === 'rejected_manager' || permit.status === 'rejected_security' ? 'status-rejected' : 'status-pending'}">
-                                    ${permit.status === 'approved_security' ? '✓ معتمد' : permit.status === 'rejected_manager' || permit.status === 'rejected_security' ? '✗ مرفوض' : '⏳ قيد الانتظار'}
+                                <span class="status-badge ${permit.status === 'approved_security' || permit.status === 'checked_in' || permit.status === 'completed' ? 'status-approved' : permit.status === 'rejected_manager' || permit.status === 'rejected_security' ? 'status-rejected' : 'status-pending'}">
+                                    ${permit.status === 'completed' ? '✓ مكتمل' : permit.status === 'checked_in' ? '✓ داخل المبنى' : permit.status === 'approved_security' ? '✓ معتمد من الأمن' : permit.status === 'pending_security' ? '⏳ بانتظار الأمن' : permit.status === 'pending_manager' ? '⏳ بانتظار المدير' : permit.status === 'rejected_manager' || permit.status === 'rejected_security' ? '✗ مرفوض' : (permit.status || '⏳ قيد الانتظار')}
                                 </span>
                             </div>
                         </div>
@@ -879,6 +1134,40 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
                         <div class="row">
                             <div class="label">مسؤول الأمن:</div>
                             <div class="value">${permit.security_username}</div>
+                        </div>
+                        ` : ''}
+                        ${(permit.manager_notes && String(permit.manager_notes).trim()) ? `
+                        <div class="row">
+                            <div class="label">ملاحظات المدير:</div>
+                            <div class="value">${String(permit.manager_notes).replace(/</g, '&lt;')}</div>
+                        </div>
+                        ` : ''}
+                        ${(permit.security_notes && String(permit.security_notes).trim()) ? `
+                        <div class="row">
+                            <div class="label">ملاحظات مكتب الأمن:</div>
+                            <div class="value">${String(permit.security_notes).replace(/</g, '&lt;')}</div>
+                        </div>
+                        ` : ''}
+                        ${(permit.actual_entry_time || permit.entry_guard_username || (permit.entry_notes && String(permit.entry_notes).trim())) ? `
+                        <div class="row">
+                            <div class="label">تسجيل الدخول (الحارس):</div>
+                            <div class="value">
+                                ${permit.actual_entry_time ? `الوقت الفعلي: ${permit.actual_entry_time}<br>` : ''}
+                                ${permit.checkin_timestamp ? `وقت التسجيل: ${permit.checkin_timestamp}<br>` : ''}
+                                ${permit.entry_guard_username ? `الحارس: ${permit.entry_guard_username}<br>` : ''}
+                                ${(permit.entry_notes && String(permit.entry_notes).trim()) ? `ملاحظات: ${String(permit.entry_notes).replace(/</g, '&lt;')}` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${(permit.actual_exit_time || permit.exit_guard_username || (permit.exit_notes && String(permit.exit_notes).trim())) ? `
+                        <div class="row">
+                            <div class="label">تسجيل الخروج (الحارس):</div>
+                            <div class="value">
+                                ${permit.actual_exit_time ? `الوقت الفعلي: ${permit.actual_exit_time}<br>` : ''}
+                                ${permit.checkout_timestamp ? `وقت التسجيل: ${permit.checkout_timestamp}<br>` : ''}
+                                ${permit.exit_guard_username ? `الحارس: ${permit.exit_guard_username}<br>` : ''}
+                                ${(permit.exit_notes && String(permit.exit_notes).trim()) ? `ملاحظات: ${String(permit.exit_notes).replace(/</g, '&lt;')}` : ''}
+                            </div>
                         </div>
                         ` : ''}
                     </div>
@@ -938,6 +1227,79 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
             </html>
         `);
     }
+});
+
+// تفاصيل تصريح موظف (دوام إضافي) — ملاحظات المدير والأمن والحارس وأوقات الدخول/الخروج
+app.get('/api/permits/details/:permit_id', authenticateToken,
+    authorizeRoles('employee', 'manager', 'security', 'admin', 'guard', 'security_guard'), (req, res) => {
+    const permitIdNum = parseInt(req.params.permit_id, 10);
+    if (Number.isNaN(permitIdNum)) {
+        return res.status(400).json({ success: false, message: 'رقم التصريح غير صالح' });
+    }
+
+    const baseSql = `
+        SELECT 
+            p.*,
+            e.full_name,
+            e.job_number,
+            e.directorate,
+            e.phone,
+            e.email,
+            d.name as department_name
+        FROM permits p
+        JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE p.permit_id = ?
+    `;
+
+    db.get(baseSql, [permitIdNum], (err, permit) => {
+        if (err) {
+            console.error('خطأ في جلب تفاصيل التصريح:', err);
+            return res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        }
+        if (!permit) {
+            return res.status(404).json({ success: false, message: 'التصريح غير موجود' });
+        }
+
+        const role = req.user.role;
+        const username = req.user.username;
+        const userEmployeeId = req.user.employee_id;
+
+        const allow = () => res.json({ success: true, permit });
+
+        if (role === 'admin' || role === 'security' || role === 'guard' || role === 'security_guard') {
+            return allow();
+        }
+        if (role === 'employee') {
+            if (userEmployeeId != null && Number(permit.employee_id) === Number(userEmployeeId)) {
+                return allow();
+            }
+            return res.status(403).json({ success: false, message: 'غير مصرح لك بعرض هذا التصريح' });
+        }
+        if (role === 'manager') {
+            db.get('SELECT employee_id FROM employees WHERE username = ?', [username], (err2, mgr) => {
+                if (err2 || !mgr) {
+                    return res.status(403).json({ success: false, message: 'غير مصرح لك بعرض هذا التصريح' });
+                }
+                db.get(`
+                    SELECT 1 AS ok FROM employees e
+                    WHERE e.employee_id = ?
+                    AND (
+                        e.manager_id = ?
+                        OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?)
+                    )
+                `, [permit.employee_id, mgr.employee_id, mgr.employee_id], (err3, row) => {
+                    if (err3 || !row) {
+                        return res.status(403).json({ success: false, message: 'غير مصرح لك بعرض هذا التصريح' });
+                    }
+                    return allow();
+                });
+            });
+            return;
+        }
+
+        return res.status(403).json({ success: false, message: 'غير مصرح' });
+    });
 });
 
 // API رئيسي لتصاريح الشركات (للعرض العام)
@@ -1052,7 +1414,7 @@ app.get('/api/permits/company-entry', authenticateToken,
 
 // API للحصول على التصاريح حسب حالة المدير
 app.get('/api/permits/company-entry/by-manager-status/:status', authenticateToken, 
-    authorizeRoles('manager', 'admin'), (req, res) => {
+    authorizeRoles('manager', 'deputy_manager', 'admin'), (req, res) => {
     try {
         const { status } = req.params;
         const { username } = req.query;
@@ -1363,16 +1725,29 @@ function attachWorkersToCompanyPermits(permits, callback) {
 }
 
 // الحصول على تصاريح الشركات المعلقة للمدير (بدون username) + قائمة العمال كاملة (مع فلتر الشهر)
-app.get('/api/permits/company-entry/pending', authenticateToken, authorizeRoles('manager', 'admin'), async (req, res) => {
+app.get('/api/permits/company-entry/pending', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
         console.log('📋 جلب تصاريح الشركات المعلقة للمدير');
         const { month } = req.query; // YYYY-MM
         
         let query = `
-            SELECT * FROM company_entry_permits 
-            WHERE status = 'pending_manager'
+            SELECT cep.* FROM company_entry_permits cep
+            WHERE cep.status = 'pending_manager'
         `;
         const params = [];
+        
+        if (req.user.role === 'deputy_manager') {
+            const row = await getManagerFilterRowForDashboard(req.user.username);
+            if (!row || !row.mgr_id) {
+                return res.json({ success: true, permits: [] });
+            }
+            query += ` AND EXISTS (
+                SELECT 1 FROM employees emp 
+                WHERE emp.employee_id = cep.employee_id 
+                AND (emp.manager_id = ? OR emp.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?))
+            )`;
+            params.push(row.mgr_id, row.mgr_id);
+        }
         
         if (month) {
             query += ` AND strftime('%Y-%m', expected_entry_date) = ?`;
@@ -1398,7 +1773,7 @@ app.get('/api/permits/company-entry/pending', authenticateToken, authorizeRoles(
 });
 
 // الحصول على تصاريح الشركات المعلقة للمدير (مع username - للتوافق مع الكود القديم)
-app.get('/api/permits/company-entry/pending/:username', authenticateToken, authorizeRoles('manager', 'admin'), async (req, res) => {
+app.get('/api/permits/company-entry/pending/:username', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
         const { username } = req.params;
         
@@ -1436,8 +1811,11 @@ app.get('/api/permits/company-entry/pending/:username', authenticateToken, autho
 });
 
 // الحصول على تصاريح الشركات المعلقة للأمن + قائمة العمال كاملة (مع فلتر الشهر اختياري)
-app.get('/api/permits/company-entry/security-pending', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+app.get('/api/permits/company-entry/security-pending', authenticateToken, authorizeRoles('security', 'admin'), async (req, res) => {
     try {
+        if (req.user.role === 'security' && !(await isSecurityOfficeApprover(req.user.employee_id))) {
+            return res.json({ success: true, permits: [] });
+        }
         console.log('📋 جلب تصاريح الشركات المعلقة للأمن');
         const { month } = req.query;
         
@@ -1471,16 +1849,33 @@ app.get('/api/permits/company-entry/security-pending', authenticateToken, author
     }
 });
 
-// الموافقة/الرفض من المدير لتصاريح الشركات
-app.post('/api/permits/company-entry/approve', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+// الموافقة/الرفض من المدير (أو نائبه) لتصاريح الشركات
+app.post('/api/permits/company-entry/approve', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
         const { permit_id, manager_username, decision, notes } = req.body;
         
         console.log(`🔄 معالجة موافقة المدير على تصريح شركة: ${permit_id}`);
         console.log('📥 البيانات:', { permit_id, manager_username, decision, notes });
         
+        const pre = await query(
+            'SELECT employee_id FROM company_entry_permits WHERE permit_id = ? AND status = ?',
+            [permit_id, 'pending_manager']
+        );
+        if (!pre.length) {
+            return res.status(404).json({ success: false, message: 'تصريح الشركة غير موجود أو تم معالجته مسبقاً' });
+        }
+        if (!(await assertManagerOrDeputyCanActOnEmployee(req, pre[0].employee_id, res))) return;
+        
+        const acting_username =
+            req.user && req.user.username
+                ? String(req.user.username).trim()
+                : (manager_username != null && String(manager_username).trim() !== '' ? String(manager_username).trim() : '');
+        if (!acting_username) {
+            return res.status(400).json({ success: false, message: 'تعذر تحديد هوية المعتمد' });
+        }
+        
         // تحديث حالة الموافقة المديرية
-        const query = `
+        const updateCompanyPermitSql = `
             UPDATE company_entry_permits 
             SET status = ?, 
                 manager_username = ?,
@@ -1491,9 +1886,9 @@ app.post('/api/permits/company-entry/approve', authenticateToken, authorizeRoles
         
         // استخدام القيم المسموحة في CHECK constraint
         const status = decision === 'approve' ? 'approved_manager' : 'rejected_manager';
-        const params = [status, manager_username, notes || '', permit_id];
+        const params = [status, acting_username, notes || '', permit_id];
         
-        db.run(query, params, function(err) {
+        db.run(updateCompanyPermitSql, params, function(err) {
             if (err) {
                 console.error('❌ خطأ في تحديث تصريح الشركة:', err);
                 return res.status(500).json({ 
@@ -1521,16 +1916,17 @@ app.post('/api/permits/company-entry/approve', authenticateToken, authorizeRoles
                     });
                 }
                 
+                const coActor = req.user.role === 'deputy_manager' ? 'نائب المدير' : 'المدير';
                 // إرسال إشعار للموظف (مع ملاحظات المدير إن وجدت)
                 db.get('SELECT employee_id FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
                     if (!err && employee) {
                         const title = decision === 'approve' 
-                            ? '✅ تمت الموافقة على تصريح الشركة' 
-                            : '❌ تم رفض تصريح الشركة';
+                            ? '✅ موافقة المدير على تصريح الشركة' 
+                            : '❌ رفض المدير لتصريح الشركة';
                         const baseMsg = decision === 'approve'
-                            ? `قام المدير بالموافقة على تصريح الشركة الخاص بك. سيتم مراجعته الآن من قبل الأمن.`
-                            : `قام المدير برفض تصريح الشركة الخاص بك. يرجى التواصل معه للحصول على مزيد من المعلومات.`;
-                        const message = (notes ? baseMsg + '<br><strong>ملاحظات المدير:</strong> ' + notes : baseMsg);
+                            ? `قام ${coActor} بالموافقة على تصريح الشركة الخاص بك. سيتم مراجعته الآن من قبل مكتب الأمن.`
+                            : `قام ${coActor} برفض تصريح الشركة الخاص بك. يرجى مراجعة المدير لمعرفة السبب.`;
+                        const message = (notes ? baseMsg + '<br><strong>ملاحظات:</strong> ' + notes : baseMsg);
                         createNotification({
                             user_id: employee.employee_id,
                             company_permit_id: permit_id,
@@ -1542,16 +1938,49 @@ app.post('/api/permits/company-entry/approve', authenticateToken, authorizeRoles
                 });
                 // إشعار لمكتب الأمن (مع ملاحظات المدير إن وجدت): عند الموافقة دائماً، وعند الرفض إذا وجدت ملاحظات
                 if (status === 'approved_manager') {
-                    notifyAllSecurityStaff(
-                        null,
-                        '🏢 تصريح شركة جديد بانتظار الموافقة الأمنية',
-                        `تصريح شركة جديد بانتظار الموافقة الأمنية.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`,
-                        'warning',
-                        permit_id
-                    );
+                    (async () => {
+                        try {
+                            await notifySecurityOfficeApprovers(
+                                null,
+                                '🏢 تصريح شركة جديد بانتظار الموافقة الأمنية',
+                                `تصريح شركة جديد بانتظار الموافقة الأمنية.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`,
+                                'warning',
+                                permit_id
+                            );
+                        } catch (n) {
+                            console.error('notifySecurityOfficeApprovers (شركة):', n.message || n);
+                        }
+                    })();
                 } else if (notes) {
-                    notifyAllSecurityStaff(null, '❌ تم رفض تصريح شركة من المدير', `تم رفض تصريح الشركة #${permit_id}.<br><strong>ملاحظات المدير:</strong> ${notes}`, 'info', permit_id);
+                    (async () => {
+                        try {
+                            await notifySecurityOfficeApprovers(
+                                null,
+                                '❌ تم رفض تصريح شركة من المدير',
+                                `تم رفض تصريح الشركة #${permit_id}.<br><strong>ملاحظات المدير:</strong> ${notes}`,
+                                'info',
+                                permit_id
+                            );
+                        } catch (n) {
+                            console.error('notifySecurityOfficeApprovers (شركة مرفوض):', n.message || n);
+                        }
+                    })();
                 }
+                (async () => {
+                    try {
+                        await notifyRepresentedManagerIfDeputy(req, {
+                            company_permit_id: permit_id,
+                            title: decision === 'approve' ? '📋 نائب المدير وافق على تصريح شركة' : '📋 نائب المدير رفض تصريح شركة',
+                            buildMessage: (label) =>
+                                decision === 'approve'
+                                    ? `أبلغناك للعلم: قام النائب <strong>${label}</strong> بالموافقة على تصريح الشركة رقم ${permit_id} نيابةً عنك.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`
+                                    : `أبلغناك للعلم: قام النائب <strong>${label}</strong> برفض تصريح الشركة رقم ${permit_id} نيابةً عنك.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                            type: 'info'
+                        });
+                    } catch (e) {
+                        console.error('notifyRepresentedManagerIfDeputy (شركة):', e.message || e);
+                    }
+                })();
                 
                 res.json({
                     success: true,
@@ -1570,8 +1999,9 @@ app.post('/api/permits/company-entry/approve', authenticateToken, authorizeRoles
 });
 
 // الموافقة/الرفض من الأمن لتصاريح الشركات
-app.post('/api/permits/company-entry/security-approve', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+app.post('/api/permits/company-entry/security-approve', authenticateToken, authorizeRoles('security', 'admin'), async (req, res) => {
     try {
+        if (!(await assertSecurityOfficeApproverOrAdmin(req, res))) return;
         const { permit_id, security_username, decision, notes } = req.body;
         
         console.log(`🔄 معالجة موافقة الأمن على تصريح شركة: ${permit_id}`);
@@ -1620,15 +2050,34 @@ app.post('/api/permits/company-entry/security-approve', authenticateToken, autho
                     });
                 }
                 
+                (async () => {
+                    try {
+                        const actorLabel = await getSecurityActorDisplayLabel(req, security_username);
+                        await notifyOtherSecurityOfficeApprovers(req.user.employee_id, {
+                            company_permit_id: permit_id,
+                            permit_id: null,
+                            title: decision === 'allow'
+                                ? '✅ موافقة زميل — تصريح شركة'
+                                : '❌ رفض زميل — تصريح شركة',
+                            message: decision === 'allow'
+                                ? `قام <strong>${actorLabel}</strong> بالموافقة على تصريح الشركة رقم ${permit_id}. لا حاجة لموافقة إضافية منك.`
+                                : `قام <strong>${actorLabel}</strong> برفض تصريح الشركة رقم ${permit_id}.`,
+                            type: decision === 'allow' ? 'info' : 'warning'
+                        });
+                    } catch (n) {
+                        console.error('notifyOtherSecurityOfficeApprovers (شركة):', n.message || n);
+                    }
+                })();
+                
                 // إرسال إشعار للموظف (مع ملاحظات الأمن إن وجدت)
                 db.get('SELECT employee_id FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
                     if (!err && employee) {
                         const title = decision === 'allow' 
-                            ? '✅ تمت الموافقة النهائية على تصريح الشركة' 
-                            : '❌ تم رفض تصريح الشركة من قبل الأمن';
+                            ? '✅ موافقة مكتب الأمن على تصريح الشركة' 
+                            : '❌ رفض مكتب الأمن لتصريح الشركة';
                         const baseMsg = decision === 'allow'
-                            ? `تمت الموافقة النهائية على تصريح الشركة الخاص بك من قبل مكتب الأمن.`
-                            : `تم رفض تصريح الشركة الخاص بك من قبل مكتب الأمن. يرجى التواصل مع المدير للحصول على مزيد من المعلومات.`;
+                            ? `وافق مكتب الأمن على تصريح الشركة الخاص بك بشكل نهائي.`
+                            : `قام مكتب الأمن برفض تصريح الشركة الخاص بك. يرجى التواصل مع المدير.`;
                         const message = (notes ? baseMsg + '<br><strong>ملاحظات الأمن:</strong> ' + notes : baseMsg);
                         createNotification({
                             user_id: employee.employee_id,
@@ -1718,7 +2167,7 @@ app.post('/api/permits/company-entry/security-approve', authenticateToken, autho
 });
 
 // الحصول على إحصائيات تصاريح الشركات (يجب أن يكون قبل /:id)
-app.get('/api/permits/company-entry/stats', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.get('/api/permits/company-entry/stats', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), (req, res) => {
     
     try {
         // استعلام واحد شامل بدلاً من استعلامين منفصلين
@@ -1775,53 +2224,80 @@ app.get('/api/permits/company-entry/stats', authenticateToken, authorizeRoles('m
     }
 });
 
-// الحصول على تصاريح الشركات المعتمدة/المرفوضة من المدير
-app.get('/api/permits/company-entry/approved', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+// الحصول على تصاريح الشركات بعد موافقة المدير (محفوظة في لوحة المدير — بما فيها مسار الأمن والحارس)
+app.get('/api/permits/company-entry/approved', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
         const { username, month } = req.query;
-        console.log('📋 جلب تصاريح الشركات المعتمدة/المرفوضة من المدير:', username, 'month=', month || 'ALL');
-        
-        // جلب تصاريح الشركات المعتمدة أو المرفوضة من هذا المدير
-        let query = `
-            SELECT * FROM company_entry_permits 
-            WHERE manager_username = ? 
-            AND status IN ('approved_manager', 'pending_security', 'approved_security', 'rejected_manager')
-        `;
-        const params = [username];
-        
-        if (month) {
-            query += ` AND strftime('%Y-%m', expected_entry_date) = ?`;
-            params.push(month);
-        }
-        
-        query += ` ORDER BY created_at DESC LIMIT 50`;
-        
-        db.all(query, params, (err, permits) => {
-            if (err) {
-                console.error('❌ خطأ في جلب تصاريح الشركات المعتمدة:', err);
-                return res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+        let requestUser = (username && String(username).trim()) || req.user.username;
+        const isAdmin = req.user.role === 'admin';
+        const monthFilter = month && String(month).trim();
+        console.log('📋 تصاريح شركات (سجل المدير):', requestUser, 'admin=', isAdmin, 'month=', monthFilter || 'ALL');
+
+        const statusSql = `cep.status IN ('approved_manager', 'approved_security', 'checked_in', 'completed', 'rejected_security')`;
+
+        const finish = (query, params) => {
+            const p = [...params];
+            if (monthFilter) {
+                query += ` AND strftime('%Y-%m', cep.expected_entry_date) = ?`;
+                p.push(monthFilter);
             }
-            attachWorkersToCompanyPermits(permits || [], (attachErr, withWorkers) => {
-                if (attachErr) return res.status(500).json({ success: false, message: 'خطأ في جلب العمال' });
-                res.json({ success: true, permits: withWorkers });
+            query += ` ORDER BY cep.created_at DESC`;
+            db.all(query, p, (err, permits) => {
+                if (err) {
+                    console.error('❌ خطأ في جلب تصاريح الشركات المعتمدة:', err);
+                    return res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+                }
+                attachWorkersToCompanyPermits(permits || [], (attachErr, withWorkers) => {
+                    if (attachErr) return res.status(500).json({ success: false, message: 'خطأ في جلب العمال' });
+                    res.json({ success: true, permits: withWorkers });
+                });
             });
-        });
+        };
+
+        if (isAdmin) {
+            finish(`SELECT cep.* FROM company_entry_permits cep WHERE ${statusSql}`, []);
+        } else {
+            if (req.user.role === 'deputy_manager') {
+                const row = await getManagerFilterRowForDashboard(req.user.username);
+                if (!row?.mgr_username) {
+                    return res.json({ success: true, permits: [] });
+                }
+                requestUser = row.mgr_username;
+            }
+            db.get('SELECT employee_id FROM employees WHERE username = ?', [requestUser], (err, manager) => {
+                if (err || !manager) {
+                    return res.status(404).json({ success: false, message: 'المدير غير موجود' });
+                }
+                finish(`
+                    SELECT DISTINCT cep.*
+                    FROM company_entry_permits cep
+                    JOIN employees e ON cep.employee_id = e.employee_id
+                    WHERE ${statusSql}
+                    AND (
+                        cep.manager_username = ?
+                        OR e.manager_id = ?
+                        OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?)
+                    )
+                `, [requestUser, manager.employee_id, manager.employee_id]);
+            });
+        }
     } catch (error) {
         console.error('❌ خطأ في API تصاريح الشركات المعتمدة:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'خطأ في جلب البيانات' 
+        res.status(500).json({
+            success: false,
+            message: 'خطأ في جلب البيانات'
         });
     }
 });
 
 // ✅ API للحصول على تصاريح الشركات النشطة (يجب أن يأتي قبل /:id)
 app.get('/api/permits/company-entry/active', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'guard', 'security_guard', 'admin'), (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
         
         // ✅ استخدام employee_id للانضمام مع جدول employees
+        // معتمد من الأمن ولم يُسجَّل دخول بعد، أو مسجَّل دخول ولم يُسجَّل خروج (نفس قائمة الحارس)
         const query = `
             SELECT cep.*, 
                    e.full_name as employee_full_name, 
@@ -1829,11 +2305,25 @@ app.get('/api/permits/company-entry/active', authenticateToken,
                    e.username as employee_username
             FROM company_entry_permits cep
             LEFT JOIN employees e ON cep.employee_id = e.employee_id
-            WHERE cep.status = 'approved_security'
-            AND strftime('%Y-%m-%d', cep.expected_entry_date) <= ?
+            WHERE strftime('%Y-%m-%d', cep.expected_entry_date) <= ?
             AND strftime('%Y-%m-%d', cep.expected_exit_date) >= ?
-            AND (cep.actual_entry_time IS NULL OR cep.actual_entry_time = '')
-            ORDER BY cep.expected_entry_date ASC, cep.expected_entry_time ASC
+            AND (
+                (
+                    cep.status = 'approved_security'
+                    AND (cep.actual_entry_time IS NULL OR cep.actual_entry_time = '')
+                )
+                OR
+                (
+                    cep.status = 'checked_in'
+                    AND cep.actual_entry_time IS NOT NULL
+                    AND cep.actual_entry_time != ''
+                    AND (cep.actual_exit_time IS NULL OR cep.actual_exit_time = '')
+                )
+            )
+            ORDER BY
+                CASE WHEN cep.status = 'checked_in' THEN 1 ELSE 0 END,
+                cep.expected_entry_date ASC,
+                cep.expected_entry_time ASC
         `;
         
         db.all(query, [today, today], (err, permits) => {
@@ -1968,8 +2458,13 @@ app.get('/api/permits/company-entry/:id', authenticateToken, authorizeRoles('emp
                 hasAccess = true;
             } else if (userRole === 'employee' && row.employee_username === userName) {
                 hasAccess = true;
-            } else if (userRole === 'manager' && row.manager_username === userName) {
-                hasAccess = true;
+            } else if (userRole === 'manager') {
+                // نفس منطق قائمة المعلقة: أي مدير يطلع طلبات pending_manager؛ وبعد الاعتماد يبقى للمدير المعتمد فقط
+                if (row.manager_username === userName) {
+                    hasAccess = true;
+                } else if (row.status === 'pending_manager') {
+                    hasAccess = true;
+                }
             } else if (userRole === 'security') {
                 hasAccess = true;
             }
@@ -2310,7 +2805,7 @@ app.get('/api/permits/company-entry/my/:username', authenticateToken, (req, res)
 
 // API لتسجيل دخول الشركة في الحراسة
 app.post('/api/permits/company-entry/guard-checkin', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'guard', 'security_guard', 'admin'), (req, res) => {
     try {
         const { 
             permit_id, 
@@ -2448,7 +2943,7 @@ app.post('/api/permits/company-entry/guard-checkin', authenticateToken,
 
 // API لتسجيل خروج الشركة من الحراسة
 app.post('/api/permits/company-entry/guard-checkout', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'guard', 'security_guard', 'admin'), (req, res) => {
     try {
         const { 
             permit_id, 
@@ -2659,7 +3154,7 @@ app.get('/api/permits/company-entry/checked-in', authenticateToken,
         const query = `
             SELECT cep.*, e.full_name as employee_full_name, e.phone as employee_phone
             FROM company_entry_permits cep
-            LEFT JOIN employees e ON cep.employee_username = e.username
+            LEFT JOIN employees e ON cep.employee_id = e.employee_id
             WHERE cep.status = 'checked_in'
             AND cep.expected_entry_date <= ?
             AND cep.expected_exit_date >= ?
@@ -2891,6 +3386,14 @@ app.post('/api/permits/company-entry/:permit_id/workers', authenticateToken,
             console.log('✅ التصريح موجود:', permit);
             const companyName = permit.company_name || '';
             
+            const roleWhoAdds = (req.user && req.user.role) || '';
+            if ((roleWhoAdds === 'guard' || roleWhoAdds === 'security_guard') && !idCardFileName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'إرفاق صورة (تصوير بالكاميرا) أو ملف PDF لبطاقة الهوية إلزامي على الحارس عند إضافة عامل.'
+                });
+            }
+            
             // استخدام دالة ensureCompanyWorkersTable بدلاً من CREATE TABLE مباشرة
             ensureCompanyWorkersTable((tableErr) => {
                 if (tableErr) {
@@ -2993,124 +3496,98 @@ app.post('/api/permits/company-entry/:permit_id/workers', authenticateToken,
     }
 });
 
-// دالة مساعدة لمعالجة نجاح إدراج العامل
-function handleWorkerInsertSuccess(permitIdInt, addedByUser, finalWorkerName, companyName, res, reqUser) {
-    console.log('✅ تم حفظ العامل بنجاح، worker_id:', this.lastID);
-    
-    // ✅ إرسال إشعار للموظف والمدير ومكتب الأمن عند إضافة عامل جديد مع جدول بالعمال
-    try {
-        // محاولة جلب اسم الحارس المناوب من قاعدة البيانات أولاً
-        db.get('SELECT guard_name FROM guard_sessions WHERE guard_username = ? ORDER BY session_start DESC LIMIT 1', 
+// بث تحديث جدول العمال لصاحب التصريح + جميع المديرين + مكتب الأمن (قائمة كاملة حالية)
+function broadcastCompanyWorkersUpdated(permitIdInt, title, detailIntroHtml) {
+    db.all(`
+        SELECT worker_name, worker_id_number, worker_profession, worker_phone, is_original, id_card_file_name
+        FROM company_workers 
+        WHERE permit_id = ?
+        ORDER BY is_original DESC, worker_id ASC
+    `, [permitIdInt], (err, list) => {
+        const rows = list || [];
+        let tableHtml = '';
+        if (rows.length === 0) {
+            tableHtml = '<p style="margin:8px 0;">لا يوجد عمال في الجدول حالياً.</p>';
+        } else {
+            tableHtml = `
+                <table style="width:100%;border-collapse:collapse;margin-top:10px;border:1px solid #ddd;">
+                    <thead><tr style="background:#3498db;color:white;">
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">#</th>
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">الاسم</th>
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">المهنة</th>
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">رقم الهوية</th>
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">الهاتف</th>
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">بطاقة</th>
+                        <th style="padding:8px;border:1px solid #ddd;text-align:right;">المصدر</th>
+                    </tr></thead><tbody>
+                    ${rows.map((w, i) => `
+                        <tr style="background:${i % 2 === 0 ? '#f8f9fa' : '#fff'};">
+                            <td style="padding:8px;border:1px solid #ddd;">${i + 1}</td>
+                            <td style="padding:8px;border:1px solid #ddd;">${w.worker_name || '—'}</td>
+                            <td style="padding:8px;border:1px solid #ddd;">${w.worker_profession || '—'}</td>
+                            <td style="padding:8px;border:1px solid #ddd;">${w.worker_id_number || '—'}</td>
+                            <td style="padding:8px;border:1px solid #ddd;">${w.worker_phone || '—'}</td>
+                            <td style="padding:8px;border:1px solid #ddd;">${w.id_card_file_name ? '✓ مرفوعة' : '—'}</td>
+                            <td style="padding:8px;border:1px solid #ddd;">${w.is_original ? 'من الطلب' : 'لاحقاً'}</td>
+                        </tr>
+                    `).join('')}
+                    </tbody></table>`;
+        }
+        const message = `${detailIntroHtml}<br><br><strong>قائمة العمال الحالية (${rows.length}):</strong>${tableHtml}`;
+        db.get('SELECT employee_id, company_name FROM company_entry_permits WHERE permit_id = ?', [permitIdInt], (e2, permit) => {
+            if (!e2 && permit && permit.employee_id) {
+                try {
+                    createNotification({
+                        user_id: permit.employee_id,
+                        company_permit_id: permitIdInt,
+                        title,
+                        message,
+                        type: 'info'
+                    });
+                } catch (x) { console.warn('notify employee workers:', x.message); }
+            }
+            try {
+                notifyAllManagers(null, title, message, 'info', permitIdInt);
+                notifyAllSecurityStaff(null, title, message, 'info', permitIdInt);
+            } catch (x) { console.warn('notify managers/security workers:', x.message); }
+        });
+    });
+}
+
+function resolveGuardDisplayName(addedByUser, reqUser, callback) {
+    let guardName = (reqUser && (reqUser.full_name || reqUser.username)) || addedByUser || 'الحارس';
+    db.get('SELECT guard_name FROM guard_sessions WHERE guard_username = ? ORDER BY session_start DESC LIMIT 1',
         [addedByUser], (err, guardSession) => {
-            let guardName = (reqUser && (reqUser.full_name || reqUser.username)) || addedByUser || 'حارس';
-            
-            // إذا وجدنا اسم الحارس المناوب في قاعدة البيانات، نستخدمه
             if (!err && guardSession && guardSession.guard_name) {
                 guardName = guardSession.guard_name;
             }
-            
-            // محاولة جلب الاسم الكامل من جدول employees كبديل
             db.get('SELECT full_name FROM employees WHERE username = ?', [addedByUser], (nameErr, employee) => {
-                if (!nameErr && employee && employee.full_name && (!guardSession || !guardSession.guard_name)) {
+                if (!nameErr && employee && employee.full_name && !(guardSession && guardSession.guard_name)) {
                     guardName = employee.full_name;
                 }
-                
-                // جلب جميع العمال المضافين من قبل هذا الحارس لهذا التصريح
-                db.all(`
-                    SELECT worker_name, worker_id_number, worker_profession, worker_phone, added_at
-                    FROM company_workers 
-                    WHERE permit_id = ? AND added_by = ?
-                    ORDER BY added_at DESC
-                `, [permitIdInt, addedByUser], (err, workers) => {
-                    if (err) {
-                        console.error('❌ خطأ في جلب العمال للإشعار:', err);
-                        workers = []; // نستخدم مصفوفة فارغة بدلاً من undefined
-                    }
-                
-                    // إنشاء جدول HTML بالعمال
-                    let workersTableHTML = '';
-                    if (workers && workers.length > 0) {
-                        workersTableHTML = `
-                            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #ddd;">
-                                <thead>
-                                    <tr style="background: #3498db; color: white;">
-                                        <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">#</th>
-                                        <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">اسم العامل</th>
-                                        <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">المهنة</th>
-                                        <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">رقم الهوية</th>
-                                        <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">الهاتف</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${workers.map((worker, index) => `
-                                        <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-                                            <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${index + 1}</td>
-                                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_name || 'غير محدد'}</td>
-                                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_profession || 'غير محدد'}</td>
-                                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_id_number || 'غير محدد'}</td>
-                                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${worker.worker_phone || 'غير محدد'}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        `;
-                    }
-                    
-                    // جلب بيانات التصريح للموظف والمدير
-                    db.get('SELECT employee_id, employee_username, company_name FROM company_entry_permits WHERE permit_id = ?', 
-                    [permitIdInt], (err, permit) => {
-                        if (!err && permit) {
-                            const notificationMessage = `
-                                قام الحارس المناوب <strong>${guardName}</strong> بإضافة ${workers ? workers.length : 0} عامل/عمال لتصريح الشركة <strong>${permit.company_name}</strong> (رقم ${permitIdInt}).
-                                <br><br>
-                                <strong>قائمة العمال المضافين:</strong>
-                                ${workersTableHTML}
-                            `;
-                            
-                            // إرسال إشعار للموظف
-                            if (permit.employee_username) {
-                                db.get('SELECT employee_id FROM employees WHERE username = ?', 
-                                [permit.employee_username], (err, employee) => {
-                                    if (!err && employee) {
-                                        createNotification({
-                                            user_id: employee.employee_id,
-                                            company_permit_id: permitIdInt,
-                                            title: '👷 تم إضافة عمال جدد',
-                                            message: notificationMessage,
-                                            type: 'info'
-                                        });
-                                    }
-                                });
-                            }
-                            
-                            // إرسال إشعار لجميع المديرين
-                            notifyAllManagers(
-                                null,
-                                '👷 إضافة عمال جدد لتصريح شركة',
-                                notificationMessage,
-                                'info',
-                                permitIdInt
-                            );
-                            
-                            // إرسال إشعار لمكتب الأمن
-                            notifyAllSecurityStaff(
-                                null,
-                                '👷 إضافة عمال جدد لتصريح شركة',
-                                notificationMessage,
-                                'info',
-                                permitIdInt
-                            );
-                        }
-                    });
-                });
+                callback(guardName);
             });
         });
-    } catch (notifyErr) {
-        console.warn('⚠️ تعذر إرسال إشعار إضافة عامل جديد:', notifyErr.message);
-    }
+}
+
+// دالة مساعدة لمعالجة نجاح إدراج العامل
+function handleWorkerInsertSuccess(permitIdInt, addedByUser, finalWorkerName, companyName, res, reqUser) {
+    const newWorkerId = this.lastID;
+    console.log('✅ تم حفظ العامل بنجاح، worker_id:', newWorkerId);
     
-    // جلب العامل المضاف
-    db.get('SELECT * FROM company_workers WHERE worker_id = ?', [this.lastID], (err, worker) => {
+    resolveGuardDisplayName(addedByUser, reqUser, (guardName) => {
+        try {
+            broadcastCompanyWorkersUpdated(
+                permitIdInt,
+                '👷 تحديث قائمة عمال الشركة',
+                `قام <strong>${guardName}</strong> بإضافة العامل <strong>${finalWorkerName}</strong> على تصريح <strong>${companyName || ''}</strong> (رقم ${permitIdInt}).`
+            );
+        } catch (notifyErr) {
+            console.warn('⚠️ تعذر بث تحديث العمال:', notifyErr.message);
+        }
+    });
+    
+    db.get('SELECT * FROM company_workers WHERE worker_id = ?', [newWorkerId], (err, worker) => {
         res.json({
             success: true,
             message: 'تم إضافة العامل بنجاح',
@@ -3239,9 +3716,11 @@ app.get('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticate
 
 // API لتحديث بيانات عامل
 app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), async (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin'), async (req, res) => {
     try {
         const { permit_id, worker_id } = req.params;
+        const wid = parseInt(worker_id, 10);
+        const pid = parseInt(permit_id, 10);
         
         // التأكد من وجود الجدول أولاً
         ensureCompanyWorkersTable((err) => {
@@ -3259,6 +3738,16 @@ app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticate
             let updateIdCard = false;
             
             const processRequest = async () => {
+                const existingWorker = await new Promise((resolve) => {
+                    db.get('SELECT * FROM company_workers WHERE worker_id = ? AND permit_id = ?', [wid, pid], (e, r) => resolve(r || null));
+                });
+                if (!existingWorker) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'العامل غير موجود'
+                    });
+                }
+                
                 if (contentType.includes('multipart/form-data')) {
                     // معالجة FormData
                     try {
@@ -3312,6 +3801,15 @@ app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticate
                     });
                 }
                 
+                const rolePut = (req.user && req.user.role) || '';
+                const guardLikePut = rolePut === 'guard' || rolePut === 'security_guard';
+                if (guardLikePut && !existingWorker.id_card_file_name && !updateIdCard) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'يجب إرفاق صورة (كاميرا) أو PDF لبطاقة الهوية — إلزامي على الحارس إن لم تكن مرفوعة مسبقاً.'
+                    });
+                }
+                
                 // بناء استعلام التحديث
                 let updateQuery = `
                     UPDATE company_workers 
@@ -3328,7 +3826,7 @@ app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticate
                 }
                 
                 updateQuery += ' WHERE worker_id = ? AND permit_id = ?';
-                params.push(worker_id, permit_id);
+                params.push(wid, pid);
                 
                 db.run(updateQuery, params, function(err) {
                     if (err) {
@@ -3346,8 +3844,18 @@ app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticate
                         });
                     }
                     
-                    // جلب العامل المحدث
-                    db.get('SELECT * FROM company_workers WHERE worker_id = ?', [worker_id], (err, worker) => {
+                    const whoLabel = (req.user && (req.user.full_name || req.user.username)) || 'مستخدم';
+                    try {
+                        broadcastCompanyWorkersUpdated(
+                            pid,
+                            '✏️ تحديث قائمة عمال الشركة',
+                            `قام <strong>${whoLabel}</strong> بتعديل بيانات أحد العمال على تصريح الشركة رقم <strong>${pid}</strong>.`
+                        );
+                    } catch (bErr) {
+                        console.warn('broadcast PUT worker:', bErr.message);
+                    }
+                    
+                    db.get('SELECT * FROM company_workers WHERE worker_id = ?', [wid], (err2, worker) => {
                         res.json({
                             success: true,
                             message: 'تم تحديث بيانات العامل بنجاح',
@@ -3377,7 +3885,7 @@ app.put('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticate
 
 // API لتحميل بطاقة الهوية
 app.get('/api/permits/company-entry/:permit_id/workers/:worker_id/id-card', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin', 'manager'), (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin', 'manager'), (req, res) => {
     try {
         const { permit_id, worker_id } = req.params;
         
@@ -3401,13 +3909,22 @@ app.get('/api/permits/company-entry/:permit_id/workers/:worker_id/id-card', auth
                 
                 const filePath = path.join(uploadsDir, worker.id_card_file_name);
                 if (fs.existsSync(filePath)) {
-                    res.sendFile(filePath);
-                } else {
-                    res.status(404).json({
-                        success: false,
-                        message: 'الملف غير موجود على الخادم'
-                    });
+                    const ext = path.extname(filePath).toLowerCase();
+                    const mimeMap = {
+                        '.pdf': 'application/pdf',
+                        '.png': 'image/png',
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.webp': 'image/webp',
+                        '.gif': 'image/gif'
+                    };
+                    res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
+                    return res.sendFile(path.resolve(filePath));
                 }
+                res.status(404).json({
+                    success: false,
+                    message: 'الملف غير موجود على الخادم'
+                });
             });
         });
         
@@ -3420,13 +3937,14 @@ app.get('/api/permits/company-entry/:permit_id/workers/:worker_id/id-card', auth
     }
 });
 
-// API لحذف عامل من تصريح شركة
+// API لحذف عامل من تصريح شركة (الحارس/الأمن يقدر يحذف أي عامل بما فيهم المسجّلين من الموظف)
 app.delete('/api/permits/company-entry/:permit_id/workers/:worker_id', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin'), (req, res) => {
     try {
         const { permit_id, worker_id } = req.params;
+        const wid = parseInt(worker_id, 10);
+        const pid = parseInt(permit_id, 10);
         
-        // التأكد من وجود الجدول أولاً
         ensureCompanyWorkersTable((err) => {
             if (err) {
                 return res.status(500).json({
@@ -3435,9 +3953,8 @@ app.delete('/api/permits/company-entry/:permit_id/workers/:worker_id', authentic
                 });
             }
             
-            // التحقق من أن العامل ليس من العمال الأصليين (يمكن حذف فقط العمال المضافة من قبل الحارس)
-            db.get('SELECT is_original, worker_name FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
-            [worker_id, permit_id], (err, worker) => {
+            db.get('SELECT is_original, worker_name FROM company_workers WHERE worker_id = ? AND permit_id = ?',
+                [wid, pid], (err, worker) => {
                 if (err || !worker) {
                     return res.status(404).json({
                         success: false,
@@ -3445,40 +3962,28 @@ app.delete('/api/permits/company-entry/:permit_id/workers/:worker_id', authentic
                     });
                 }
                 
-                // لا يمكن حذف العمال الأصليين
-                if (worker.is_original) {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'لا يمكن حذف العمال الأصليين المضافة في التصريح'
-                    });
-                }
-                
                 const deletedWorkerName = worker.worker_name || 'عامل';
                 
-                // حذف العامل
-                db.run('DELETE FROM company_workers WHERE worker_id = ? AND permit_id = ?', 
-                [worker_id, permit_id], function(err) {
-                    if (err) {
-                        console.error('❌ خطأ في حذف العامل:', err);
+                db.run('DELETE FROM company_workers WHERE worker_id = ? AND permit_id = ?',
+                    [wid, pid], function(delErr) {
+                    if (delErr) {
+                        console.error('❌ خطأ في حذف العامل:', delErr);
                         return res.status(500).json({
                             success: false,
-                            message: 'حدث خطأ في حذف العامل: ' + err.message
+                            message: 'حدث خطأ في حذف العامل: ' + delErr.message
                         });
                     }
                     
-                    // إشعار مكتب الأمن بتعديل الحارس (حذف عامل)
-                    db.get('SELECT company_name FROM company_entry_permits WHERE permit_id = ?', [permit_id], (permitErr, permit) => {
-                        if (!permitErr && permit) {
-                            const guardName = req.user?.username || req.user?.name || 'الحارس';
-                            notifyAllSecurityStaff(
-                                null,
-                                '🗑️ حذف عامل من تصريح شركة',
-                                `قام الحارس ${guardName} بحذف العامل "${deletedWorkerName}" من تصريح الشركة ${permit.company_name || permit_id}. راجع قائمة العمال عند عرض التصريح.`,
-                                'info',
-                                permit_id
-                            );
-                        }
-                    });
+                    const whoDel = (req.user && (req.user.full_name || req.user.username)) || 'مستخدم';
+                    try {
+                        broadcastCompanyWorkersUpdated(
+                            pid,
+                            '🗑️ تحديث قائمة عمال الشركة',
+                            `قام <strong>${whoDel}</strong> بحذف العامل <strong>${deletedWorkerName}</strong> من تصريح الشركة رقم <strong>${pid}</strong>.`
+                        );
+                    } catch (bErr) {
+                        console.warn('broadcast DELETE worker:', bErr.message);
+                    }
                     
                     res.json({
                         success: true,
@@ -3583,7 +4088,7 @@ app.get('/api/permits/company-entry/stats/:username', authenticateToken, (req, r
             
             params.push(userName, userName, userName, userName, userName, today, today, userName);
         }
-        else if (userRole === 'security' || userRole === 'security_guard') {
+        else if (userRole === 'security') {
             totalQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE security_status = 'approved'`;
             pendingQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE manager_status = 'approved' AND security_status = 'pending'`;
             approvedQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE security_status = 'approved'`;
@@ -3591,6 +4096,15 @@ app.get('/api/permits/company-entry/stats/:username', authenticateToken, (req, r
             checkedInQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE status = 'checked_in' AND expected_entry_date <= ? AND expected_exit_date >= ?`;
             completedQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE status = 'completed'`;
             
+            params.push(today, today);
+        }
+        else if (userRole === 'guard' || userRole === 'security_guard') {
+            totalQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE security_status = 'approved'`;
+            pendingQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE status = 'approved_security' AND security_status = 'approved'`;
+            approvedQuery = totalQuery;
+            rejectedQuery = `SELECT 0 as count`;
+            checkedInQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE status = 'checked_in' AND expected_entry_date <= ? AND expected_exit_date >= ?`;
+            completedQuery = `SELECT COUNT(*) as count FROM company_entry_permits WHERE status = 'completed'`;
             params.push(today, today);
         }
         else if (userRole === 'admin') {
@@ -3643,7 +4157,7 @@ app.get('/api/permits/company-entry/stats/:username', authenticateToken, (req, r
 });
 
 // 🔥 GET /api/permits/company-entry/stats - إحصائيات تصاريح الشركات (محسّن)
-app.get('/api/permits/company-entry/stats', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.get('/api/permits/company-entry/stats', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), (req, res) => {
     
     try {
         // استعلام واحد شامل بدلاً من استعلامين منفصلين
@@ -4767,100 +5281,86 @@ app.post('/api/permits/material-exit', authenticateToken, authorizeRoles('employ
                 message: 'جميع الحقول المطلوبة يجب أن تكون مملوءة'
             });
         }
-        
-        // التحقق من وجود المستخدم
-        db.get('SELECT * FROM employees WHERE username = ?', [finalEmployeeUsername], async (err, employee) => {
-            if (err) {
-                console.error('❌ خطأ في البحث عن الموظف:', err);
-                return res.status(500).json({
-                    success: false,
-                    message: 'حدث خطأ في الخادم'
-                });
-            }
-            
-            if (!employee) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'الموظف غير موجود'
-                });
-            }
-            
-            try {
-                // إدخال التصريح في قاعدة البيانات
-                const query = `
-                    INSERT INTO material_exit_permits 
-                    (employee_id, employee_name, job_number, directorate, department,
-                     material_type, exit_reason, permit_date, permit_time, supervisor_name, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_manager')
-                `;
-                
-                const params = [
-                    employee.employee_id,
-                    employee_name || employee.full_name,
-                    job_number || employee.job_number || '',
-                    directorate || employee.directorate || '',
-                    department || '',
-                    material_type,
-                    exit_reason,
-                    permit_date,
-                    permit_time,
-                    supervisor_name
-                ];
-                
-                db.run(query, params, function(err) {
-                    if (err) {
-                        console.error('❌ خطأ في إدخال التصريح:', err);
-                        return res.status(500).json({
-                            success: false,
-                            message: 'حدث خطأ في حفظ التصريح: ' + err.message
-                        });
-                    }
-                    
-                    const permitId = this.lastID;
-                    console.log(`✅ تم إنشاء تصريح إخراج مواد برقم: ${permitId}`);
-                    
-                    // إرسال إشعار للمدير
-                    const title = '📦 طلب إخراج مواد جديد';
-                    const message = `طلب إخراج مواد من الموظف ${employee_name || employee.full_name} (${job_number || employee.job_number || ''}) بانتظار الموافقة.`;
-                    notifyAllManagers(permitId, title, message, 'warning', null);
-                    
-                    res.json({
-                        success: true,
-                        message: 'تم تقديم طلب إخراج المواد بنجاح',
-                        permit_id: permitId
-                    });
-                });
-                
-            } catch (error) {
-                console.error('❌ خطأ في معالجة الطلب:', error);
-                res.status(500).json({
-                    success: false,
-                    message: 'حدث خطأ في الخادم'
-                });
-            }
+
+        const employee = await get('SELECT * FROM employees WHERE username = ?', [finalEmployeeUsername]);
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: 'الموظف غير موجود'
+            });
+        }
+
+        const insertSql = `
+            INSERT INTO material_exit_permits 
+            (employee_id, employee_name, job_number, directorate, department,
+             material_type, exit_reason, permit_date, permit_time, supervisor_name, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_manager')
+        `;
+
+        const insertParams = [
+            employee.employee_id,
+            employee_name || employee.full_name || '',
+            job_number || employee.job_number || '',
+            directorate || employee.directorate || '',
+            department || '',
+            material_type,
+            exit_reason,
+            permit_date,
+            permit_time,
+            supervisor_name
+        ];
+
+        const insertResult = await run(insertSql, insertParams);
+        const permitId = insertResult.lastID;
+        console.log(`✅ تم إنشاء تصريح إخراج مواد برقم: ${permitId}`);
+
+        const title = '📦 طلب إخراج مواد جديد';
+        const message = `طلب إخراج مواد من الموظف ${employee_name || employee.full_name} (${job_number || employee.job_number || ''}) بانتظار الموافقة.`;
+        notifyAllManagers(permitId, title, message, 'warning', null);
+
+        res.json({
+            success: true,
+            message: 'تم تقديم طلب إخراج المواد بنجاح',
+            permit_id: permitId
         });
-        
     } catch (error) {
         console.error('❌ خطأ في API إخراج المواد:', error);
+        const raw = String(error.message || '');
+        const busy =
+            error.code === 'SQLITE_BUSY' ||
+            raw.includes('SQLITE_BUSY') ||
+            raw.includes('database is locked');
+        const message = busy
+            ? 'قاعدة البيانات مقفلة (غالباً نسختان من الخادم تعملان، أو ملف overtime.db مفتوح في برنامج آخر). أوقف النسخ الزائدة وأغلق DB Browser ثم أعد المحاولة.'
+            : 'حدث خطأ في حفظ التصريح: ' + (raw || 'حدث خطأ في الخادم');
         res.status(500).json({
             success: false,
-            message: 'حدث خطأ في الخادم'
+            message
         });
     }
 });
 
 // API لجلب طلبات إخراج المواد المعلقة للمدير
-app.get('/api/permits/material-exit/pending', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.get('/api/permits/material-exit/pending', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
-        const query = `
+        let sql = `
             SELECT m.*, e.username, e.email, e.phone
             FROM material_exit_permits m
             JOIN employees e ON m.employee_id = e.employee_id
             WHERE m.status = 'pending_manager'
-            ORDER BY m.created_at DESC
         `;
-        
-        db.all(query, [], (err, permits) => {
+        const params = [];
+        if (req.user.role === 'deputy_manager') {
+            const row = await getManagerFilterRowForDashboard(req.user.username);
+            if (!row || !row.mgr_id) {
+                return res.json({ success: true, permits: [] });
+            }
+            sql += ` AND (e.manager_id = ? OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?))`;
+            params.push(row.mgr_id, row.mgr_id);
+        }
+        sql += ` ORDER BY m.created_at DESC`;
+
+        db.all(sql, params, (err, permits) => {
             if (err) {
                 console.error('❌ خطأ في جلب التصاريح:', err);
                 return res.status(500).json({
@@ -4883,32 +5383,61 @@ app.get('/api/permits/material-exit/pending', authenticateToken, authorizeRoles(
     }
 });
 
-// API لجلب تصاريح إخراج المواد المعتمدة من قبل المدير
-app.get('/api/permits/material-exit/approved', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+// API لجلب تصاريح إخراج المواد بعد اعتماد المدير (محفوظة في لوحة المدير — بما فيها الأمن والحارس)
+app.get('/api/permits/material-exit/approved', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
-        const query = `
-            SELECT m.*, e.username, e.email, e.phone, e.full_name
-            FROM material_exit_permits m
-            JOIN employees e ON m.employee_id = e.employee_id
-            WHERE m.status IN ('pending_security', 'sent_to_guard', 'completed', 'approved_manager')
-            ORDER BY COALESCE(m.manager_decision_date, m.created_at) DESC, m.created_at DESC
-        `;
-        
-        db.all(query, [], (err, permits) => {
-            if (err) {
-                console.error('❌ خطأ في جلب التصاريح المعتمدة:', err);
-                console.error('تفاصيل الخطأ:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    message: 'حدث خطأ في الخادم: ' + err.message
-                });
-            }
-            
-            res.json({
-                success: true,
-                permits: permits || []
+        const { username } = req.query;
+        let requestUser = (username && String(username).trim()) || req.user.username;
+        const isAdmin = req.user.role === 'admin';
+
+        const statusSql = `m.status IN ('pending_security', 'sent_to_guard', 'completed', 'rejected_security')`;
+
+        const run = (query, params) => {
+            query += ` ORDER BY COALESCE(m.manager_decision_date, m.created_at) DESC, m.permit_id DESC`;
+            db.all(query, params, (err, permits) => {
+                if (err) {
+                    console.error('❌ خطأ في جلب تصاريح إخراج المواد المعتمدة:', err);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'حدث خطأ في الخادم: ' + err.message
+                    });
+                }
+                res.json({ success: true, permits: permits || [] });
             });
-        });
+        };
+
+        if (isAdmin) {
+            run(`
+                SELECT m.*, e.username, e.email, e.phone, e.full_name
+                FROM material_exit_permits m
+                JOIN employees e ON m.employee_id = e.employee_id
+                WHERE ${statusSql}
+            `, []);
+        } else {
+            if (req.user.role === 'deputy_manager') {
+                const row = await getManagerFilterRowForDashboard(req.user.username);
+                if (!row?.mgr_username) {
+                    return res.json({ success: true, permits: [] });
+                }
+                requestUser = row.mgr_username;
+            }
+            db.get('SELECT employee_id FROM employees WHERE username = ?', [requestUser], (err, manager) => {
+                if (err || !manager) {
+                    return res.status(404).json({ success: false, message: 'المدير غير موجود' });
+                }
+                run(`
+                    SELECT m.*, e.username, e.email, e.phone, e.full_name
+                    FROM material_exit_permits m
+                    JOIN employees e ON m.employee_id = e.employee_id
+                    WHERE ${statusSql}
+                    AND (
+                        m.manager_username = ?
+                        OR e.manager_id = ?
+                        OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?)
+                    )
+                `, [requestUser, manager.employee_id, manager.employee_id]);
+            });
+        }
     } catch (error) {
         console.error('❌ خطأ في API:', error);
         res.status(500).json({
@@ -4918,21 +5447,38 @@ app.get('/api/permits/material-exit/approved', authenticateToken, authorizeRoles
     }
 });
 
-// API لموافقة/رفض المدير على طلب إخراج مواد
-app.post('/api/permits/material-exit/manager-approve', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+// API لموافقة/رفض المدير (أو نائبه) على طلب إخراج مواد
+app.post('/api/permits/material-exit/manager-approve', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     try {
         const { permit_id, manager_username, decision, notes } = req.body;
         
-        if (!permit_id || !manager_username || !decision) {
+        if (!permit_id || !decision) {
             return res.status(400).json({
                 success: false,
                 message: 'بيانات ناقصة'
             });
         }
         
+        const pr = await query(
+            `SELECT employee_id FROM material_exit_permits WHERE permit_id = ? AND status = 'pending_manager'`,
+            [permit_id]
+        );
+        if (!pr.length) {
+            return res.status(404).json({ success: false, message: 'التصريح غير موجود أو تم معالجته مسبقاً' });
+        }
+        if (!(await assertManagerOrDeputyCanActOnEmployee(req, pr[0].employee_id, res))) return;
+        
+        const acting_username =
+            req.user && req.user.username
+                ? String(req.user.username).trim()
+                : (manager_username != null && String(manager_username).trim() !== '' ? String(manager_username).trim() : '');
+        if (!acting_username) {
+            return res.status(400).json({ success: false, message: 'تعذر تحديد هوية المعتمد' });
+        }
+        
         const status = decision === 'approve' ? 'pending_security' : 'rejected_manager';
         
-        const query = `
+        const updateMaterialExitSql = `
             UPDATE material_exit_permits 
             SET status = ?,
                 manager_username = ?,
@@ -4942,7 +5488,7 @@ app.post('/api/permits/material-exit/manager-approve', authenticateToken, author
             WHERE permit_id = ? AND status = 'pending_manager'
         `;
         
-        db.run(query, [status, manager_username, decision, notes || '', permit_id], function(err) {
+        db.run(updateMaterialExitSql, [status, acting_username, decision, notes || '', permit_id], function(err) {
             if (err) {
                 console.error('❌ خطأ في تحديث التصريح:', err);
                 return res.status(500).json({
@@ -4959,6 +5505,7 @@ app.post('/api/permits/material-exit/manager-approve', authenticateToken, author
             }
             
             db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
+                const matActor = req.user.role === 'deputy_manager' ? 'نائب المدير' : 'المدير';
                 if (!err && permit) {
                     if (decision === 'approve') {
                         db.get('SELECT employee_id FROM employees WHERE employee_id = ?', [permit.employee_id], (err, emp) => {
@@ -4967,30 +5514,63 @@ app.post('/api/permits/material-exit/manager-approve', authenticateToken, author
                                     user_id: emp.employee_id,
                                     permit_id: permit_id,
                                     title: '✅ تمت الموافقة على طلب إخراج المواد',
-                                    message: `قام المدير بالموافقة على طلب إخراج المواد. سيتم مراجعته من قبل الأمن.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`,
+                                    message: `قام ${matActor} بالموافقة على طلب إخراج المواد. سيتم مراجعته من قبل الأمن.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
                                     type: 'success'
                                 });
                             }
                         });
                         const title = '📦 طلب إخراج مواد بانتظار الموافقة الأمنية';
-                        const message = `طلب إخراج مواد من الموظف ${permit.employee_name} (${permit.job_number}) بانتظار الموافقة الأمنية.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`;
-                        notifyAllSecurityStaff(permit_id, title, message, 'warning', null);
+                        const message = `طلب إخراج مواد من الموظف ${permit.employee_name} (${permit.job_number}) بانتظار الموافقة الأمنية.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`;
+                        (async () => {
+                            try {
+                                await notifySecurityOfficeApprovers(permit_id, title, message, 'warning', null);
+                            } catch (n) {
+                                console.error('notifySecurityOfficeApprovers (مواد):', n.message || n);
+                            }
+                        })();
                     } else {
                         db.get('SELECT employee_id FROM employees WHERE employee_id = ?', [permit.employee_id], (err, employee) => {
                             if (!err && employee) {
                                 createNotification({
                                     user_id: employee.employee_id,
                                     permit_id: permit_id,
-                                    title: '❌ تم رفض طلب إخراج المواد',
-                                    message: `تم رفض طلب إخراج المواد الخاص بك من قبل المدير.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`,
+                                    title: '❌ رفض المدير لطلب إخراج المواد',
+                                    message: `قام ${matActor} برفض طلب إخراج المواد المقدَّم منك (رقم الطلب ${permit_id}).${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
                                     type: 'error'
                                 });
                             }
                         });
                         if (notes) {
-                            notifyAllSecurityStaff(permit_id, '❌ تم رفض طلب إخراج مواد من المدير', `تم رفض طلب إخراج مواد #${permit_id}.<br><strong>ملاحظات المدير:</strong> ${notes}`, 'info', null);
+                            (async () => {
+                                try {
+                                    await notifySecurityOfficeApprovers(
+                                        permit_id,
+                                        '❌ تم رفض طلب إخراج مواد من المدير',
+                                        `تم رفض طلب إخراج مواد #${permit_id}.<br><strong>ملاحظات:</strong> ${notes}`,
+                                        'info',
+                                        null
+                                    );
+                                } catch (n) {
+                                    console.error('notifySecurityOfficeApprovers (مواد مرفوض):', n.message || n);
+                                }
+                            })();
                         }
                     }
+                    (async () => {
+                        try {
+                            await notifyRepresentedManagerIfDeputy(req, {
+                                permit_id,
+                                title: decision === 'approve' ? '📋 نائب المدير وافق على إخراج مواد' : '📋 نائب المدير رفض إخراج مواد',
+                                buildMessage: (label) =>
+                                    decision === 'approve'
+                                        ? `أبلغناك للعلم: قام النائب <strong>${label}</strong> بالموافقة على طلب إخراج المواد رقم ${permit_id} (${permit.employee_name}) نيابةً عنك.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`
+                                        : `أبلغناك للعلم: قام النائب <strong>${label}</strong> برفض طلب إخراج المواد رقم ${permit_id} نيابةً عنك.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                                type: 'info'
+                            });
+                        } catch (e) {
+                            console.error('notifyRepresentedManagerIfDeputy (مواد):', e.message || e);
+                        }
+                    })();
                 }
                 res.json({
                     success: true,
@@ -5011,8 +5591,11 @@ app.post('/api/permits/material-exit/manager-approve', authenticateToken, author
 });
 
 // API لجلب طلبات إخراج المواد المعلقة للأمن
-app.get('/api/permits/material-exit/security-pending', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+app.get('/api/permits/material-exit/security-pending', authenticateToken, authorizeRoles('security', 'admin'), async (req, res) => {
     try {
+        if (req.user.role === 'security' && !(await isSecurityOfficeApprover(req.user.employee_id))) {
+            return res.json({ success: true, permits: [] });
+        }
         const query = `
             SELECT m.*, e.username, e.email, e.phone
             FROM material_exit_permits m
@@ -5045,8 +5628,9 @@ app.get('/api/permits/material-exit/security-pending', authenticateToken, author
 });
 
 // API لموافقة/رفض الأمن على طلب إخراج مواد
-app.post('/api/permits/material-exit/security-approve', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+app.post('/api/permits/material-exit/security-approve', authenticateToken, authorizeRoles('security', 'admin'), async (req, res) => {
     try {
+        if (!(await assertSecurityOfficeApproverOrAdmin(req, res))) return;
         const { permit_id, security_username, decision, notes } = req.body;
         
         if (!permit_id || !security_username || !decision) {
@@ -5086,6 +5670,24 @@ app.post('/api/permits/material-exit/security-approve', authenticateToken, autho
             
             db.get('SELECT * FROM material_exit_permits WHERE permit_id = ?', [permit_id], (err, permit) => {
                 if (!err && permit) {
+                    (async () => {
+                        try {
+                            const actorLabel = await getSecurityActorDisplayLabel(req, security_username);
+                            await notifyOtherSecurityOfficeApprovers(req.user.employee_id, {
+                                permit_id,
+                                company_permit_id: null,
+                                title: decision === 'approve'
+                                    ? '✅ موافقة زميل — إخراج مواد'
+                                    : '❌ رفض زميل — إخراج مواد',
+                                message: decision === 'approve'
+                                    ? `قام <strong>${actorLabel}</strong> بالموافقة على طلب إخراج المواد رقم ${permit_id}. لا حاجة لموافقة إضافية منك.`
+                                    : `قام <strong>${actorLabel}</strong> برفض طلب إخراج المواد رقم ${permit_id}.`,
+                                type: decision === 'approve' ? 'info' : 'warning'
+                            });
+                        } catch (n) {
+                            console.error('notifyOtherSecurityOfficeApprovers (مواد):', n.message || n);
+                        }
+                    })();
                     if (decision === 'approve') {
                         db.get('SELECT employee_id FROM employees WHERE employee_id = ?', [permit.employee_id], (err, emp) => {
                             if (!err && emp) {
@@ -5110,8 +5712,8 @@ app.post('/api/permits/material-exit/security-approve', authenticateToken, autho
                                 createNotification({
                                     user_id: employee.employee_id,
                                     permit_id: permit_id,
-                                    title: '❌ تم رفض طلب إخراج المواد',
-                                    message: `تم رفض طلب إخراج المواد الخاص بك من قبل مكتب الأمن.${notes ? '<br><strong>ملاحظات الأمن:</strong> ' + notes : ''}`,
+                                    title: '❌ رفض مكتب الأمن لطلب إخراج المواد',
+                                    message: `قام مكتب الأمن برفض طلب إخراج المواد المقدَّم منك (رقم الطلب ${permit_id}).${notes ? '<br><strong>ملاحظات مكتب الأمن:</strong> ' + notes : ''}`,
                                     type: 'error'
                                 });
                             }
@@ -5310,7 +5912,14 @@ app.post('/api/permits/material-exit/guard-approve', authenticateToken, authoriz
 app.get('/api/permits/material-exit/my/:username', authenticateToken, (req, res) => {
     try {
         const { username } = req.params;
-        
+
+        if (req.user.username !== username && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'غير مصرح لك بالوصول إلى تصاريح مستخدم آخر'
+            });
+        }
+
         const query = `
             SELECT m.*, e.username, e.email, e.phone
             FROM material_exit_permits m
@@ -5785,7 +6394,7 @@ app.get('/api/permits/company-entry/history/:username', authenticateToken, (req,
 });
 
 // API: إرسال إشعار للموظف بعد قرار المدير
-app.post('/api/notifications/employee', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.post('/api/notifications/employee', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), (req, res) => {
     const { permit_id, action } = req.body;
     
     if (!permit_id || !action) {
@@ -5833,7 +6442,7 @@ app.post('/api/notifications/employee', authenticateToken, authorizeRoles('manag
 });
 
 // API: إرسال إشعار للأمن عند وصول تصريح جديد
-app.post('/api/notifications/security', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.post('/api/notifications/security', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), (req, res) => {
     const { permit_id, type } = req.body;
     
     if (!permit_id) {
@@ -5860,11 +6469,17 @@ app.post('/api/notifications/security', authenticateToken, authorizeRoles('manag
         const title = '📋 تصريح جديد بانتظار الموافقة الأمنية';
         const message = `تصريح جديد للموظف ${permit.full_name} (${permit.job_number}) بانتظار الموافقة الأمنية.`;
         
-        notifyAllSecurityUsers(permit_id, title, message, 'warning');
+        (async () => {
+            try {
+                await notifySecurityOfficeApprovers(permit_id, title, message, 'warning');
+            } catch (n) {
+                console.error('notifySecurityOfficeApprovers (API إشعار أمن):', n.message || n);
+            }
+        })();
         
         res.json({
             success: true,
-            message: 'تم إرسال الإشعار لجميع مسؤولي الأمن والحراس'
+            message: 'تم إرسال الإشعار لمسؤولي مكتب الأمن المعتمدين'
         });
     });
 });
@@ -5880,12 +6495,13 @@ app.post('/api/notifications/employee-security', authenticateToken, authorizeRol
         });
     }
     
+    const pidEmpSec = parseInt(permit_id, 10);
     db.get(`
         SELECT p.*, e.employee_id, e.full_name, e.username 
         FROM permits p
         JOIN employees e ON p.employee_id = e.employee_id
-        WHERE p.permit_id = ?
-    `, [permit_id], (err, permit) => {
+        WHERE COALESCE(p.permit_id, p.rowid) = ?
+    `, [pidEmpSec], (err, permit) => {
         if (err || !permit) {
             console.error('خطأ في جلب بيانات التصريح:', err);
             return res.status(404).json({
@@ -5895,19 +6511,19 @@ app.post('/api/notifications/employee-security', authenticateToken, authorizeRol
         }
         
         const title = decision === 'allow' 
-            ? '✅ تمت الموافقة النهائية على تصريحك' 
-            : '❌ تم رفض تصريحك من قبل الأمن';
+            ? '✅ موافقة مكتب الأمن على تصريحك' 
+            : '❌ رفض مكتب الأمن لطلب التصريح';
         
         const message = decision === 'allow'
-            ? 'تمت الموافقة النهائية على طلب تصريحك من قبل مكتب الأمن. يمكنك الآن العمل في الوقت المحدد.'
-            : 'تم رفض طلب تصريحك من قبل مكتب الأمن. يرجى التواصل مع المدير للحصول على مزيد من المعلومات.';
+            ? 'وافق مكتب الأمن على طلب تصريحك (بعد الدوام). يمكنك تسجيل الدخول عند الحارس في الوقت المحدد.'
+            : 'قام مكتب الأمن برفض طلب تصريحك (بعد الدوام). يرجى التواصل مع المدير.';
         
         createNotification({
             user_id: permit.employee_id,
-            permit_id: permit_id,
+            permit_id: permit.permit_id != null ? permit.permit_id : pidEmpSec,
             title: title,
             message: message,
-            type: decision === 'allow' ? 'success' : 'warning'
+            type: decision === 'allow' ? 'success' : 'error'
         });
         
         if (decision === 'allow') {
@@ -5933,7 +6549,7 @@ app.post('/api/notifications/employee-security', authenticateToken, authorizeRol
 });
 
 // API: إرسال التصريح للأمن بعد موافقة المدير
-app.post('/api/permits/send-to-security', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.post('/api/permits/send-to-security', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), (req, res) => {
     const { permit_id, manager_username } = req.body;
     
     if (!permit_id || !manager_username) {
@@ -5943,47 +6559,54 @@ app.post('/api/permits/send-to-security', authenticateToken, authorizeRoles('man
         });
     }
     
-    // ✅ تحديث: التصريح يجب أن يكون بحالة pending_security (بعد موافقة المدير)
-    db.get(`SELECT * FROM permits WHERE permit_id = ? AND status = 'pending_security'`, [permit_id], (err, permit) => {
-        if (err) {
-            console.error('خطأ في التحقق من التصريح:', err);
-            return res.status(500).json({
-                success: false,
-                message: 'حدث خطأ في الخادم'
-            });
-        }
-        
-        if (!permit) {
-            return res.status(400).json({
-                success: false,
-                message: 'التصريح لم يوافق عليه المدير بعد أو تم معالجته مسبقاً'
-            });
-        }
-        
-        const query = `UPDATE permits SET manager_decision_date = CURRENT_TIMESTAMP WHERE permit_id = ?`;
-        
-        db.run(query, [permit_id], function(err) {
-            if (err) {
-                console.error('خطأ في تحديث التصريح:', err);
-                return res.status(500).json({
+    (async () => {
+        try {
+            const rows = await query(
+                `SELECT p.*, e.full_name, e.job_number, e.employee_id
+                 FROM permits p
+                 JOIN employees e ON p.employee_id = e.employee_id
+                 WHERE (p.permit_id = ? OR (p.permit_id IS NULL AND p.rowid = ?)) AND p.status = 'pending_security'`,
+                [permit_id, permit_id]
+            );
+            if (!rows.length) {
+                return res.status(400).json({
                     success: false,
-                    message: 'حدث خطأ في الخادم'
+                    message: 'التصريح لم يوافق عليه المدير بعد أو تم معالجته مسبقاً'
                 });
             }
-            
-            notifyAllSecurityUsers(
-                permit_id,
-                '📋 تصريح جديد بانتظار الموافقة الأمنية',
-                `تصريح جديد للموظف ${permit.full_name} (${permit.job_number}) بانتظار الموافقة الأمنية.`,
-                'warning'
+            const permit = rows[0];
+            if (!(await assertManagerOrDeputyCanActOnEmployee(req, permit.employee_id, res))) {
+                return;
+            }
+
+            await run(
+                `UPDATE permits
+                 SET manager_decision_date = CURRENT_TIMESTAMP,
+                     permit_id = COALESCE(permit_id, rowid)
+                 WHERE (permit_id = ? OR (permit_id IS NULL AND rowid = ?))`,
+                [permit_id, permit_id]
             );
-            
+
+            try {
+                await notifySecurityOfficeApprovers(
+                    permit_id,
+                    '📋 تصريح جديد بانتظار الموافقة الأمنية',
+                    `تصريح جديد للموظف ${permit.full_name} (${permit.job_number}) بانتظار الموافقة الأمنية.`,
+                    'warning'
+                );
+            } catch (n) {
+                console.error('notifySecurityOfficeApprovers (send-to-security):', n.message || n);
+            }
+
             res.json({
                 success: true,
                 message: 'تم إرسال التصريح إلى مكتب الأمن بنجاح'
             });
-        });
-    });
+        } catch (e) {
+            console.error('send-to-security:', e);
+            res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        }
+    })();
 });
 
 // API: عرض جميع الأقسام
@@ -6210,9 +6833,17 @@ app.post('/api/permits/send-to-guard', authenticateToken, authorizeRoles('securi
     console.log(`🚀 محاولة إرسال التصريح ${permit_id} للحارس بواسطة ${security_username}`);
     
     db.get(`
-        SELECT p.*, e.full_name, e.job_number 
+        SELECT 
+            p.*, 
+            e.full_name, 
+            e.job_number, 
+            e.directorate, 
+            e.phone,
+            e.email,
+            d.name as department_name
         FROM permits p
         JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN departments d ON e.department_id = d.id
         WHERE p.permit_id = ? AND p.status = 'approved_security'
     `, [permit_id], (err, permit) => {
         if (err) {
@@ -6233,21 +6864,44 @@ app.post('/api/permits/send-to-guard', authenticateToken, authorizeRoles('securi
         console.log(`✅ تم إرسال التصريح ${permit_id} للحارس`);
         console.log(`📋 تفاصيل التصريح: ${permit.full_name} (${permit.job_number})`);
         
-        notifyAllSecurityUsers(
-            permit_id,
-            '👤 تصريح جديد جاهز للتسجيل',
-            `تصريح للموظف ${permit.full_name} (${permit.job_number}) جاهز للتسجيل بنقطة الحراسة.`,
-            'info'
-        );
+        (async () => {
+            try {
+                await notifyAllGuards(
+                    permit_id,
+                    '👤 تصريح جديد جاهز للتسجيل',
+                    `تصريح للموظف ${permit.full_name} (${permit.job_number}) جاهز للتسجيل بنقطة الحراسة.`,
+                    'info'
+                );
+            } catch (n) {
+                console.error('notifyAllGuards (إرسال للحارس):', n.message || n);
+            }
+        })();
+        
+        const guardPayload = {
+            permit_id: permit.permit_id,
+            employee_name: permit.full_name,
+            full_name: permit.full_name,
+            job_number: permit.job_number,
+            department_name: permit.department_name || null,
+            directorate: permit.directorate || null,
+            phone: permit.phone || null,
+            email: permit.email || null,
+            reason: permit.reason || null,
+            start_date: permit.start_date || null,
+            end_date: permit.end_date || null,
+            expected_exit_time: permit.expected_exit_time || null,
+            request_date: permit.request_date || null,
+            manager_notes: permit.manager_notes || null,
+            security_notes: permit.security_notes || null,
+            security_username: permit.security_username || null,
+            approved_by_security: permit.security_username || security_username,
+            status: permit.status
+        };
         
         res.json({
             success: true,
             message: 'تم إرسال التصريح إلى نقطة الحراسة بنجاح',
-            permit: {
-                id: permit.permit_id,
-                employee_name: permit.full_name,
-                job_number: permit.job_number
-            }
+            permit: guardPayload
         });
     });
 });
@@ -6488,44 +7142,70 @@ app.post('/api/notifications/mark-all-read', authenticateToken, (req, res) => {
     });
 });
 
-// API للموافقة على التصريح من قبل المدير
-app.post('/api/permits/manager-approve', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+// API للموافقة على التصريح من قبل المدير (أو نائبه)
+app.post('/api/permits/manager-approve', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     console.log('🔄 ========== طلب موافقة المدير ==========');
     console.log('📥 البيانات المستلمة:', JSON.stringify(req.body, null, 2));
     console.log('👤 مدير النظام:', req.body.manager_username);
     console.log('#️⃣ رقم التصريح:', req.body.permit_id);
     console.log('✅ القرار:', req.body.decision);
     
-    const { permit_id, manager_username, decision, notes } = req.body;
+    const { permit_id: bodyPermitId, manager_username: bodyManagerUser, decision, notes } = req.body || {};
+    const permit_id = bodyPermitId != null && bodyPermitId !== '' ? bodyPermitId : null;
     
-    if (!permit_id || !manager_username || !decision) {
-        console.log('❌ بيانات ناقصة!');
+    if (permit_id == null || permit_id === '' || !decision) {
+        console.log('❌ بيانات ناقصة!', { permit_id, decision, rawBody: req.body });
         return res.status(400).json({
             success: false,
-            message: 'بيانات ناقصة: permit_id, manager_username, decision مطلوبة'
+            message: 'بيانات ناقصة: permit_id و decision مطلوبة'
         });
     }
     
-    // ✅ إصلاح: عند الموافقة تصبح الحالة pending_security (ليس approved_manager)
-    const status = decision === 'approve' ? 'pending_security' : 'rejected_manager';
-    console.log(`🔄 تحديث حالة التصريح إلى: ${status}`);
+    const permitRows = await query(
+        `SELECT p.employee_id FROM permits p WHERE (p.permit_id = ? OR (p.permit_id IS NULL AND p.rowid = ?)) AND p.status = 'pending_manager'`,
+        [permit_id, permit_id]
+    );
+    if (!permitRows.length) {
+        return res.status(404).json({
+            success: false,
+            message: 'التصريح غير موجود أو تم معالجته مسبقاً'
+        });
+    }
+    if (!(await assertManagerOrDeputyCanActOnEmployee(req, permitRows[0].employee_id, res))) return;
     
-    const query = `
+    const acting_username =
+        req.user && req.user.username
+            ? String(req.user.username).trim()
+            : (bodyManagerUser != null && String(bodyManagerUser).trim() !== '' ? String(bodyManagerUser).trim() : '');
+    if (!acting_username) {
+        return res.status(400).json({
+            success: false,
+            message: 'تعذر تحديد هوية المعتمد. أعد تسجيل الدخول.'
+        });
+    }
+    
+    // الموافقة والرفض يُحيلان التصريح إلى مكتب الأمن (pending_security)؛ الفرق في manager_decision
+    const status = 'pending_security';
+    console.log(`🔄 تحديث التصريح: status=${status}, manager decision=${decision}`);
+    
+    const updatePermitSql = `
         UPDATE permits 
         SET status = ?, 
             manager_decision = ?,
             manager_decision_date = CURRENT_TIMESTAMP,
             manager_notes = ?,
-            manager_username = ?
-        WHERE permit_id = ? AND status = 'pending_manager'
+            manager_username = ?,
+            permit_id = COALESCE(permit_id, rowid)
+        WHERE (permit_id = ? OR (permit_id IS NULL AND rowid = ?))
+        AND status = 'pending_manager'
     `;
     
-    const params = [status, decision, notes || '', manager_username, permit_id];
+    const params = [status, decision, notes || '', acting_username, permit_id, permit_id];
     
-    console.log('📝 تنفيذ الاستعلام:', query);
+    console.log('📝 تنفيذ الاستعلام:', updatePermitSql);
     console.log('🔢 المعاملات:', params);
     
-    db.run(query, params, function(err) {
+    db.run(updatePermitSql, params, function(err) {
         if (err) {
             console.error('❌ خطأ في تحديث التصريح:', err.message);
             console.error('❌ تفاصيل الخطأ:', err.stack);
@@ -6544,55 +7224,83 @@ app.post('/api/permits/manager-approve', authenticateToken, authorizeRoles('mana
             });
         }
         
+        const pidForLookup = parseInt(permit_id, 10);
         db.get(`
             SELECT p.*, e.full_name, e.job_number, e.employee_id
             FROM permits p
             JOIN employees e ON p.employee_id = e.employee_id
-            WHERE p.permit_id = ?
-        `, [permit_id], (err, permit) => {
-            if (err || !permit) return;
-            if (decision === 'approve') {
-                // إشعار للموظف عند موافقة المدير (مع الملاحظات إن وجدت)
-                createNotification({
-                    user_id: permit.employee_id,
-                    permit_id: permit_id,
-                    title: '✅ تمت الموافقة على طلب التصريح',
-                    message: `قام المدير بالموافقة على تصريحك. سيتم مراجعته من قبل مكتب الأمن.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`,
-                    type: 'success'
-                });
-                // إشعار لمكتب الأمن (مع ملاحظات المدير إن وجدت)
-                const title = '📋 تصريح جديد بانتظار الموافقة الأمنية';
-                const message = `تصريح للموظف ${permit.full_name} (${permit.job_number}) بانتظار الموافقة الأمنية.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`;
-                notifyAllSecurityStaff(permit_id, title, message, 'warning');
-            } else {
-                // إشعار للموظف عند رفض المدير
-                createNotification({
-                    user_id: permit.employee_id,
-                    permit_id: permit_id,
-                    title: '❌ تم رفض طلب التصريح',
-                    message: `تم رفض طلب التصريح الخاص بك من قبل المدير.${notes ? '<br><strong>ملاحظات المدير:</strong> ' + notes : ''}`,
-                    type: 'error'
-                });
-                // إشعار لمكتب الأمن عند رفض المدير (للمعلومية وملاحظات المدير)
-                if (notes) {
-                    notifyAllSecurityStaff(permit_id, '❌ تم رفض تصريح من المدير', `تم رفض تصريح #${permit_id} للموظف ${permit.full_name}.<br><strong>ملاحظات المدير:</strong> ${notes}`, 'info');
-                }
+            WHERE COALESCE(p.permit_id, p.rowid) = ?
+        `, [pidForLookup], (err, permit) => {
+            if (err) {
+                console.error('manager-approve: تعذر جلب التصريح للإشعار', err.message);
+                return;
             }
+            if (!permit) {
+                console.warn('manager-approve: لا صف تصريح مطابق لـ COALESCE(permit_id,rowid)=', pidForLookup);
+                return;
+            }
+            const stablePermitId = permit.permit_id != null ? permit.permit_id : pidForLookup;
+            const mgrActorLabel = req.user.role === 'deputy_manager' ? 'نائب المدير' : 'المدير';
+            (async () => {
+                try {
+                    if (decision === 'approve') {
+                        await createNotification({
+                            user_id: permit.employee_id,
+                            permit_id: stablePermitId,
+                            title: '✅ موافقة المدير على طلب التصريح',
+                            message: `قام ${mgrActorLabel} بالموافقة على طلب تصريحك (بعد الدوام). سيتم إرساله إلى مكتب الأمن للمراجعة.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                            type: 'success'
+                        });
+                        await notifySecurityOfficeApprovers(
+                            stablePermitId,
+                            '📋 تصريح جديد بانتظار الموافقة الأمنية',
+                            `تصريح للموظف ${permit.full_name} (${permit.job_number}) بانتظار الموافقة الأمنية.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                            'warning'
+                        );
+                    } else {
+                        await createNotification({
+                            user_id: permit.employee_id,
+                            permit_id: stablePermitId,
+                            title: '⚠️ المدير رفض الطلب — بانتظار مكتب الأمن',
+                            message: `سجّل ${mgrActorLabel} رفضاً أولياً لتصريحك (بعد الدوام) رقم ${stablePermitId}. سيراجعه مكتب الأمن ويصدر القرار النهائي (موافقة أو رفض).${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                            type: 'warning'
+                        });
+                        await notifySecurityOfficeApprovers(
+                            stablePermitId,
+                            '⚠️ تصريح بعد رفض المدير — يحتاج قرار مكتب الأمن',
+                            `رفض ${mgrActorLabel} تصريح #${stablePermitId} للموظف ${permit.full_name} (${permit.job_number}). راجع الطلب وأصدر موافقة أو رفضاً نهائياً.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                            'warning'
+                        );
+                    }
+                    await notifyRepresentedManagerIfDeputy(req, {
+                        permit_id: stablePermitId,
+                        title: decision === 'approve' ? '📋 نائب المدير وافق على تصريح' : '📋 نائب المدير سجّل رفضاً على تصريح',
+                        buildMessage: (label) =>
+                            decision === 'approve'
+                                ? `أبلغناك للعلم: قام النائب <strong>${label}</strong> بالموافقة على تصريح بعد الدوام رقم ${stablePermitId} للموظف ${permit.full_name} نيابةً عنك.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`
+                                : `أبلغناك للعلم: قام النائب <strong>${label}</strong> بتسجيل رفض أولي لتصريح بعد الدوام رقم ${stablePermitId} للموظف ${permit.full_name} نيابةً عنك. سيراجعه مكتب الأمن.${notes ? '<br><strong>ملاحظات:</strong> ' + notes : ''}`,
+                        type: 'info'
+                    });
+                } catch (nErr) {
+                    console.error('manager-approve: فشل إرسال الإشعارات', nErr.message || nErr);
+                }
+            })();
         });
         
         console.log('✅ تمت العملية بنجاح');
         
         res.json({
             success: true,
-            message: decision === 'approve' 
-                ? 'تمت الموافقة على التصريح وتم إرساله لمكتب الأمن' 
-                : 'تم رفض التصريح'
+            message: decision === 'approve'
+                ? 'تمت الموافقة على التصريح وتم إرساله لمكتب الأمن'
+                : 'تم تسجيل رفض المدير وإحالة التصريح لمكتب الأمن للقرار النهائي'
         });
     });
 });
 
 // API للموافقة على التصريح من قبل الأمن
-app.post('/api/permits/security-approve', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+app.post('/api/permits/security-approve', authenticateToken, authorizeRoles('security', 'admin'), async (req, res) => {
+    if (!(await assertSecurityOfficeApproverOrAdmin(req, res))) return;
     const { permit_id, security_username, decision, notes } = req.body;
     
     if (!permit_id || !security_username || !decision) {
@@ -6610,11 +7318,13 @@ app.post('/api/permits/security-approve', authenticateToken, authorizeRoles('sec
             security_decision = ?,
             security_decision_date = CURRENT_TIMESTAMP,
             security_notes = ?,
-            security_username = ?
-        WHERE permit_id = ? AND status = 'pending_security'
+            security_username = ?,
+            permit_id = COALESCE(permit_id, rowid)
+        WHERE (permit_id = ? OR (permit_id IS NULL AND rowid = ?))
+        AND status = 'pending_security'
     `;
     
-    db.run(query, [status, decision, notes || '', security_username, permit_id], function(err) {
+    db.run(query, [status, decision, notes || '', security_username, permit_id, permit_id], function(err) {
         if (err) {
             console.error('خطأ في تحديث التصريح:', err);
             return res.status(500).json({
@@ -6626,50 +7336,90 @@ app.post('/api/permits/security-approve', authenticateToken, authorizeRoles('sec
         if (this.changes === 0) {
             return res.status(404).json({
                 success: false,
-                message: 'التصريح غير موجود أو لم يوافق عليه المدير بعد'
+                message: 'التصريح غير موجود أو ليس بحالة بانتظار مكتب الأمن'
             });
         }
         
         // ✅ إرسال إشعارات عند موافقة/رفض الأمن
+        const secPidLookup = parseInt(permit_id, 10);
         db.get(`
             SELECT p.*, e.full_name, e.job_number, e.employee_id
             FROM permits p
             JOIN employees e ON p.employee_id = e.employee_id
-            WHERE p.permit_id = ?
-        `, [permit_id], (err, permit) => {
-            if (!err && permit) {
-                if (decision === 'allow') {
-                    // إشعار للموظف عند الموافقة (مع ملاحظات الأمن إن وجدت)
-                    createNotification({
-                        user_id: permit.employee_id,
-                        permit_id: permit_id,
-                        title: '✅ تمت الموافقة على التصريح',
-                        message: `تمت الموافقة على تصريحك من قبل مكتب الأمن. يمكنك الآن تسجيل الدخول عند الحارس.${notes ? '<br><strong>ملاحظات الأمن:</strong> ' + notes : ''}`,
-                        type: 'success'
-                    });
-                    // إشعار للمدير بملاحظات الأمن
-                    if (notes) {
-                        notifyAllManagers(permit_id, '📋 ملاحظات الأمن على تصريح', `تمت الموافقة على تصريح #${permit_id} (${permit.full_name}).<br><strong>ملاحظات الأمن:</strong> ${notes}`, 'info');
-                    }
-                    notifyAllGuards(
-                        permit_id,
-                        '📋 تصريح جديد جاهز للحراسة',
-                        `تصريح جديد للموظف ${permit.full_name} (${permit.job_number}) جاهز لتسجيل الدخول.`,
-                        'info'
-                    );
-                } else {
-                    // إشعار للموظف عند الرفض (مع ملاحظات الأمن)
-                    createNotification({
-                        user_id: permit.employee_id,
-                        permit_id: permit_id,
-                        title: '❌ تم رفض التصريح من قبل الأمن',
-                        message: `تم رفض تصريحك من قبل مكتب الأمن.${notes ? '<br><strong>ملاحظات الأمن:</strong> ' + notes : ''}`,
-                        type: 'error'
-                    });
-                    // إشعار للمدير عند رفض الأمن (مع الملاحظات)
-                    notifyAllManagers(permit_id, '❌ تم رفض تصريح من الأمن', `تم رفض تصريح #${permit_id} للموظف ${permit.full_name} من قبل مكتب الأمن.${notes ? '<br><strong>ملاحظات الأمن:</strong> ' + notes : ''}`, 'warning');
-                }
+            WHERE COALESCE(p.permit_id, p.rowid) = ?
+        `, [secPidLookup], (err, permit) => {
+            if (err) {
+                console.error('security-approve: تعذر جلب التصريح للإشعار', err.message);
+                return;
             }
+            if (!permit) {
+                console.warn('security-approve: لا صف تصريح مطابق لـ COALESCE(permit_id,rowid)=', secPidLookup);
+                return;
+            }
+            const stablePermitId = permit.permit_id != null ? permit.permit_id : secPidLookup;
+            (async () => {
+                try {
+                    const actorLabel = await getSecurityActorDisplayLabel(req, security_username);
+                    await notifyOtherSecurityOfficeApprovers(req.user.employee_id, {
+                        permit_id: stablePermitId,
+                        company_permit_id: null,
+                        title: decision === 'allow'
+                            ? '✅ موافقة زميل — تصريح موظف'
+                            : '❌ رفض زميل — تصريح موظف',
+                        message: decision === 'allow'
+                            ? `قام <strong>${actorLabel}</strong> بالموافقة على تصريح الموظف رقم ${stablePermitId}. لا حاجة لموافقة إضافية منك.`
+                            : `قام <strong>${actorLabel}</strong> برفض تصريح الموظف رقم ${stablePermitId}.`,
+                        type: decision === 'allow' ? 'info' : 'warning'
+                    });
+                    if (decision === 'allow') {
+                        const mgrRejected = permit.manager_decision === 'reject' || permit.manager_decision === 'deny';
+                        const allowMsg = mgrRejected
+                            ? `وافق مكتب الأمن على تصريحك (بعد الدوام) رغم الرفض الأولي من المدير. يمكنك تسجيل الدخول عند نقطة الحراسة.${notes ? '<br><strong>ملاحظات مكتب الأمن:</strong> ' + notes : ''}`
+                            : `وافق مكتب الأمن على تصريحك (بعد الدوام). يمكنك تسجيل الدخول عند نقطة الحراسة.${notes ? '<br><strong>ملاحظات مكتب الأمن:</strong> ' + notes : ''}`;
+                        await createNotification({
+                            user_id: permit.employee_id,
+                            permit_id: stablePermitId,
+                            title: '✅ موافقة مكتب الأمن على التصريح',
+                            message: allowMsg,
+                            type: 'success'
+                        });
+                        if (notes) {
+                            await notifyAllManagers(
+                                stablePermitId,
+                                '📋 ملاحظات الأمن على تصريح',
+                                `تمت الموافقة على تصريح #${stablePermitId} (${permit.full_name}).<br><strong>ملاحظات الأمن:</strong> ${notes}`,
+                                'info'
+                            );
+                        }
+                        await notifyAllGuards(
+                            stablePermitId,
+                            '📋 تصريح جديد جاهز للحراسة',
+                            `تصريح جديد للموظف ${permit.full_name} (${permit.job_number}) جاهز لتسجيل الدخول.`,
+                            'info'
+                        );
+                    } else {
+                        const mgrRejected = permit.manager_decision === 'reject' || permit.manager_decision === 'deny';
+                        const denyIntro = mgrRejected
+                            ? `بعد رفض المدير للطلب أولياً، قام مكتب الأمن برفض تصريحك (بعد الدوام) رقم ${stablePermitId} بشكل نهائي.`
+                            : `قام مكتب الأمن برفض تصريحك (بعد الدوام) رقم ${stablePermitId}.`;
+                        await createNotification({
+                            user_id: permit.employee_id,
+                            permit_id: stablePermitId,
+                            title: '❌ رفض مكتب الأمن لطلب التصريح',
+                            message: `${denyIntro}${notes ? '<br><strong>ملاحظات مكتب الأمن:</strong> ' + notes : ''}`,
+                            type: 'error'
+                        });
+                        await notifyAllManagers(
+                            stablePermitId,
+                            '❌ رفض مكتب الأمن لتصريح موظف',
+                            `رفض مكتب الأمن تصريح #${stablePermitId} للموظف ${permit.full_name}.${notes ? '<br><strong>ملاحظات الأمن:</strong> ' + notes : ''}`,
+                            'warning'
+                        );
+                    }
+                } catch (nErr) {
+                    console.error('security-approve: فشل إرسال الإشعارات', nErr.message || nErr);
+                }
+            })();
         });
         
         res.json({
@@ -6747,9 +7497,16 @@ app.get('/api/permits/my/:username', authenticateToken, (req, res) => {
 // تم نقل route الطباعة إلى الأعلى قبل routes العامة
 
 // API للحصول على التصاريح المعلقة للمدير (مع إمكانية التصفية حسب الشهر)
-app.get('/api/permits/pending/:managerUsername', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+app.get('/api/permits/pending/:managerUsername', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     const { managerUsername } = req.params;
     const { month } = req.query; // YYYY-MM
+
+    if (!(await assertDeputyCanUseManagerUsername(req, managerUsername))) {
+        return res.status(403).json({
+            success: false,
+            message: 'لا يمكنك عرض بيانات هذا المدير'
+        });
+    }
     
     console.log(`📋 جلب التصاريح المعلقة للمدير: ${managerUsername}`);
     
@@ -6769,6 +7526,7 @@ app.get('/api/permits/pending/:managerUsername', authenticateToken, authorizeRol
         let query = `
             SELECT 
                 p.*, 
+                COALESCE(p.permit_id, p.rowid) AS overtime_permit_id,
                 e.full_name, 
                 e.job_number, 
                 e.directorate, 
@@ -6818,54 +7576,141 @@ app.get('/api/permits/pending/:managerUsername', authenticateToken, authorizeRol
     });
 });
 
-// API للحصول على التصاريح المعتمدة/المرفوضة من المدير (مع إمكانية التصفية حسب الشهر)
-app.get('/api/permits/approved/:managerUsername', authenticateToken, authorizeRoles('manager', 'admin'), (req, res) => {
+// API للحصول على تصاريح الموظفين بعد موافقة المدير (نفس نطاق المعلّقة: فريق المدير/قسمه)
+app.get('/api/permits/approved/:managerUsername', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
     const { managerUsername } = req.params;
     const { month } = req.query; // YYYY-MM
-    
-    // جلب التصاريح المعتمدة والمرفوضة من هذا المدير
-    let query = `
-        SELECT 
-            p.*, 
-            e.full_name, 
-            e.job_number, 
-            e.directorate, 
-            d.name as department_name,
-            e.phone,
-            e.email
-        FROM permits p
-        JOIN employees e ON p.employee_id = e.employee_id
-        LEFT JOIN departments d ON e.department_id = d.id
-        WHERE p.manager_username = ?
-        AND p.status IN ('pending_security', 'approved_security', 'rejected_manager')
-    `;
-    const params = [managerUsername];
-    
-    if (month) {
-        query += ` AND strftime('%Y-%m', p.request_date) = ?`;
-        params.push(month);
+
+    if (!(await assertDeputyCanUseManagerUsername(req, managerUsername))) {
+        return res.status(403).json({
+            success: false,
+            message: 'لا يمكنك عرض بيانات هذا المدير'
+        });
     }
-    
-    query += ` ORDER BY p.request_date DESC LIMIT 50`;
-    
-    db.all(query, params, (err, permits) => {
-        if (err) {
-            console.error('خطأ في جلب التصاريح المعتمدة/المرفوضة:', err);
-            return res.status(500).json({
+
+    db.get('SELECT employee_id FROM employees WHERE username = ?', [managerUsername], (err, manager) => {
+        if (err || !manager) {
+            return res.status(404).json({
                 success: false,
-                message: 'حدث خطأ في الخادم'
+                message: 'المدير غير موجود'
             });
         }
-        
-        res.json({
-            success: true,
-            permits: permits || []
+
+        let query = `
+            SELECT 
+                p.*, 
+                COALESCE(p.permit_id, p.rowid) AS overtime_permit_id,
+                e.full_name, 
+                e.job_number, 
+                e.directorate, 
+                d.name as department_name,
+                e.phone,
+                e.email
+            FROM permits p
+            JOIN employees e ON p.employee_id = e.employee_id
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE p.status IN ('pending_security', 'approved_security', 'checked_in', 'completed')
+            AND (
+                e.manager_id = ? 
+                OR e.department_id IN (
+                    SELECT department_id FROM employees WHERE employee_id = ?
+                )
+            )
+        `;
+        const params = [manager.employee_id, manager.employee_id];
+
+        if (month) {
+            query += ` AND strftime('%Y-%m', p.request_date) = ?`;
+            params.push(month);
+        }
+
+        query += ` ORDER BY p.request_date DESC, p.permit_id DESC`;
+
+        db.all(query, params, (err, permits) => {
+            if (err) {
+                console.error('خطأ في جلب التصاريح المعتمدة للمدير:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+
+            res.json({
+                success: true,
+                permits: permits || []
+            });
+        });
+    });
+});
+
+// تصاريح الموظفين التي سجّل فيها المدير رفضاً (نفس نطاق /approved)
+app.get('/api/permits/manager-rejected-employee/:managerUsername', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'admin'), async (req, res) => {
+    const { managerUsername } = req.params;
+
+    if (!(await assertDeputyCanUseManagerUsername(req, managerUsername))) {
+        return res.status(403).json({
+            success: false,
+            message: 'لا يمكنك عرض بيانات هذا المدير'
+        });
+    }
+
+    db.get('SELECT employee_id FROM employees WHERE username = ?', [managerUsername], (err, manager) => {
+        if (err || !manager) {
+            return res.status(404).json({
+                success: false,
+                message: 'المدير غير موجود'
+            });
+        }
+
+        const query = `
+            SELECT 
+                p.*, 
+                COALESCE(p.permit_id, p.rowid) AS overtime_permit_id,
+                e.full_name, 
+                e.job_number, 
+                e.directorate, 
+                d.name as department_name,
+                e.phone,
+                e.email
+            FROM permits p
+            JOIN employees e ON p.employee_id = e.employee_id
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE (
+                p.manager_decision IN ('reject', 'deny')
+                OR p.status = 'rejected_manager'
+            )
+            AND (
+                e.manager_id = ? 
+                OR e.department_id IN (
+                    SELECT department_id FROM employees WHERE employee_id = ?
+                )
+            )
+            ORDER BY datetime(COALESCE(p.manager_decision_date, p.request_date)) DESC, COALESCE(p.permit_id, p.rowid) DESC
+            LIMIT 100
+        `;
+
+        db.all(query, [manager.employee_id, manager.employee_id], (err2, permits) => {
+            if (err2) {
+                console.error('خطأ في جلب تصاريح رفض المدير:', err2);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+
+            res.json({
+                success: true,
+                permits: permits || []
+            });
         });
     });
 });
 
 // API للحصول على التصاريح المعلقة للأمن
-app.get('/api/permits/security-pending', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+app.get('/api/permits/security-pending', authenticateToken, authorizeRoles('security', 'admin'), async (req, res) => {
+    if (req.user.role === 'security' && !(await isSecurityOfficeApprover(req.user.employee_id))) {
+        return res.json({ success: true, permits: [] });
+    }
     const query = `
         SELECT 
             p.*, 
@@ -6900,18 +7745,278 @@ app.get('/api/permits/security-pending', authenticateToken, authorizeRoles('secu
     });
 });
 
+// جميع تصاريح الموظفين التي اعتمدها مكتب الأمن (أو في مسار التنفيذ بعد الاعتماد)
+app.get('/api/permits/security-approved', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    const query = `
+        SELECT 
+            p.*, 
+            e.full_name, 
+            e.job_number, 
+            e.directorate, 
+            d.name as department_name,
+            e.phone, 
+            e.email,
+            m.full_name as manager_name
+        FROM permits p
+        JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees m ON e.manager_id = m.employee_id
+        WHERE p.status IN ('approved_security', 'checked_in', 'completed')
+        ORDER BY p.request_date DESC, p.permit_id DESC
+    `;
+
+    db.all(query, [], (err, permits) => {
+        if (err) {
+            console.error('خطأ في جلب التصاريح المعتمدة للأمن:', err);
+            return res.status(500).json({
+                success: false,
+                message: 'حدث خطأ في الخادم'
+            });
+        }
+
+        res.json({
+            success: true,
+            permits: permits || []
+        });
+    });
+});
+
+// سجل تصاريح الشركات التي صدر بشأنها قرار أمني (موافقة/رفض) — محفوظ في لوحة الأمن
+app.get('/api/permits/company-entry/security-approved', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    try {
+        const query = `
+            SELECT cep.*,
+                   e.full_name AS employee_full_name,
+                   e.phone AS employee_phone,
+                   e.username AS employee_username
+            FROM company_entry_permits cep
+            LEFT JOIN employees e ON cep.employee_id = e.employee_id
+            WHERE cep.status IN ('approved_security', 'checked_in', 'completed', 'rejected_security')
+            ORDER BY datetime(COALESCE(cep.security_decision_date, cep.created_at)) DESC,
+                     cep.permit_id DESC
+        `;
+        db.all(query, [], (err, permits) => {
+            if (err) {
+                console.error('❌ خطأ في جلب سجل شركات الأمن المعتمدة:', err);
+                return res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+            }
+            attachWorkersToCompanyPermits(permits || [], (attachErr, withWorkers) => {
+                if (attachErr) return res.status(500).json({ success: false, message: 'خطأ في جلب العمال' });
+                res.json({ success: true, permits: withWorkers });
+            });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API company-entry/security-approved:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+    }
+});
+
+// سجل إخراج المواد بعد قرار الأمن — محفوظ في لوحة الأمن
+app.get('/api/permits/material-exit/security-approved', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    try {
+        const query = `
+            SELECT m.*, e.username, e.email, e.phone, e.full_name
+            FROM material_exit_permits m
+            JOIN employees e ON m.employee_id = e.employee_id
+            WHERE m.status IN ('sent_to_guard', 'completed', 'rejected_security')
+            ORDER BY datetime(COALESCE(m.security_decision_date, m.created_at)) DESC,
+                     m.permit_id DESC
+        `;
+        db.all(query, [], (err, permits) => {
+            if (err) {
+                console.error('❌ خطأ في جلب سجل مواد الأمن المعتمدة:', err);
+                return res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+            }
+            res.json({ success: true, permits: permits || [] });
+        });
+    } catch (error) {
+        console.error('❌ خطأ في API material-exit/security-approved:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+    }
+});
+
+// سجل التصاريح المرفوضة من مكتب الأمن (موظفين + شركات + إخراج مواد)
+app.get('/api/permits/security-rejected', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    const employeeQuery = `
+        SELECT 
+            p.*, 
+            COALESCE(p.permit_id, p.rowid) AS overtime_permit_id,
+            e.full_name, 
+            e.job_number, 
+            e.directorate, 
+            d.name as department_name,
+            e.phone, 
+            e.email,
+            m.full_name as manager_name
+        FROM permits p
+        JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees m ON e.manager_id = m.employee_id
+        WHERE p.status = 'rejected_security'
+        ORDER BY datetime(COALESCE(p.security_decision_date, p.request_date)) DESC, COALESCE(p.permit_id, p.rowid) DESC
+        LIMIT 100
+    `;
+
+    db.all(employeeQuery, [], (err, employeePermits) => {
+        if (err) {
+            console.error('خطأ في جلب تصاريح الموظفين المرفوضة أمنياً:', err);
+            return res.status(500).json({
+                success: false,
+                message: 'حدث خطأ في الخادم'
+            });
+        }
+
+        const companyQuery = `
+            SELECT * FROM company_entry_permits 
+            WHERE status = 'rejected_security' 
+            ORDER BY datetime(COALESCE(security_decision_date, created_at)) DESC 
+            LIMIT 100
+        `;
+
+        db.all(companyQuery, [], (err2, companyRows) => {
+            if (err2) {
+                console.error('خطأ في جلب تصاريح الشركات المرفوضة أمنياً:', err2);
+                return res.status(500).json({
+                    success: false,
+                    message: 'حدث خطأ في الخادم'
+                });
+            }
+
+            attachWorkersToCompanyPermits(companyRows || [], (attachErr, companyPermits) => {
+                if (attachErr) {
+                    console.error('خطأ في إرفاق عمال الشركات (مرفوضة):', attachErr);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'حدث خطأ في الخادم'
+                    });
+                }
+
+                const materialQuery = `
+                    SELECT m.*, e.username, e.email, e.phone
+                    FROM material_exit_permits m
+                    JOIN employees e ON m.employee_id = e.employee_id
+                    WHERE m.status = 'rejected_security'
+                    ORDER BY datetime(COALESCE(m.security_decision_date, m.created_at)) DESC
+                    LIMIT 100
+                `;
+
+                db.all(materialQuery, [], (err3, materialPermits) => {
+                    if (err3) {
+                        console.error('خطأ في جلب تصاريح إخراج المواد المرفوضة أمنياً:', err3);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'حدث خطأ في الخادم'
+                        });
+                    }
+
+                    res.json({
+                        success: true,
+                        employee_permits: employeePermits || [],
+                        company_permits: companyPermits || [],
+                        material_permits: materialPermits || []
+                    });
+                });
+            });
+        });
+    });
+});
+
 // API للحصول على إحصائيات النظام
-app.get('/api/stats/:username', authenticateToken, (req, res) => {
+app.get('/api/stats/:username', authenticateToken, async (req, res) => {
     const { username } = req.params;
     
-    if (req.user.username !== username && req.user.role !== 'admin') {
+    if (!(await assertStatsUsernameAllowed(req, username))) {
         return res.status(403).json({
             success: false,
             message: 'غير مصرح لك بالوصول إلى إحصائيات مستخدم آخر'
         });
     }
+
+    const todayLocal = (() => {
+        const x = new Date();
+        return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    })();
+
+    const respondSecurityDashboardStats = (hidePendingForNonApprover = false) => {
+        const statsQuery = `
+                SELECT 
+                    ((SELECT COUNT(*) FROM permits WHERE status = 'pending_security') + 
+                     (SELECT COUNT(*) FROM company_entry_permits WHERE status = 'approved_manager') +
+                     (SELECT COUNT(*) FROM material_exit_permits WHERE status = 'pending_security')) as pending_requests,
+                    (SELECT COUNT(*) FROM permits WHERE status = 'approved_security' 
+                     AND date(start_date) <= date(?) AND date(end_date) >= date(?)) as active_passes,
+                    ((SELECT COUNT(*) FROM permits WHERE status = 'approved_security' 
+                      AND strftime('%Y-%m-%d', security_decision_date) = ?) +
+                     (SELECT COUNT(*) FROM company_entry_permits WHERE status = 'approved_security'
+                      AND strftime('%Y-%m-%d', security_decision_date) = ?) +
+                     (SELECT COUNT(*) FROM material_exit_permits 
+                      WHERE security_decision = 'approve' AND strftime('%Y-%m-%d', security_decision_date) = ?)) as today_approved,
+                    ((SELECT COUNT(*) FROM permits WHERE status = 'rejected_security' 
+                      AND strftime('%Y-%m-%d', security_decision_date) = ?) +
+                     (SELECT COUNT(*) FROM company_entry_permits WHERE status = 'rejected_security'
+                      AND strftime('%Y-%m-%d', security_decision_date) = ?) +
+                     (SELECT COUNT(*) FROM material_exit_permits WHERE status = 'rejected_security'
+                      AND strftime('%Y-%m-%d', security_decision_date) = ?)) as today_rejected
+            `;
+        const t = todayLocal;
+        const params = [t, t, t, t, t, t, t, t];
+        db.get(statsQuery, params, (err, stats) => {
+            if (err) {
+                console.error('خطأ في جلب الإحصائيات (لوحة الأمن):', err);
+                return res.json({
+                    success: true,
+                    stats: {
+                        pending_requests: 0,
+                        active_passes: 0,
+                        today_approved: 0,
+                        today_rejected: 0
+                    }
+                });
+            }
+            const base = stats || {
+                pending_requests: 0,
+                active_passes: 0,
+                today_approved: 0,
+                today_rejected: 0
+            };
+            if (hidePendingForNonApprover) {
+                base.pending_requests = 0;
+            }
+            res.json({
+                success: true,
+                stats: base
+            });
+        });
+    };
+
+    const scopeSecurity = String(req.query.scope || '').toLowerCase() === 'security';
+    const mayUseSecurityScope = (req.user.role === 'security' || req.user.role === 'admin') &&
+        (req.user.username === username || req.user.role === 'admin');
+    if (scopeSecurity && mayUseSecurityScope) {
+        let hidePending = false;
+        if (req.user.role === 'security') {
+            hidePending = !(await isSecurityOfficeApprover(req.user.employee_id));
+        }
+        return respondSecurityDashboardStats(hidePending);
+    }
     
-    db.get('SELECT user_type, employee_id FROM employees WHERE username = ?', [username], (err, user) => {
+    db.get('SELECT user_type, employee_id FROM employees WHERE username = ?', [username], async (err, user) => {
+        if (user && (user.user_type === 'guard' || user.user_type === 'security_guard')) {
+            return res.json({
+                success: true,
+                stats: {
+                    pending_requests: 0,
+                    active_passes: 0,
+                    today_approved: 0,
+                    today_rejected: 0
+                }
+            });
+        }
+        if (user && user.user_type === 'security') {
+            const hidePending = !(await isSecurityOfficeApprover(user.employee_id));
+            return respondSecurityDashboardStats(hidePending);
+        }
+
         if (err || !user) {
             return res.json({
                 success: true,
@@ -6924,48 +8029,63 @@ app.get('/api/stats/:username', authenticateToken, (req, res) => {
             });
         }
         
-        const today = new Date().toISOString().split('T')[0];
+        const today = todayLocal;
         
         let statsQuery = '';
         let params = [];
         
         if (user.user_type === 'manager') {
+            // نفس نطاق /api/permits/pending/:managerUsername: مباشرون للمدير أو نفس القسم
+            const mgrScopePermits = `
+                (
+                    e.manager_id = ?
+                    OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?)
+                )`;
+            const mgrScopeMaterial = `
+                (
+                    m.manager_username = ?
+                    OR e.manager_id = ?
+                    OR e.department_id IN (SELECT department_id FROM employees WHERE employee_id = ?)
+                )`;
             statsQuery = `
                 SELECT 
                     (SELECT COUNT(*) FROM permits p 
                      JOIN employees e ON p.employee_id = e.employee_id 
-                     WHERE e.manager_id = ? AND p.status = 'pending_manager') as pending_requests,
+                     WHERE p.status = 'pending_manager' AND ${mgrScopePermits}) as pending_requests,
                     (SELECT COUNT(*) FROM permits p 
                      JOIN employees e ON p.employee_id = e.employee_id 
-                     WHERE e.manager_id = ? AND (p.status = 'pending_security' OR p.status = 'approved_security')
-                     AND DATE(p.manager_decision_date) = ?) as today_approved,
+                     WHERE p.manager_decision = 'approve'
+                     AND DATE(p.manager_decision_date) = ?
+                     AND ${mgrScopePermits}) as today_approved,
                     (SELECT COUNT(*) FROM permits p 
                      JOIN employees e ON p.employee_id = e.employee_id 
-                     WHERE e.manager_id = ? AND p.status = 'rejected_manager' 
-                     AND DATE(p.manager_decision_date) = ?) as today_rejected,
+                     WHERE (p.manager_decision IN ('reject', 'deny') OR p.status = 'rejected_manager')
+                     AND DATE(COALESCE(p.manager_decision_date, p.request_date)) = ?
+                     AND ${mgrScopePermits}) as today_rejected,
                     (SELECT COUNT(*) FROM permits p 
                      JOIN employees e ON p.employee_id = e.employee_id 
-                     WHERE e.manager_id = ? AND p.status = 'approved_security'
-                     AND DATE(p.start_date) <= DATE(?) AND DATE(p.end_date) >= DATE(?)) as active_passes
+                     WHERE p.status = 'approved_security'
+                     AND DATE(p.start_date) <= DATE(?) AND DATE(p.end_date) >= DATE(?)
+                     AND ${mgrScopePermits}) as active_passes,
+                    (SELECT COUNT(*) FROM material_exit_permits m
+                     JOIN employees e ON m.employee_id = e.employee_id
+                     WHERE m.manager_decision = 'approve'
+                     AND DATE(m.manager_decision_date) = ?
+                     AND ${mgrScopeMaterial}) as material_today_approved,
+                    (SELECT COUNT(*) FROM material_exit_permits m
+                     JOIN employees e ON m.employee_id = e.employee_id
+                     WHERE m.manager_decision IN ('reject', 'deny')
+                     AND DATE(m.manager_decision_date) = ?
+                     AND ${mgrScopeMaterial}) as material_today_rejected
             `;
-            params = [user.employee_id, user.employee_id, today, user.employee_id, today, user.employee_id, today, today];
-        } else if (user.user_type === 'security' || user.user_type === 'security_guard') {
-            statsQuery = `
-                SELECT 
-                    ((SELECT COUNT(*) FROM permits WHERE status = 'pending_security') + 
-                     (SELECT COUNT(*) FROM company_entry_permits WHERE status = 'approved_manager')) as pending_requests,
-                    (SELECT COUNT(*) FROM permits WHERE status = 'approved_security' 
-                     AND DATE(start_date) <= DATE(?) AND DATE(end_date) >= DATE(?)) as active_passes,
-                    ((SELECT COUNT(*) FROM permits WHERE status = 'approved_security' 
-                      AND DATE(security_decision_date) = ?) +
-                     (SELECT COUNT(*) FROM company_entry_permits WHERE status = 'approved_security'
-                      AND DATE(security_decision_date) = ?)) as today_approved,
-                    ((SELECT COUNT(*) FROM permits WHERE status = 'rejected_security' 
-                      AND DATE(security_decision_date) = ?) +
-                     (SELECT COUNT(*) FROM company_entry_permits WHERE status = 'rejected_security'
-                      AND DATE(security_decision_date) = ?)) as today_rejected
-            `;
-            params = [today, today, today, today, today, today];
+            params = [
+                user.employee_id, user.employee_id,
+                today, user.employee_id, user.employee_id,
+                today, user.employee_id, user.employee_id,
+                today, today, user.employee_id, user.employee_id,
+                today, username, user.employee_id, user.employee_id,
+                today, username, user.employee_id, user.employee_id
+            ];
         } else {
             statsQuery = `
                 SELECT 
@@ -7046,8 +8166,16 @@ app.get('/api/permits/search', authenticateToken, (req, res) => {
         return;
     }
     
+    if (type !== 'recent' && (!q || String(q).trim() === '')) {
+        return res.status(400).json({
+            success: false,
+            message: 'يرجى إدخال نص للبحث'
+        });
+    }
+    
     let query = '';
-    let params = [`%${q}%`, `%${q}%`, `%${q}%`];
+    const idPattern = `%${String(q).trim()}%`;
+    let params = [idPattern, idPattern, idPattern];
     
     if (type === 'security') {
         query = `
@@ -7056,12 +8184,39 @@ app.get('/api/permits/search', authenticateToken, (req, res) => {
                 e.full_name, 
                 e.job_number, 
                 e.directorate, 
-                d.name as department_name
+                d.name as department_name,
+                COALESCE(p.permit_id, p.rowid) AS resolved_permit_id
             FROM permits p
             JOIN employees e ON p.employee_id = e.employee_id
             LEFT JOIN departments d ON e.department_id = d.id
-            WHERE (e.full_name LIKE ? OR e.job_number LIKE ? OR p.permit_id LIKE ?)
-            AND p.status IN ('approved_manager', 'approved_security')
+            WHERE (e.full_name LIKE ? OR e.job_number LIKE ? OR CAST(COALESCE(p.permit_id, p.rowid) AS TEXT) LIKE ?)
+            AND p.status IN ('approved_manager', 'pending_security', 'approved_security', 'checked_in', 'completed')
+            ORDER BY p.request_date DESC
+            LIMIT 20
+        `;
+    } else if (type === 'manager') {
+        query = `
+            SELECT 
+                p.*, 
+                e.full_name, 
+                e.job_number, 
+                e.directorate, 
+                d.name as department_name,
+                COALESCE(p.permit_id, p.rowid) AS resolved_permit_id
+            FROM permits p
+            JOIN employees e ON p.employee_id = e.employee_id
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE (e.full_name LIKE ? OR e.job_number LIKE ? OR CAST(COALESCE(p.permit_id, p.rowid) AS TEXT) LIKE ?)
+            AND p.status IN (
+                'pending_manager',
+                'approved_manager',
+                'pending_security',
+                'approved_security',
+                'rejected_manager',
+                'rejected_security',
+                'checked_in',
+                'completed'
+            )
             ORDER BY p.request_date DESC
             LIMIT 20
         `;
@@ -7088,11 +8243,12 @@ app.get('/api/permits/search', authenticateToken, (req, res) => {
                 e.full_name, 
                 e.job_number, 
                 e.directorate, 
-                d.name as department_name
+                d.name as department_name,
+                COALESCE(p.permit_id, p.rowid) AS resolved_permit_id
             FROM permits p
             JOIN employees e ON p.employee_id = e.employee_id
             LEFT JOIN departments d ON e.department_id = d.id
-            WHERE e.full_name LIKE ? OR e.job_number LIKE ? OR p.permit_id LIKE ?
+            WHERE e.full_name LIKE ? OR e.job_number LIKE ? OR CAST(COALESCE(p.permit_id, p.rowid) AS TEXT) LIKE ?
             ORDER BY p.request_date DESC
             LIMIT 20
         `;
@@ -7110,6 +8266,154 @@ app.get('/api/permits/search', authenticateToken, (req, res) => {
         res.json({
             success: true,
             permits: permits || []
+        });
+    });
+});
+
+// بحث موحّد: تصاريح موظفين + شركات + إخراج مواد
+app.get('/api/permits/global-search', authenticateToken, authorizeRoles('manager', 'deputy_manager', 'security', 'admin'), (req, res) => {
+    const rawQ = req.query.q;
+    const context = req.query.context === 'security' ? 'security' : 'manager';
+    if (!rawQ || String(rawQ).trim() === '') {
+        return res.status(400).json({
+            success: false,
+            message: 'يرجى إدخال نص للبحث'
+        });
+    }
+    const p = `%${String(rawQ).trim()}%`;
+    const employeeStatusIn = context === 'security'
+        ? `('approved_manager', 'pending_security', 'approved_security', 'checked_in', 'completed')`
+        : `('pending_manager', 'approved_manager', 'pending_security', 'approved_security', 'rejected_manager', 'rejected_security', 'checked_in', 'completed')`;
+
+    const empSql = `
+        SELECT 
+            'employee' AS result_kind,
+            p.*,
+            e.full_name,
+            e.job_number,
+            d.name AS department_name,
+            COALESCE(p.permit_id, p.rowid) AS resolved_permit_id
+        FROM permits p
+        JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE (e.full_name LIKE ? OR e.job_number LIKE ? OR CAST(COALESCE(p.permit_id, p.rowid) AS TEXT) LIKE ?)
+        AND p.status IN ${employeeStatusIn}
+        ORDER BY datetime(COALESCE(p.request_date, p.created_at)) DESC
+        LIMIT 20
+    `;
+
+    // ملاحظة: بعض قواعد البيانات لا تحتوي أعمدة employee_username / employee_name في company_entry_permits
+    const companySql = `
+        SELECT 
+            'company_entry' AS result_kind,
+            cep.*,
+            COALESCE(cep.permit_id, cep.rowid) AS resolved_permit_id,
+            e.full_name AS employee_full_name,
+            e.job_number AS emp_job_number
+        FROM company_entry_permits cep
+        LEFT JOIN employees e ON e.employee_id = cep.employee_id
+        WHERE (
+            IFNULL(cep.company_name, '') LIKE ? OR IFNULL(cep.company_representative, '') LIKE ? OR IFNULL(cep.entry_purpose, '') LIKE ?
+            OR CAST(COALESCE(cep.permit_id, cep.rowid) AS TEXT) LIKE ?
+            OR IFNULL(e.full_name, '') LIKE ? OR IFNULL(e.job_number, '') LIKE ? OR IFNULL(e.username, '') LIKE ?
+            OR IFNULL(cep.requesting_department, '') LIKE ?
+        )
+        ORDER BY datetime(cep.created_at) DESC
+        LIMIT 20
+    `;
+
+    const matSql = `
+        SELECT 
+            'material_exit' AS result_kind,
+            m.*,
+            COALESCE(m.permit_id, m.rowid) AS resolved_permit_id
+        FROM material_exit_permits m
+        WHERE (
+            IFNULL(m.employee_name, '') LIKE ? OR IFNULL(m.job_number, '') LIKE ?
+            OR IFNULL(m.material_type, '') LIKE ? OR IFNULL(m.exit_reason, '') LIKE ?
+            OR IFNULL(m.supervisor_name, '') LIKE ? OR IFNULL(m.directorate, '') LIKE ? OR IFNULL(m.department, '') LIKE ?
+            OR CAST(COALESCE(m.permit_id, m.rowid) AS TEXT) LIKE ?
+        )
+        ORDER BY datetime(m.created_at) DESC
+        LIMIT 20
+    `;
+
+    db.all(empSql, [p, p, p], (errEmp, employees) => {
+        if (errEmp) {
+            console.error('global-search (employee):', errEmp);
+            return res.status(500).json({ success: false, message: 'حدث خطأ في البحث' });
+        }
+        db.all(companySql, [p, p, p, p, p, p, p, p], (errCo, companies) => {
+            if (errCo) {
+                console.error('global-search (company):', errCo.message || errCo);
+                return res.status(500).json({ success: false, message: 'حدث خطأ في البحث' });
+            }
+            db.all(matSql, [p, p, p, p, p, p, p, p], (errMat, materials) => {
+                if (errMat) {
+                    console.error('global-search (material):', errMat);
+                    return res.status(500).json({ success: false, message: 'حدث خطأ في البحث' });
+                }
+
+                const results = [];
+
+                for (const row of employees || []) {
+                    const id = row.resolved_permit_id != null ? row.resolved_permit_id : row.permit_id;
+                    const sub = [row.job_number, row.department_name].filter(Boolean).join(' | ');
+                    results.push({
+                        kind: 'employee',
+                        id,
+                        permit_id: row.permit_id,
+                        title: `تصريح موظف #${id}`,
+                        primary: row.full_name || '',
+                        secondary: sub || '—',
+                        status: row.status || '',
+                        manager_decision: row.manager_decision || '',
+                        sort_at: row.request_date || row.created_at || ''
+                    });
+                }
+
+                for (const row of companies || []) {
+                    const id = row.resolved_permit_id != null ? row.resolved_permit_id : row.permit_id;
+                    const sub = [row.company_representative, row.employee_full_name || row.employee_name].filter(Boolean).join(' — ');
+                    const st = row.status || [row.manager_status, row.security_status].filter(Boolean).join(' / ');
+                    results.push({
+                        kind: 'company_entry',
+                        id,
+                        permit_id: row.permit_id,
+                        title: `تصريح شركة #${id}`,
+                        primary: row.company_name || '',
+                        secondary: sub || '—',
+                        status: st || '',
+                        sort_at: row.created_at || ''
+                    });
+                }
+
+                for (const row of materials || []) {
+                    const id = row.resolved_permit_id != null ? row.resolved_permit_id : row.permit_id;
+                    const sub = [row.job_number, row.material_type].filter(Boolean).join(' | ');
+                    results.push({
+                        kind: 'material_exit',
+                        id,
+                        permit_id: row.permit_id,
+                        title: `إخراج مواد #${id}`,
+                        primary: row.employee_name || '',
+                        secondary: sub || '—',
+                        status: row.status || '',
+                        sort_at: row.created_at || ''
+                    });
+                }
+
+                results.sort((a, b) => {
+                    const ta = Date.parse(a.sort_at) || 0;
+                    const tb = Date.parse(b.sort_at) || 0;
+                    return tb - ta;
+                });
+
+                res.json({
+                    success: true,
+                    results: results.slice(0, 60)
+                });
+            });
         });
     });
 });
@@ -7219,7 +8523,7 @@ app.post('/api/permits/end-early', authenticateToken, authorizeRoles('security',
 
 // API للحصول على التصاريح المعتمدة من الأمن (جاهزة للتسجيل)
 app.get('/api/permits/guard-approved', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin'), (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     
     console.log('📋 جلب التصاريح الجاهزة للحارس - التاريخ:', today);
@@ -7264,7 +8568,7 @@ app.get('/api/permits/guard-approved', authenticateToken,
 
 // API لتسجيل دخول الموظف
 app.post('/api/permits/guard-checkin', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin'), (req, res) => {
     const { 
         permit_id, 
         guard_username, 
@@ -7272,14 +8576,31 @@ app.post('/api/permits/guard-checkin', authenticateToken,
         entry_notes 
     } = req.body;
     
-    if (!permit_id || !guard_username || !actual_entry_time) {
+    if (permit_id == null || permit_id === '' || !guard_username || actual_entry_time == null || String(actual_entry_time).trim() === '') {
         return res.status(400).json({
             success: false,
             message: 'بيانات غير مكتملة'
         });
     }
     
-    if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(actual_entry_time)) {
+    const permitIdNum = parseInt(permit_id, 10);
+    if (Number.isNaN(permitIdNum)) {
+        return res.status(400).json({
+            success: false,
+            message: 'رقم التصريح غير صالح'
+        });
+    }
+    
+    // بعض المتصفحات ترسل الوقت بصيغة HH:MM:SS — نحوّلها إلى HH:MM
+    const rawTime = String(actual_entry_time).trim();
+    const timeMatch = rawTime.match(/^(\d{1,2}):(\d{2})/);
+    let entryTimeNormalized = '';
+    if (timeMatch) {
+        const h = Math.min(23, parseInt(timeMatch[1], 10));
+        const mi = Math.min(59, parseInt(timeMatch[2], 10));
+        entryTimeNormalized = String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0');
+    }
+    if (!entryTimeNormalized || !/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(entryTimeNormalized)) {
         return res.status(400).json({
             success: false,
             message: 'تنسيق الوقت غير صحيح. استخدم الصيغة HH:MM'
@@ -7290,7 +8611,7 @@ app.post('/api/permits/guard-checkin', authenticateToken,
         SELECT status, employee_id 
         FROM permits 
         WHERE permit_id = ? AND status = 'approved_security'
-    `, [permit_id], (err, permit) => {
+    `, [permitIdNum], (err, permit) => {
         if (err) {
             console.error('خطأ في التحقق من التصريح:', err);
             return res.status(500).json({
@@ -7317,12 +8638,16 @@ app.post('/api/permits/guard-checkin', authenticateToken,
             WHERE permit_id = ?
         `;
         
-        db.run(query, [actual_entry_time, guard_username, entry_notes || '', permit_id], function(err) {
+        db.run(query, [entryTimeNormalized, guard_username, entry_notes || '', permitIdNum], function(err) {
             if (err) {
                 console.error('خطأ في تسجيل الدخول:', err);
+                const msg = err.message || '';
+                const isCheck = /CHECK constraint/i.test(msg);
                 return res.status(500).json({
                     success: false,
-                    message: 'حدث خطأ في الخادم'
+                    message: isCheck
+                        ? 'قاعدة البيانات ترفض حالة «داخل المبنى». أعد تشغيل الخادم مرة واحدة لتطبيق التحديث، أو راجع مسؤول النظام.'
+                        : 'حدث خطأ في الخادم'
                 });
             }
             
@@ -7335,9 +8660,9 @@ app.post('/api/permits/guard-checkin', authenticateToken,
                 // ✅ إشعار للموظف
                 createNotification({
                     user_id: permit.employee_id,
-                    permit_id: permit_id,
+                    permit_id: permitIdNum,
                     title: '👤 تم تسجيل دخولك',
-                    message: `تم تسجيل دخولك بنقطة الحراسة في الساعة ${actual_entry_time} بواسطة الحارس ${guard_username}.${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                    message: `تم تسجيل دخولك بنقطة الحراسة في الساعة ${entryTimeNormalized} بواسطة الحارس ${guard_username}.${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
                     type: 'success'
                 });
                 
@@ -7351,9 +8676,9 @@ app.post('/api/permits/guard-checkin', authenticateToken,
                     if (!err && result && result.manager_id) {
                         createNotification({
                             user_id: result.manager_id,
-                            permit_id: permit_id,
+                            permit_id: permitIdNum,
                             title: '👤 تسجيل دخول موظف',
-                            message: `تم تسجيل دخول الموظف ${employeeName} (${jobNumber}) بنقطة الحراسة في الساعة ${actual_entry_time} بواسطة الحارس ${guard_username}.`,
+                            message: `تم تسجيل دخول الموظف ${employeeName} (${jobNumber}) بنقطة الحراسة في الساعة ${entryTimeNormalized} بواسطة الحارس ${guard_username}.`,
                             type: 'info'
                         });
                     }
@@ -7361,9 +8686,9 @@ app.post('/api/permits/guard-checkin', authenticateToken,
                 
                 // ✅ إشعار لمكتب الأمن
                 notifyAllSecurityStaff(
-                    permit_id,
+                    permitIdNum,
                     '👤 تسجيل دخول موظف',
-                    `تم تسجيل دخول موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${actual_entry_time}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                    `تم تسجيل دخول موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${entryTimeNormalized}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
                     'info'
                 );
             });
@@ -7378,7 +8703,7 @@ app.post('/api/permits/guard-checkin', authenticateToken,
 
 // API لتسجيل خروج الموظف
 app.post('/api/permits/guard-checkout', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin'), (req, res) => {
     const { 
         permit_id, 
         guard_username, 
@@ -7386,14 +8711,22 @@ app.post('/api/permits/guard-checkout', authenticateToken,
         exit_notes 
     } = req.body;
     
-    if (!permit_id || !guard_username || !actual_exit_time) {
+    if (permit_id == null || permit_id === '' || !guard_username || actual_exit_time == null || String(actual_exit_time).trim() === '') {
         return res.status(400).json({
             success: false,
             message: 'بيانات غير مكتملة'
         });
     }
     
-    if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(actual_exit_time)) {
+    const rawExit = String(actual_exit_time).trim();
+    const exitTimeMatch = rawExit.match(/^(\d{1,2}):(\d{2})/);
+    let exitTimeNormalized = '';
+    if (exitTimeMatch) {
+        const h = Math.min(23, parseInt(exitTimeMatch[1], 10));
+        const mi = Math.min(59, parseInt(exitTimeMatch[2], 10));
+        exitTimeNormalized = String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0');
+    }
+    if (!exitTimeNormalized || !/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(exitTimeNormalized)) {
         return res.status(400).json({
             success: false,
             message: 'تنسيق الوقت غير صحيح. استخدم الصيغة HH:MM'
@@ -7431,7 +8764,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
             WHERE permit_id = ?
         `;
         
-        db.run(query, [actual_exit_time, guard_username, exit_notes || '', permit_id], function(err) {
+        db.run(query, [exitTimeNormalized, guard_username, exit_notes || '', permit_id], function(err) {
             if (err) {
                 console.error('خطأ في تسجيل الخروج:', err);
                 return res.status(500).json({
@@ -7441,7 +8774,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
             }
             
             const expectedTime = new Date(`2000-01-01T${permit.expected_exit_time}`);
-            const actualTime = new Date(`2000-01-01T${actual_exit_time}`);
+            const actualTime = new Date(`2000-01-01T${exitTimeNormalized}`);
             const diffMinutes = (actualTime - expectedTime) / (1000 * 60);
             
             // جلب بيانات الموظف الكاملة للإشعارات
@@ -7450,7 +8783,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
                 const employeeName = employeeInfo ? (employeeInfo.full_name || 'موظف') : 'موظف';
                 const jobNumber = employeeInfo ? (employeeInfo.job_number || '') : '';
                 
-                let notificationMessage = `تم تسجيل خروجك بنقطة الحراسة في الساعة ${actual_exit_time} بواسطة الحارس ${guard_username}.`;
+                let notificationMessage = `تم تسجيل خروجك بنقطة الحراسة في الساعة ${exitTimeNormalized} بواسطة الحارس ${guard_username}.`;
                 if (diffMinutes > 15) {
                     notificationMessage += ` (تأخر ${Math.round(diffMinutes)} دقيقة)`;
                 } else if (diffMinutes < -15) {
@@ -7477,7 +8810,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
                     WHERE e.employee_id = ?
                 `, [permit.employee_id], (err, result) => {
                     if (!err && result && result.manager_id) {
-                        let managerMessage = `تم تسجيل خروج الموظف ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''} بنقطة الحراسة في الساعة ${actual_exit_time} بواسطة الحارس ${guard_username}.`;
+                        let managerMessage = `تم تسجيل خروج الموظف ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''} بنقطة الحراسة في الساعة ${exitTimeNormalized} بواسطة الحارس ${guard_username}.`;
                         if (diffMinutes > 15) {
                             managerMessage += ` (تأخر ${Math.round(diffMinutes)} دقيقة)`;
                         } else if (diffMinutes < -15) {
@@ -7495,7 +8828,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
                 });
                 
                 // ✅ إشعار لمكتب الأمن
-                let securityMessage = `تم تسجيل خروج موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الخروج: ${actual_exit_time}`;
+                let securityMessage = `تم تسجيل خروج موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الخروج: ${exitTimeNormalized}`;
                 if (diffMinutes > 15) {
                     securityMessage += `\n⚠️ تأخر: ${Math.round(diffMinutes)} دقيقة`;
                 } else if (diffMinutes < -15) {
@@ -7517,14 +8850,20 @@ app.post('/api/permits/guard-checkout', authenticateToken,
                 db.run(`
                     INSERT INTO time_violations (permit_id, employee_id, violation_type, expected_time, actual_time, time_difference, severity)
                     VALUES (?, ?, 'late_checkout', ?, ?, ?, 'medium')
-                `, [permit_id, permit.employee_id, permit.expected_exit_time, actual_exit_time, diffMinutes]);
+                `, [permit_id, permit.employee_id, permit.expected_exit_time, exitTimeNormalized, diffMinutes]);
                 
-                notifyAllSecurityUsers(
-                    permit_id,
-                    '⚠️ تأخر في الخروج',
-                    `موظف تأخر في الخروج ${Math.round(diffMinutes)} دقيقة`,
-                    'warning'
-                );
+                (async () => {
+                    try {
+                        await notifySecurityOfficeApprovers(
+                            permit_id,
+                            '⚠️ تأخر في الخروج',
+                            `موظف تأخر في الخروج ${Math.round(diffMinutes)} دقيقة (تنبيه لمكتب الأمن).`,
+                            'warning'
+                        );
+                    } catch (n) {
+                        console.error('notifySecurityOfficeApprovers (تأخر خروج):', n.message || n);
+                    }
+                })();
             }
             
             res.json({
@@ -7537,7 +8876,7 @@ app.post('/api/permits/guard-checkout', authenticateToken,
 
 // API للحصول على التصاريح المسجلة دخول (داخل المبنى)
 app.get('/api/permits/guard-checked-in', authenticateToken, 
-    authorizeRoles('security', 'guard', 'admin'), (req, res) => {
+    authorizeRoles('security', 'security_guard', 'guard', 'admin'), (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     
     const query = `
@@ -7706,7 +9045,18 @@ app.post('/api/permits/new', authenticateToken, authorizeRoles('employee', 'admi
                     });
                 }
                 
-                const permitId = this.lastID;
+                const rowid = this.lastID;
+                // جدول permits لدى بعض النسخ: permit_id ليس AUTOINCREMENT فيبقى NULL — نملؤه من rowid
+                db.run(
+                    `UPDATE permits SET permit_id = rowid WHERE rowid = ? AND (permit_id IS NULL OR CAST(permit_id AS TEXT) = '')`,
+                    [rowid],
+                    function(syncErr) {
+                        if (syncErr) {
+                            console.error('⚠️ تعذر مزامنة permit_id مع rowid:', syncErr.message);
+                        }
+                    }
+                );
+                const permitId = rowid;
                 
                 // ✅ إشعار للموظف
                 createNotification({
@@ -7755,6 +9105,14 @@ app.post('/api/permits/new', authenticateToken, authorizeRoles('employee', 'admi
 });
 
 // ============== Static files serving ==============
+// أيقونة الموقع (المتصفح يطلب /favicon.ico تلقائياً — بدونها يظهر 404 في وحدة التحكم)
+app.get('/favicon.ico', (_req, res) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2980b9"/><path fill="#ecf0f1" d="M8 10h16v2H8zm0 5h12v2H8zm0 5h14v2H8z"/></svg>`;
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=604800');
+    res.send(svg);
+});
+
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ============== صفحات HTML ==============
@@ -8017,7 +9375,15 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5050;
 
-app.listen(PORT, () => {
+(async function startServer() {
+    try {
+        await checkDatabaseTables();
+    } catch (e) {
+        console.error('❌ فشل تهيئة قاعدة البيانات قبل تشغيل الخادم:', e);
+        process.exit(1);
+    }
+
+    app.listen(PORT, () => {
     console.log('\n' + '='.repeat(60));
     console.log('🚀  نظام تصاريح العمل بعد الدوام الرسمي');
     console.log('='.repeat(60));
@@ -8065,6 +9431,12 @@ app.listen(PORT, () => {
     console.log('   GET  /api/permits/company-entry/stats                      - إحصائيات تصاريح الشركات');
     
     console.log('='.repeat(60));
+    console.log('🎯  APIs مكتب الأمن (تصاريح موظفين):');
+    console.log('   GET  /api/permits/security-approved  - سجل تصاريح الموظفين بعد قرار الأمن');
+    console.log('   GET  /api/permits/company-entry/security-approved - سجل شركات بعد قرار الأمن');
+    console.log('   GET  /api/permits/material-exit/security-approved - سجل إخراج مواد بعد قرار الأمن');
+    console.log('   GET  /api/permits/security-rejected   - سجل التصاريح المرفوضة من الأمن');
+    console.log('='.repeat(60));
     console.log('🎯  APIs الجديدة للحرس:');
     console.log('   GET  /api/permits/guard-approved    - التصاريح الجاهزة');
     console.log('   POST /api/permits/guard-checkin     - تسجيل دخول');
@@ -8074,4 +9446,5 @@ app.listen(PORT, () => {
     console.log('='.repeat(60));
     console.log('💡  اضغط Ctrl + C لإيقاف الخادم');
     console.log('='.repeat(60) + '\n');
-});
+    });
+})();

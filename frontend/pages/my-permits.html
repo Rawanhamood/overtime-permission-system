@@ -19,18 +19,34 @@
             min-height: 100vh;
         }
         
-        /* ========== NAVBAR STYLES ========== */
+        /* ========== NAVBAR (تدرج موحّد: #467191 ← #5DB9E8) ========== */
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 28%, #5298b8 56%, #5DB9E8 100%);
+            color: #fff;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 26px rgba(70, 113, 145, 0.38), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 22px 22px;
+            opacity: 0.45;
+        }
+        
+        .navbar > * {
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -39,18 +55,37 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
         }
         
         .logo-icon {
-            background: #fff;
-            color: #3498db;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 14px;
+            background: radial-gradient(
+                ellipse 100% 95% at 50% 42%,
+                #ffffff 0%,
+                rgba(255, 255, 255, 0.94) 28%,
+                rgba(255, 255, 255, 0.65) 58%,
+                rgba(255, 255, 255, 0.22) 82%,
+                transparent 100%
+            );
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        
+        .logo-icon img {
+            height: 60px;
+            width: auto;
+            max-width: min(220px, 40vw);
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 1;
         }
         
         .nav-links {
@@ -60,7 +95,7 @@
         }
         
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.95);
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -72,23 +107,25 @@
         }
         
         .nav-link:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.16);
             transform: translateY(-2px);
         }
         
         .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             padding: 8px 20px;
             border-radius: 25px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
         }
         
         .user-details {
@@ -98,23 +135,25 @@
         .user-name {
             font-weight: 600;
             font-size: 16px;
+            color: #fff;
         }
         
         .user-role {
             font-size: 13px;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.88);
         }
         
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e4a6b;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         /* ========== NOTIFICATION SYSTEM ========== */
@@ -123,9 +162,9 @@
         }
         
         .notification-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -136,7 +175,7 @@
         }
         
         .notification-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
         
@@ -154,7 +193,7 @@
             justify-content: center;
             font-size: 11px;
             font-weight: bold;
-            border: 2px solid #2c3e50;
+            border: 2px solid #467191;
         }
         
         .notifications-panel {
@@ -184,7 +223,7 @@
         }
         
         .notifications-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(90deg, #467191 0%, #4c7da0 40%, #5DB9E8 100%);
             color: white;
             padding: 20px;
             display: flex;
@@ -1242,7 +1281,11 @@
                         <option value="">جميع الحالات</option>
                         <option value="pending_manager">⏳ قيد مراجعة المدير</option>
                         <option value="approved_manager">✅ موافق عليها من المدير</option>
-                        <option value="approved_security">✅ موافق عليها نهائياً</option>
+                        <option value="pending_security">⏳ قيد مراجعة الأمن</option>
+                        <option value="sent_to_guard">✅ معتمد أمنياً — عند الحارس</option>
+                        <option value="approved_security">✅ موافق عليها نهائياً (جاهز للتنفيذ)</option>
+                        <option value="checked_in">🟢 مسجّل دخول</option>
+                        <option value="completed">✅ مكتمل</option>
                         <option value="rejected_manager">❌ مرفوضة من المدير</option>
                         <option value="rejected_security">❌ مرفوضة نهائياً</option>
                     </select>
@@ -1340,6 +1383,13 @@
     <script>
         // =============== SYSTEM INITIALIZATION ===============
         document.addEventListener('DOMContentLoaded', function() {
+            ['pointerdown', 'keydown'].forEach(function (ev) {
+                document.addEventListener(ev, prepareNotificationAudioFromUserGesture, {
+                    capture: true,
+                    passive: true
+                });
+            });
+
             // Load user data and permits
             loadUserData();
             loadPermits();
@@ -1439,27 +1489,58 @@
 
         // =============== NOTIFICATIONS SYSTEM ===============
         let lastUnreadNotifications = 0;
+        let notificationAudioCtx = null;
+        let notificationAudioOk = false;
+
+        function prepareNotificationAudioFromUserGesture() {
+            if (notificationAudioOk) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new AC();
+                }
+                const ctx = notificationAudioCtx;
+                const markOk = function () {
+                    if (ctx.state === 'running') {
+                        notificationAudioOk = true;
+                    }
+                };
+                if (ctx.state === 'running') {
+                    notificationAudioOk = true;
+                    return;
+                }
+                const p = ctx.resume();
+                if (p && typeof p.then === 'function') {
+                    p.then(markOk).catch(function () {});
+                } else {
+                    markOk();
+                }
+            } catch (e) {
+                /* صوت اختياري */
+            }
+        }
 
         function playNotificationSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                
-                const ctx = new AudioContext();
+                if (!notificationAudioOk || !notificationAudioCtx || notificationAudioCtx.state !== 'running') {
+                    return;
+                }
+                const ctx = notificationAudioCtx;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
+
                 osc.type = 'sine';
                 osc.frequency.value = 880;
-                
+
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
+
                 const now = ctx.currentTime;
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                
+
                 osc.start(now);
                 osc.stop(now + 0.5);
             } catch (e) {
@@ -1755,7 +1836,8 @@ async function loadPermits() {
             ).length;
             const approved = permits.filter(p => 
                 p.status === 'approved_security' ||
-                p.status === 'completed'
+                p.status === 'completed' ||
+                p.status === 'checked_in'
             ).length;
             const rejected = permits.filter(p => 
                 p.status === 'rejected_manager' || p.status === 'rejected_security'
@@ -1962,7 +2044,8 @@ async function loadPermits() {
                     'approved_security',
                     'approved',
                     'completed',
-                    'approved_manager'
+                    'checked_in',
+                    'sent_to_guard'
                 ];
                 
                 const isApproved = approvedStatuses.includes(permit.status) ||
@@ -1979,7 +2062,7 @@ async function loadPermits() {
             
             // للتصاريح الأخرى (شركات أو إخراج مواد)
             if (permitType === 'company_entry') {
-                const isApproved = permit.status === 'approved_security' || 
+                const isApproved = ['approved_security', 'checked_in', 'completed'].includes(permit.status) ||
                                   (typeof permit.status === 'string' && permit.status.toLowerCase().includes('approved'));
                 if (isApproved) {
                     console.log(`[DEBUG] ✅ تصريح الشركة ${permit.permit_id} قابل للطباعة - الحالة: "${permit.status}"`);
@@ -1989,7 +2072,7 @@ async function loadPermits() {
             
             if (permitType === 'material_exit') {
                 const isCompleted = permit.status === 'completed' || 
-                                   permit.status === 'approved_security' ||
+                                   permit.status === 'sent_to_guard' ||
                                    (typeof permit.status === 'string' && permit.status.toLowerCase().includes('approved'));
                 if (isCompleted) {
                     console.log(`[DEBUG] ✅ تصريح إخراج المواد ${permit.permit_id} قابل للطباعة - الحالة: "${permit.status}"`);
@@ -2001,18 +2084,16 @@ async function loadPermits() {
             return false;
         }
         
+        /** معرّف فريد للبطاقة في DOM (يتفادى تضارب permit_id بين جداول مختلفة) */
+        function permitDomId(permit) {
+            const t = permit.permit_type || 'personal';
+            return `${t}_${permit.permit_id}`;
+        }
+
         function createPermitCardHTML(permit) {
-    // طباعة بيانات التصريح للتحقق
-    console.log(`[DEBUG] إنشاء بطاقة تصريح #${permit.permit_id}:`, {
-        permit_id: permit.permit_id,
-        permit_type: permit.permit_type,
-        status: permit.status,
-        type: permit.type,
-        canPrint: canPrintPermit(permit)
-    });
-    
-    const statusInfo = getStatusInfo(permit.status);
-    const requestDate = formatDate(permit.request_date);
+    const domId = permitDomId(permit);
+    const statusInfo = getStatusInfo(permit);
+    const requestDate = formatDate(permit.request_date || permit.created_at);
     
     // تحديد نوع التصريح
     const permitType = permit.permit_type === 'company_entry' 
@@ -2022,7 +2103,7 @@ async function loadPermits() {
             : getPermitType(permit.type || 'exit');
     
     return `
-        <div class="permit-card" id="permitCard_${permit.permit_id}" data-type="${permit.permit_type}">
+        <div class="permit-card" id="permitCard_${domId}" data-type="${permit.permit_type}">
             <div class="permit-header">
                 <div>
                     <div class="permit-id">
@@ -2044,7 +2125,7 @@ async function loadPermits() {
             ${renderBasicDetails(permit)}
             
             <!-- تفاصيل إضافية قابلة للطي -->
-            <div id="extraDetails_${permit.permit_id}" class="extra-details" style="display: none;">
+            <div id="extraDetails_${domId}" class="extra-details" style="display: none;">
                 ${
                     permit.permit_type === 'company_entry'
                         ? renderCompanyEntryExtraDetails(permit)
@@ -2062,7 +2143,7 @@ async function loadPermits() {
             
             <!-- أزرار الإجراءات -->
             <div class="permit-actions">
-                <button class="action-btn btn-view" onclick="togglePermitDetails(${permit.permit_id})" id="toggleBtn_${permit.permit_id}">
+                <button class="action-btn btn-view" onclick="togglePermitDetails('${domId}')" id="toggleBtn_${domId}">
                     👁️ عرض التفاصيل
                 </button>
                 ${permit.status === 'pending_manager' && permit.permit_type !== 'material_exit' ? `
@@ -2379,6 +2460,50 @@ async function loadPermits() {
             `;
         }
 
+        function renderMaterialExitExtraDetails(permit) {
+            return `
+                <div class="extra-section">
+                    <h4 class="extra-title">📦 معلومات كاملة - تصريح إخراج مواد وأجهزة</h4>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">اسم الموظف</div>
+                            <div class="detail-value">${permit.employee_name || permit.full_name || ''}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">الرقم الوظيفي</div>
+                            <div class="detail-value">${permit.job_number || ''}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">المديرية</div>
+                            <div class="detail-value">${permit.directorate || ''}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">القسم</div>
+                            <div class="detail-value">${permit.department || ''}</div>
+                        </div>
+                    </div>
+                    <div class="details-grid" style="margin-top: 20px;">
+                        <div class="detail-item">
+                            <div class="detail-label">نوع المادة / الجهاز</div>
+                            <div class="detail-value">${permit.material_type || 'غير محدد'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">سبب الإخراج</div>
+                            <div class="detail-value">${permit.exit_reason || 'غير محدد'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">تاريخ الإخراج</div>
+                            <div class="detail-value">${permit.permit_date || ''} - ${permit.permit_time || ''}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">المشرف المباشر</div>
+                            <div class="detail-value">${permit.supervisor_name || ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         // دالة لعرض الملاحظات
         function renderNotesSection(permit) {
             let notesHTML = '';
@@ -2406,6 +2531,19 @@ async function loadPermits() {
 
         // دالة لعرض الجدول الزمني
         function renderTimelineSection(permit) {
+            const mgrRej = permit.manager_decision === 'reject' || permit.manager_decision === 'deny';
+            let managerTimelineLine = '';
+            if (permit.manager_decision_date) {
+                if (permit.status === 'rejected_manager') {
+                    managerTimelineLine = '❌ تم الرفض من المدير (نهائي)';
+                } else if (mgrRej && permit.status === 'pending_security') {
+                    managerTimelineLine = '❌ المدير رفض الطلب — الطلب عند مكتب الأمن للقرار النهائي';
+                } else if (mgrRej) {
+                    managerTimelineLine = '❌ تم الرفض من المدير';
+                } else {
+                    managerTimelineLine = '✅ تمت الموافقة من المدير';
+                }
+            }
             return `
                 <div class="permit-timeline">
                     <div class="timeline-item">
@@ -2419,8 +2557,7 @@ async function loadPermits() {
                         <div class="timeline-item">
                             <div class="timeline-content">
                                 <div class="timeline-date">${formatDate(permit.manager_decision_date)}</div>
-                                <div>${permit.status.includes('approved') ? '✅' : '❌'} 
-                                ${permit.status.includes('approved') ? 'تمت الموافقة من المدير' : 'تم الرفض من المدير'}</div>
+                                <div>${managerTimelineLine}</div>
                             </div>
                         </div>
                     ` : ''}
@@ -2439,26 +2576,34 @@ async function loadPermits() {
         }
 
         // =============== دوال مساعدة ===============
-        function getStatusInfo(status) {
+        function getStatusInfo(permit) {
+            const status = typeof permit === 'string' ? permit : permit.status;
+            const mgrRej = permit && (permit.manager_decision === 'reject' || permit.manager_decision === 'deny');
+            const isCompany = permit && permit.permit_type === 'company_entry';
             switch(status) {
                 case 'pending_manager':
                     return { class: 'status-pending', icon: '⏳', text: 'قيد مراجعة المدير' };
                 case 'approved_manager':
                     return { class: 'status-security', icon: '✅', text: 'موافق عليها من المدير' };
                 case 'pending_security':
+                    if (mgrRej) {
+                        return { class: 'status-security', icon: '⚠️', text: 'رفض المدير — بانتظار مكتب الأمن' };
+                    }
                     return { class: 'status-security', icon: '⏳', text: 'قيد مراجعة الأمن' };
                 case 'sent_to_guard':
-                    return { class: 'status-security', icon: '✅', text: 'بإنتظار موافقة الحارس' };
+                    return { class: 'status-security', icon: '✅', text: 'معتمد أمنياً — عند الحارس' };
                 case 'approved_security':
-                    return { class: 'status-approved', icon: '✅', text: 'موافق عليها نهائياً' };
+                    return { class: 'status-approved', icon: '✅', text: isCompany ? 'معتمد أمنياً — جاهز للحارس' : 'موافق عليها نهائياً' };
+                case 'checked_in':
+                    return { class: 'status-approved', icon: '🟢', text: isCompany ? 'مسجّل دخول الشركة' : 'مسجّل دخول' };
                 case 'completed':
-                    return { class: 'status-approved', icon: '✅', text: 'تم تنفيذ التصريح' };
+                    return { class: 'status-approved', icon: '✅', text: isCompany ? 'اكتملت الزيارة' : 'تم تنفيذ التصريح' };
                 case 'rejected_manager':
                     return { class: 'status-rejected', icon: '❌', text: 'مرفوضة من المدير' };
                 case 'rejected_security':
                     return { class: 'status-rejected', icon: '❌', text: 'مرفوضة نهائياً' };
                 default:
-                    return { class: 'status-pending', icon: '⏳', text: 'قيد المراجعة' };
+                    return { class: 'status-pending', icon: '⏳', text: status ? String(status) : 'قيد المراجعة' };
             }
         }
 
@@ -2503,10 +2648,10 @@ async function loadPermits() {
         }
 
         // =============== عرض/إخفاء التفاصيل ===============
-        function togglePermitDetails(permitId) {
-            const detailsDiv = document.getElementById(`extraDetails_${permitId}`);
-            const toggleBtn = document.getElementById(`toggleBtn_${permitId}`);
-            const permitCard = document.getElementById(`permitCard_${permitId}`);
+        function togglePermitDetails(domId) {
+            const detailsDiv = document.getElementById(`extraDetails_${domId}`);
+            const toggleBtn = document.getElementById(`toggleBtn_${domId}`);
+            const permitCard = document.getElementById(`permitCard_${domId}`);
             
             if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
                 // إظهار التفاصيل
@@ -2635,8 +2780,8 @@ async function loadPermits() {
         }
 
         function viewPermitDetails(permitId, permitType = 'personal') {
-            // استخدام عرض التفاصيل القابلة للطي بدلاً من صفحة منفصلة
-            togglePermitDetails(permitId);
+            const t = permitType === 'company_entry' ? 'company_entry' : permitType === 'material_exit' ? 'material_exit' : 'personal';
+            togglePermitDetails(`${t}_${permitId}`);
         }
 
         // =============== UTILITY FUNCTIONS ===============
@@ -2660,256 +2805,6 @@ async function loadPermits() {
         window.printPermit = printPermit;
         window.viewPermitDetails = viewPermitDetails;
 
-
-        // دالة لعرض التفاصيل الأساسية
-function renderBasicDetails(permit) {
-    if (permit.permit_type === 'company_entry') {
-        // للتصاريح الشركات
-        return `
-            <div class="permit-details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">اسم الشركة</div>
-                    <div class="detail-value">${permit.company_name || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">ممثل الشركة</div>
-                    <div class="detail-value">${permit.company_representative || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">الغرض</div>
-                    <div class="detail-value">${permit.entry_purpose || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">عدد الزوار</div>
-                    <div class="detail-value">${permit.number_of_visitors || 1} شخص</div>
-                </div>
-            </div>
-        `;
-    } else {
-        // للتصاريح الشخصية
-        const permitType = getPermitType(permit.type || 'exit');
-        
-        return `
-            <div class="permit-details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">النوع</div>
-                    <div class="detail-value">${permitType.name}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">${permit.type === 'entry' ? 'وقت الدخول' : 'السبب'}</div>
-                    <div class="detail-value">${permit.reason || 'لا يوجد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">الفترة</div>
-                    <div class="detail-value">${permit.start_date} إلى ${permit.end_date}</div>
-                </div>
-            </div>
-        `;
-    }
-}
-
-// دالة لعرض تفاصيل إضافية لتصاريح الشركات
-function renderCompanyEntryExtraDetails(permit) {
-    let additionalInfo = {};
-    try {
-        if (permit.additional_notes) {
-            if (typeof permit.additional_notes === 'string') {
-                // التحقق من أن النص يبدأ بـ { أو [ قبل محاولة تحليله كـ JSON
-                const trimmed = permit.additional_notes.trim();
-                if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
-                    (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-                    additionalInfo = JSON.parse(permit.additional_notes);
-                } else {
-                    // إذا كان نصاً عادياً، نستخدمه كما هو
-                    additionalInfo = { additional_notes: permit.additional_notes };
-                }
-            } else {
-                additionalInfo = permit.additional_notes;
-            }
-        }
-    } catch (e) {
-        console.warn('خطأ في تحليل البيانات الإضافية:', e);
-        // في حالة الخطأ، نستخدم النص الأصلي
-        if (permit.additional_notes && typeof permit.additional_notes === 'string') {
-            additionalInfo = { additional_notes: permit.additional_notes };
-        }
-    }
-    
-    const requestingDepartment = additionalInfo.requesting_department || {};
-    const employeesList = additionalInfo.employees || [];
-    
-    return `
-        <!-- قسم التفاصيل الكاملة -->
-        <div class="extra-section">
-            <h4 class="extra-title">📋 معلومات كاملة - تصريح دخول شركة</h4>
-            
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">تاريخ تقديم الطلب</div>
-                    <div class="detail-value">${formatDateTime(permit.request_date)}</div>
-                </div>
-                
-                ${requestingDepartment.directorate ? `
-                <div class="detail-item">
-                    <div class="detail-label">المديرية</div>
-                    <div class="detail-value">${requestingDepartment.directorate}</div>
-                </div>
-                ` : ''}
-                
-                ${requestingDepartment.department ? `
-                <div class="detail-item">
-                    <div class="detail-label">القسم</div>
-                    <div class="detail-value">${requestingDepartment.department}</div>
-                </div>
-                ` : ''}
-            </div>
-            
-            <!-- تفاصيل الشركة -->
-            <div class="details-grid" style="margin-top: 20px;">
-                <div class="detail-item">
-                    <div class="detail-label">اسم الشركة</div>
-                    <div class="detail-value">${permit.company_name || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">الممثل القانوني</div>
-                    <div class="detail-value">${permit.company_representative || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">رقم الهاتف</div>
-                    <div class="detail-value">${permit.representative_phone || 'غير محدد'}</div>
-                </div>
-                
-                ${requestingDepartment.company_address ? `
-                <div class="detail-item">
-                    <div class="detail-label">عنوان الشركة</div>
-                    <div class="detail-value">${requestingDepartment.company_address}</div>
-                </div>
-                ` : ''}
-            </div>
-            
-            <!-- قائمة العمال -->
-            ${employeesList.length > 0 ? `
-            <div style="margin-top: 25px;">
-                <h5 class="sub-title">👥 قائمة العمال (${employeesList.length})</h5>
-                <div class="employees-list">
-                    ${employeesList.map((employee, index) => `
-                    <div class="employee-item">
-                        <span class="employee-number">${index + 1}</span>
-                        <span class="employee-name">${employee.name || 'غير محدد'}</span>
-                        <span class="employee-profession">(${employee.profession || 'عامل'})</span>
-                        <span class="employee-id">${employee.id_number || 'غير محدد'}</span>
-                    </div>
-                    `).join('')}
-                </div>
-            </div>
-            ` : ''}
-            
-            <!-- الغرض بالتفصيل -->
-            <div style="margin-top: 25px;">
-                <h5 class="sub-title">🎯 الغرض من الدخول بالتفصيل</h5>
-                <div class="purpose-details">
-                    ${permit.entry_purpose || 'غير محدد'}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// دالة لعرض تفاصيل إضافية لتصاريح الشخصية
-function renderPersonalPermitExtraDetails(permit) {
-    const permitType = getPermitType(permit.type || 'exit');
-    
-    return `
-        <div class="extra-section">
-            <h4 class="extra-title">📋 معلومات كاملة - تصريح عمل بعد الدوام</h4>
-            
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">نوع التصريح</div>
-                    <div class="detail-value">${permitType.name}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">تاريخ التقديم</div>
-                    <div class="detail-value">${formatDateTime(permit.request_date)}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">الفترة</div>
-                    <div class="detail-value">${permit.start_date} إلى ${permit.end_date}</div>
-                </div>
-            </div>
-            
-            <!-- السبب بالتفصيل -->
-            <div style="margin-top: 25px;">
-                <h5 class="sub-title">📄 السبب بالتفصيل</h5>
-                <div class="reason-details">
-                    ${permit.reason || 'لا يوجد'}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// دالة لعرض تفاصيل إضافية لتصاريح إخراج المواد والأجهزة
-function renderMaterialExitExtraDetails(permit) {
-    return `
-        <div class="extra-section">
-            <h4 class="extra-title">📦 معلومات كاملة - تصريح إخراج مواد وأجهزة</h4>
-            
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">اسم الموظف</div>
-                    <div class="detail-value">${permit.employee_name || ''}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">الرقم الوظيفي</div>
-                    <div class="detail-value">${permit.job_number || ''}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">المديرية</div>
-                    <div class="detail-value">${permit.directorate || ''}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">القسم</div>
-                    <div class="detail-value">${permit.department || ''}</div>
-                </div>
-            </div>
-            
-            <div class="details-grid" style="margin-top: 20px;">
-                <div class="detail-item">
-                    <div class="detail-label">نوع المادة / الجهاز</div>
-                    <div class="detail-value">${permit.material_type || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">سبب الإخراج</div>
-                    <div class="detail-value">${permit.exit_reason || 'غير محدد'}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">تاريخ الإخراج</div>
-                    <div class="detail-value">${permit.permit_date || ''} - ${permit.permit_time || ''}</div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-label">المشرف المباشر</div>
-                    <div class="detail-value">${permit.supervisor_name || ''}</div>
-                </div>
-            </div>
-        </div>
-    `;
-}
     </script>
 </body>
 </html>

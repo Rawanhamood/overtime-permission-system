@@ -38,7 +38,7 @@ const authorizeRoles = (...roles) => {
         
         // السماح للحارس (guard) بالوصول لـ APIs محددة فقط
         if (userRole === 'guard' || userRole === 'security_guard') {
-            const guardAllowedAPIs = ['security', 'security_guard', 'admin'];
+            const guardAllowedAPIs = ['security', 'security_guard', 'admin', 'guard'];
             if (!guardAllowedAPIs.some(allowedRole => roles.includes(allowedRole))) {
                 return res.status(403).json({
                     success: false,
@@ -79,7 +79,7 @@ const checkGuardPermissions = (req, res, next) => {
 // اختصارات للأدوار الشائعة
 const checkManagerRole = (req, res, next) => {
     const userRole = req.user?.role;
-    if (userRole !== 'manager' && userRole !== 'admin') {
+    if (userRole !== 'manager' && userRole !== 'deputy_manager' && userRole !== 'admin') {
         return res.status(403).json({
             success: false,
             message: 'غير مصرح لك بتنفيذ هذه العملية'
