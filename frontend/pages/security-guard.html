@@ -1590,7 +1590,7 @@ async function processCheckIn(permitId, employeeName) {
         type: 'employee_checkin',
         guard_name: guardName,
         data: {
-            message: `تسجيل دخول موظف (بعد الدوام) عند الحارس.\nالموظف: ${employeeName}\nرقم التصريح: #${permitId}\nوقت الدخول المُدوَّن: ${manualTime}${notes ? `\nملاحظات الحارس: ${notes}` : ''}`,
+            message: `تم تسجيل دخول موظف بنقطة الحراسة.\nالموظف: ${employeeName}${permitSnapshot?.job_number ? ' (' + permitSnapshot.job_number + ')' : ''}\nالحارس المناوب: ${guardName}\nوقت الدخول: ${manualTime}${notes ? '\nملاحظات: ' + notes : ''}`,
             employee_name: employeeName,
             permit_id: permitId,
             check_in_time: manualTime,

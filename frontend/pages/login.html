@@ -2,7 +2,9 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#49769a">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>تسجيل الدخول - نظام تصاريح العمل</title>
     <style>
         /* ========== RESET & BASE STYLES ========== */
@@ -15,12 +17,14 @@
         
         body {
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
             position: relative;
             isolation: isolate;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body::before {
@@ -159,9 +163,11 @@
             padding: 16px 20px;
             border: 2px solid #e8f4ff;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 16px; /* 16px يقلّل التكبير التلقائي في iOS عند التركيز */
             transition: all 0.3s ease;
             background: white;
+            min-height: 48px;
+            touch-action: manipulation;
         }
         
         .form-input:focus {
@@ -188,6 +194,8 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            min-height: 48px;
+            touch-action: manipulation;
         }
         
         .login-btn:hover {
@@ -482,6 +490,13 @@
             color: #95a5a6;
             font-size: 13px;
         }
+
+        /* إخفاء اختصارات لوحة المفاتيح على الشاشات اللمسية */
+        @media (pointer: coarse) {
+            .shortcut-hint {
+                display: none;
+            }
+        }
         
         .shortcut-key {
             background: #edf2f7;
@@ -523,7 +538,7 @@
                     <img src="/assets/images/login-logo.png?v=5" alt="شعار محافظة الداخلية" decoding="async">
                 </div>
                 <h1>نظام تصاريح العمل</h1>
-                <p class="login-subtitle">مكتب محافظة الداخلية</p>
+                <p class="login-subtitle"> محافظة الداخلية</p>
             </div>
         </div>
 
@@ -856,7 +871,7 @@
                                error.message.includes('HTML')) {
                         errorMessage = `❌ ${error.message}`;
                     } else if (error.message.includes('لا يمكن الوصول')) {
-                        errorMessage = '❌ لا يمكن الوصول إلى الخادم. تأكد من تشغيل الخادم على المنفذ 5000.';
+                        errorMessage = '❌ لا يمكن الوصول إلى الخادم. تأكد من تشغيل الخادم (المنفذ الافتراضي 5050).';
                     }
                     
                     showMessage(errorMessage, 'error');
@@ -1158,7 +1173,7 @@
                 1. تحقق من تشغيل الخادم (node server.js)<br>
                 2. تأكد من نقطة النهاية /api/login موجودة<br>
                 3. جرب: <button onclick="testDirectLogin()" style="background: #666; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer;">اختبار مباشر</button><br>
-                4. افتح <a href="http://localhost:5000/api/login" target="_blank" style="color: #0f0;">/api/login</a> في متصفح جديد<br>
+                4. افتح <a href="http://localhost:5050/api/login" target="_blank" style="color: #0f0;">/api/login</a> في متصفح جديد<br>
                 5. تحقق من سجلات الخادم (Terminal)
             `;
             
@@ -1201,7 +1216,7 @@
         toggleBtn.innerHTML = '👁️';
         toggleBtn.style.cssText = `
             position: absolute;
-            left: 15px;
+            left: 8px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -1209,8 +1224,11 @@
             cursor: pointer;
             font-size: 18px;
             color: #7f8c8d;
-            padding: 5px;
+            min-width: 44px;
+            min-height: 44px;
+            padding: 8px;
             z-index: 10;
+            touch-action: manipulation;
         `;
         
         passwordGroup.style.position = 'relative';

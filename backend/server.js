@@ -2,6 +2,22 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const os = require('os');
+
+/** عناوين IPv4 غير الداخلية — لعرض رابط فتح التطبيق من الهاتف على نفس الشبكة */
+function getLanIPv4Addresses() {
+    const results = [];
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name] || []) {
+            const isIPv4 = net.family === 'IPv4' || net.family === 4;
+            if (isIPv4 && !net.internal) {
+                results.push(net.address);
+            }
+        }
+    }
+    return results;
+}
 
 const app = express();
 
@@ -37,6 +53,19 @@ const {
     isSecurityOfficeApprover,
     notifyAllGuards
 } = require('./utils/notifications');
+const { PRINT_LOGO_CSS, buildPrintHeaderHtml } = require('./utils/print-templates');
+const {
+    resolveDateRange,
+    mapEmployeeRow,
+    mapCompanyRow,
+    mapMaterialRow,
+    dateInRange,
+    matchesEntryExitFilters,
+    matchesText,
+    sortItems,
+    buildCounts,
+    itemsToCsv
+} = require('./utils/security-unified-registry');
 const {
     checkDatabaseTables,
     initializeDatabase,
@@ -979,6 +1008,7 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
                             padding-bottom: 20px; 
                             margin-bottom: 30px; 
                         }
+                        ${PRINT_LOGO_CSS}
                         .header h1 { 
                             color: #2c3e50; 
                             margin: 0 0 10px 0;
@@ -1067,10 +1097,7 @@ app.get('/api/permits/print/:permit_id', authenticateToken, authorizeRoles('empl
                     </style>
                 </head>
                 <body>
-                    <div class="header">
-                        <h1>تصريح الدوام بعد ساعات الدوام</h1>
-                        <div class="permit-number">رقم التصريح: #${permit.permit_id}</div>
-                    </div>
+                    ${buildPrintHeaderHtml('تصريح الدوام بعد ساعات الدوام', `رقم التصريح: #${permit.permit_id}`)}
                     
                     <div class="info-section">
                         <h2>معلومات الموظف</h2>
@@ -4928,6 +4955,7 @@ app.get('/api/permits/company-entry/print/:permit_id', authenticateToken, author
                                     padding-bottom: 20px; 
                                     margin-bottom: 30px; 
                                 }
+                                ${PRINT_LOGO_CSS}
                                 .header h1 { 
                                     color: #2c3e50; 
                                     margin: 0 0 10px 0;
@@ -5032,11 +5060,11 @@ app.get('/api/permits/company-entry/print/:permit_id', authenticateToken, author
                             </style>
                         </head>
                         <body>
-                            <div class="header">
-                                <h1>تصريح دخول الشركة</h1>
-                                <div class="permit-number">رقم التصريح: ${permit.permit_id}</div>
-                                <p>تاريخ الطلب: ${new Date(permit.request_date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            </div>
+                            ${buildPrintHeaderHtml(
+                                'تصريح دخول الشركة',
+                                `رقم التصريح: ${permit.permit_id}`,
+                                `<p>تاريخ الطلب: ${new Date(permit.request_date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>`
+                            )}
                             
                             <div class="info-section">
                                 <h2>معلومات الشركة</h2>
@@ -6079,6 +6107,7 @@ app.get('/api/permits/material-exit/print/:permit_id', authenticateToken, author
                             padding-bottom: 20px; 
                             margin-bottom: 30px; 
                         }
+                        ${PRINT_LOGO_CSS}
                         .header h1 { 
                             color: #2c3e50; 
                             margin: 0 0 10px 0;
@@ -6171,10 +6200,7 @@ app.get('/api/permits/material-exit/print/:permit_id', authenticateToken, author
                     </style>
                 </head>
                 <body>
-                    <div class="header">
-                        <h1>تصريح إخراج المواد والأجهزة</h1>
-                        <div class="permit-number">رقم التصريح: #${permit.permit_id}</div>
-                    </div>
+                    ${buildPrintHeaderHtml('تصريح إخراج المواد والأجهزة', `رقم التصريح: #${permit.permit_id}`)}
                     
                     <div class="info-section">
                         <h2>معلومات الموظف</h2>
@@ -7042,6 +7068,85 @@ app.get('/api/notifications/:username', authenticateToken, (req, res) => {
                     });
                 }
                 
+                res.json({
+                    success: true,
+                    notifications: notifications || [],
+                    unread_count: countResult ? countResult.count : 0
+                });
+            });
+        });
+    });
+});
+
+// API لإشعارات نقطة الحراسة فقط (دخول/خروج موظفين وشركات ومواد)
+app.get('/api/notifications/guard-events/:username', authenticateToken, (req, res) => {
+    const { username } = req.params;
+
+    if (req.user.username !== username && req.user.role !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: 'غير مصرح لك بالوصول إلى إشعارات مستخدم آخر'
+        });
+    }
+
+    db.get('SELECT employee_id FROM employees WHERE username = ?', [username], (err, employee) => {
+        if (err) {
+            console.error('خطأ في البحث عن مستخدم:', err);
+            return res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        }
+        if (!employee) {
+            return res.json({ success: true, notifications: [], unread_count: 0 });
+        }
+
+        const guardEventsQuery = `
+            SELECT
+                n.notification_id,
+                n.user_id,
+                n.permit_id,
+                n.company_permit_id,
+                n.title,
+                n.message,
+                n.type as notification_type,
+                n.is_read,
+                n.created_at,
+                e.full_name as related_employee_name
+            FROM notifications n
+            LEFT JOIN permits p ON n.permit_id = p.permit_id
+            LEFT JOIN company_entry_permits cep ON n.company_permit_id = cep.permit_id
+            LEFT JOIN employees e ON COALESCE(p.employee_id, cep.employee_id) = e.employee_id
+            WHERE n.user_id = ?
+              AND (
+                n.title LIKE '%تسجيل دخول موظف%'
+                OR n.title LIKE '%تسجيل خروج موظف%'
+                OR n.title LIKE '%تسجيل دخول شركة%'
+                OR n.title LIKE '%تسجيل خروج شركة%'
+                OR n.title LIKE '%تسجيل خروج مواد%'
+                OR n.message LIKE '%نقطة الحراسة%'
+              )
+            ORDER BY n.created_at DESC
+            LIMIT 50
+        `;
+
+        db.all(guardEventsQuery, [employee.employee_id], (err2, notifications) => {
+            if (err2) {
+                console.error('خطأ في جلب إشعارات الحرس:', err2);
+                return res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإشعارات' });
+            }
+
+            const unreadQuery = `
+                SELECT COUNT(*) as count FROM notifications
+                WHERE user_id = ? AND is_read = 0
+                  AND (
+                    title LIKE '%تسجيل دخول موظف%'
+                    OR title LIKE '%تسجيل خروج موظف%'
+                    OR title LIKE '%تسجيل دخول شركة%'
+                    OR title LIKE '%تسجيل خروج شركة%'
+                    OR title LIKE '%تسجيل خروج مواد%'
+                    OR message LIKE '%نقطة الحراسة%'
+                  )
+            `;
+
+            db.get(unreadQuery, [employee.employee_id], (err3, countResult) => {
                 res.json({
                     success: true,
                     notifications: notifications || [],
@@ -7921,6 +8026,78 @@ app.get('/api/permits/security-rejected', authenticateToken, authorizeRoles('sec
     });
 });
 
+// السجل الموحّد لجميع التصاريح — مكتب الأمن (فلترة + بحث + تصدير)
+app.get('/api/permits/security-unified-registry', authenticateToken, authorizeRoles('security', 'admin'), (req, res) => {
+    try {
+        const kind = String(req.query.kind || 'all').toLowerCase();
+        const range = resolveDateRange(req.query);
+        const q = req.query.q ? String(req.query.q).trim() : '';
+        const format = String(req.query.format || 'json').toLowerCase();
+
+        const employeeSql = `
+            SELECT p.*, e.full_name, e.job_number, d.name AS department_name
+            FROM permits p
+            JOIN employees e ON p.employee_id = e.employee_id
+            LEFT JOIN departments d ON e.department_id = d.id
+            ORDER BY datetime(COALESCE(p.checkin_timestamp, p.security_decision_date, p.request_date, p.created_at)) DESC
+        `;
+        const companySql = `
+            SELECT cep.* FROM company_entry_permits cep
+            ORDER BY datetime(COALESCE(cep.checkin_timestamp, cep.security_decision_date, cep.expected_entry_date, cep.created_at)) DESC
+        `;
+        const materialSql = `
+            SELECT m.*, e.full_name FROM material_exit_permits m
+            LEFT JOIN employees e ON m.employee_id = e.employee_id
+            ORDER BY datetime(COALESCE(m.guard_verification_date, m.security_decision_date, m.permit_date, m.created_at)) DESC
+        `;
+
+        const runQuery = (sql) => new Promise((resolve, reject) => {
+            db.all(sql, [], (err, rows) => (err ? reject(err) : resolve(rows || [])));
+        });
+
+        Promise.all([
+            kind === 'company' || kind === 'material' ? Promise.resolve([]) : runQuery(employeeSql),
+            kind === 'employee' || kind === 'material' ? Promise.resolve([]) : runQuery(companySql),
+            kind === 'employee' || kind === 'company' ? Promise.resolve([]) : runQuery(materialSql)
+        ]).then(([empRows, coRows, matRows]) => {
+            let items = [
+                ...empRows.map(mapEmployeeRow),
+                ...coRows.map(mapCompanyRow),
+                ...matRows.map(mapMaterialRow)
+            ];
+
+            items = items.filter(it => dateInRange(it.sort_at, range.from, range.to));
+            items = items.filter(it => matchesEntryExitFilters(it, req.query));
+            items = items.filter(it => matchesText(it, q));
+            sortItems(items);
+
+            const counts = buildCounts(items);
+
+            if (format === 'csv' || format === 'excel') {
+                const csv = itemsToCsv(items);
+                const fname = `security-permits-${range.from || 'all'}-${range.to || 'all'}.csv`;
+                res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+                res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+                return res.send(csv);
+            }
+
+            res.json({
+                success: true,
+                items,
+                counts,
+                range,
+                filters: { kind, q, period: req.query.period || 'month' }
+            });
+        }).catch((err) => {
+            console.error('security-unified-registry:', err);
+            res.status(500).json({ success: false, message: 'حدث خطأ في جلب السجل الموحّد' });
+        });
+    } catch (error) {
+        console.error('security-unified-registry:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+    }
+});
+
 // API للحصول على إحصائيات النظام
 app.get('/api/stats/:username', authenticateToken, async (req, res) => {
     const { username } = req.params;
@@ -8653,44 +8830,46 @@ app.post('/api/permits/guard-checkin', authenticateToken,
             
             // جلب بيانات الموظف الكاملة للإشعارات
             db.get('SELECT full_name, job_number, directorate FROM employees WHERE employee_id = ?', 
-            [permit.employee_id], (err, employeeInfo) => {
+            [permit.employee_id], async (err, employeeInfo) => {
                 const employeeName = employeeInfo ? (employeeInfo.full_name || 'موظف') : 'موظف';
                 const jobNumber = employeeInfo ? (employeeInfo.job_number || '') : '';
                 
-                // ✅ إشعار للموظف
-                createNotification({
-                    user_id: permit.employee_id,
-                    permit_id: permitIdNum,
-                    title: '👤 تم تسجيل دخولك',
-                    message: `تم تسجيل دخولك بنقطة الحراسة في الساعة ${entryTimeNormalized} بواسطة الحارس ${guard_username}.${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
-                    type: 'success'
-                });
-                
-                // ✅ إشعار للمدير
-                db.get(`
-                    SELECT m.employee_id as manager_id
-                    FROM employees e
-                    LEFT JOIN employees m ON e.manager_id = m.employee_id
-                    WHERE e.employee_id = ?
-                `, [permit.employee_id], (err, result) => {
-                    if (!err && result && result.manager_id) {
-                        createNotification({
-                            user_id: result.manager_id,
+                try {
+                    await createNotification({
+                        user_id: permit.employee_id,
+                        permit_id: permitIdNum,
+                        title: '👤 تم تسجيل دخولك',
+                        message: `تم تسجيل دخولك بنقطة الحراسة في الساعة ${entryTimeNormalized} بواسطة الحارس ${guard_username}.${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                        type: 'success'
+                    });
+                    
+                    const managerRow = await new Promise((resolve) => {
+                        db.get(`
+                            SELECT m.employee_id as manager_id
+                            FROM employees e
+                            LEFT JOIN employees m ON e.manager_id = m.employee_id
+                            WHERE e.employee_id = ?
+                        `, [permit.employee_id], (e2, row) => resolve(row));
+                    });
+                    if (managerRow && managerRow.manager_id) {
+                        await createNotification({
+                            user_id: managerRow.manager_id,
                             permit_id: permitIdNum,
                             title: '👤 تسجيل دخول موظف',
                             message: `تم تسجيل دخول الموظف ${employeeName} (${jobNumber}) بنقطة الحراسة في الساعة ${entryTimeNormalized} بواسطة الحارس ${guard_username}.`,
                             type: 'info'
                         });
                     }
-                });
-                
-                // ✅ إشعار لمكتب الأمن
-                notifyAllSecurityStaff(
-                    permitIdNum,
-                    '👤 تسجيل دخول موظف',
-                    `تم تسجيل دخول موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${entryTimeNormalized}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
-                    'info'
-                );
+                    
+                    await notifyAllSecurityStaff(
+                        permitIdNum,
+                        '👤 تسجيل دخول موظف',
+                        `تم تسجيل دخول موظف بنقطة الحراسة.\nالموظف: ${employeeName}${jobNumber ? ' (' + jobNumber + ')' : ''}\nالحارس المناوب: ${guard_username}\nوقت الدخول: ${entryTimeNormalized}${entry_notes ? '\nملاحظات: ' + entry_notes : ''}`,
+                        'info'
+                    );
+                } catch (notifErr) {
+                    console.error('خطأ في إرسال إشعارات تسجيل الدخول:', notifErr.message || notifErr);
+                }
             });
             
             res.json({
@@ -9374,6 +9553,7 @@ app.use((req, res) => {
 // ============== تشغيل الخادم ==============
 
 const PORT = process.env.PORT || 5050;
+const HOST = process.env.HOST || '0.0.0.0';
 
 (async function startServer() {
     try {
@@ -9383,12 +9563,29 @@ const PORT = process.env.PORT || 5050;
         process.exit(1);
     }
 
-    app.listen(PORT, () => {
+    app.listen(PORT, HOST, () => {
     console.log('\n' + '='.repeat(60));
     console.log('🚀  نظام تصاريح العمل بعد الدوام الرسمي');
     console.log('='.repeat(60));
+    console.log(`✅  الاستماع على: ${HOST}:${PORT} (جميع واجهات الشبكة)`);
     console.log(`✅  الخادم يعمل على: http://localhost:${PORT}`);
     console.log(`🔗  رابط تسجيل الدخول: http://localhost:${PORT}/login`);
+    const lan = getLanIPv4Addresses();
+    if (lan.length) {
+        console.log('📱  من الهاتف (نفس شبكة Wi‑Fi):');
+        lan.forEach((ip) => {
+            console.log(`    http://${ip}:${PORT}/login`);
+        });
+    } else {
+        console.log(`📱  للهاتف: افتح من المتصفح باستخدام IP هذا الجهاز على الشبكة، مثل: http://192.168.x.x:${PORT}/login`);
+    }
+    if (HOST === '0.0.0.0' || HOST === '::') {
+        console.log('⚠️  إذا Safari/Chrome يقول «لا يمكن الاتصال بالخادم»:');
+        console.log('   • استخدم الرابط أعلاه بعنوان Wi‑Fi (ليس localhost)، و http فقط.');
+        console.log('   • تأكد أن الهاتف على نفس شبكة الـ Wi‑Fi وليس بيانات الجوال.');
+        console.log('   • اسمح بمرور المنفذ على Windows: شغّل PowerShell «كمسؤول» ثم نفّذ:');
+        console.log(`     New-NetFirewallRule -DisplayName "Overtime Permit ${PORT}" -Direction Inbound -LocalPort ${PORT} -Protocol TCP -Action Allow`);
+    }
     console.log(`🎯  رابط لوحة التحكم: http://localhost:${PORT}/dashboard.html`);
     console.log(`💾  قاعدة البيانات: overtime.db`);
     console.log('\n👤  بيانات الدخول للتجربة:');

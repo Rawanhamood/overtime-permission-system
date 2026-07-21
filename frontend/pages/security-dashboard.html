@@ -1015,6 +1015,166 @@
         .security-tab-panel[hidden] {
             display: none !important;
         }
+
+        /* ========== UNIFIED REGISTRY ========== */
+        .registry-toolbar {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid #e8eef5;
+        }
+        .registry-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .registry-filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 120px;
+        }
+        .registry-filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .registry-filter-group select,
+        .registry-filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #dde4ed;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .registry-period-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .registry-period-btn {
+            padding: 8px 16px;
+            border: 2px solid #e8eef5;
+            border-radius: 20px;
+            background: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .registry-period-btn.active {
+            background: #3498db;
+            color: #fff;
+            border-color: #2980b9;
+        }
+        .registry-counts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .registry-count-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .registry-count-card .num {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .registry-count-card .lbl {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .registry-table-wrap {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #e8eef5;
+            background: #fff;
+        }
+        .registry-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .registry-table th {
+            background: #3498db;
+            color: #fff;
+            padding: 12px 10px;
+            text-align: right;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .registry-table td {
+            padding: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .registry-table tr:hover td {
+            background: #f8fafc;
+        }
+        .registry-kind-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .registry-kind-employee { background: #dbeafe; color: #1d4ed8; }
+        .registry-kind-company { background: #fee2e2; color: #b91c1c; }
+        .registry-kind-material { background: #fef3c7; color: #b45309; }
+        .registry-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .registry-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+        }
+        .registry-btn-view { background: #3498db; color: #fff; }
+        .registry-btn-print { background: #9b59b6; color: #fff; }
+        .registry-btn-allow { background: #27ae60; color: #fff; }
+        .registry-btn-deny { background: #e74c3c; color: #fff; }
+        .registry-btn-export {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #27ae60 0%, #219a52 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .registry-btn-search {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+        }
         
         /* ========== RESPONSIVE DESIGN ========== */
         @media (max-width: 1024px) {
@@ -1305,6 +1465,10 @@
         </div>
 
         <div class="security-permit-tabs" role="tablist" aria-label="تصنيف التصاريح">
+            <button type="button" class="security-tab" role="tab" aria-selected="false" data-security-tab="registry" id="securityTabBtnRegistry" onclick="setSecurityPermitTab('registry')">
+                <span class="security-tab-label">السجل الموحّد</span>
+                <span class="security-tab-icon" aria-hidden="true">📊</span>
+            </button>
             <button type="button" class="security-tab active" role="tab" aria-selected="true" data-security-tab="company" id="securityTabBtnCompany" onclick="setSecurityPermitTab('company')">
                 <span class="security-tab-label">تصاريح الشركات</span>
                 <span class="security-tab-icon" aria-hidden="true">🏢</span>
@@ -1324,6 +1488,110 @@
         </div>
 
         <div class="security-tab-panels">
+            <div class="security-tab-panel" data-panel="registry" id="securityTabPanelRegistry" role="tabpanel" aria-labelledby="securityTabBtnRegistry" hidden>
+                <div class="permits-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span>📊</span>
+                            السجل الموحّد لجميع التصاريح
+                        </div>
+                        <span class="section-count" id="registryTotalCount">0 تصريح</span>
+                    </div>
+                    <div class="registry-toolbar">
+                        <div class="registry-period-btns" id="registryPeriodBtns">
+                            <button type="button" class="registry-period-btn" data-period="week" onclick="setRegistryPeriod('week')">أسبوع</button>
+                            <button type="button" class="registry-period-btn active" data-period="month" onclick="setRegistryPeriod('month')">شهر</button>
+                            <button type="button" class="registry-period-btn" data-period="year" onclick="setRegistryPeriod('year')">سنة</button>
+                            <button type="button" class="registry-period-btn" data-period="all" onclick="setRegistryPeriod('all')">الكل</button>
+                            <button type="button" class="registry-period-btn" data-period="custom" onclick="setRegistryPeriod('custom')">مخصص</button>
+                        </div>
+                        <div class="registry-filters">
+                            <div class="registry-filter-group" id="registryYearGroup">
+                                <label>السنة</label>
+                                <select id="registryYear"></select>
+                            </div>
+                            <div class="registry-filter-group" id="registryMonthGroup">
+                                <label>الشهر</label>
+                                <select id="registryMonth">
+                                    <option value="1">يناير</option><option value="2">فبراير</option><option value="3">مارس</option>
+                                    <option value="4">أبريل</option><option value="5">مايو</option><option value="6">يونيو</option>
+                                    <option value="7">يوليو</option><option value="8">أغسطس</option><option value="9">سبتمبر</option>
+                                    <option value="10">أكتوبر</option><option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+                                </select>
+                            </div>
+                            <div class="registry-filter-group" id="registryFromGroup" style="display:none;">
+                                <label>من تاريخ</label>
+                                <input type="date" id="registryFrom">
+                            </div>
+                            <div class="registry-filter-group" id="registryToGroup" style="display:none;">
+                                <label>إلى تاريخ</label>
+                                <input type="date" id="registryTo">
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>نوع التصريح</label>
+                                <select id="registryKind">
+                                    <option value="all">الكل</option>
+                                    <option value="employee">موظف (بعد الدوام)</option>
+                                    <option value="company">دخول شركة</option>
+                                    <option value="material">إخراج مواد</option>
+                                </select>
+                            </div>
+                            <div class="registry-filter-group" style="flex:1;min-width:200px;">
+                                <label>بحث (اسم، رقم، حارس...)</label>
+                                <input type="text" id="registrySearch" placeholder="ابحث في السجل..." onkeydown="if(event.key==='Enter'){event.preventDefault();loadUnifiedRegistry();}">
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>دخول من</label>
+                                <input type="date" id="registryEntryFrom">
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>دخول إلى</label>
+                                <input type="date" id="registryEntryTo">
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>خروج من</label>
+                                <input type="date" id="registryExitFrom">
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>خروج إلى</label>
+                                <input type="date" id="registryExitTo">
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>&nbsp;</label>
+                                <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#475569;">
+                                    <input type="checkbox" id="registryHasEntry"> مسجل دخول فقط
+                                </label>
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>&nbsp;</label>
+                                <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#475569;">
+                                    <input type="checkbox" id="registryHasExit"> مسجل خروج فقط
+                                </label>
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>&nbsp;</label>
+                                <button type="button" class="registry-btn-search" onclick="loadUnifiedRegistry()">🔍 بحث</button>
+                            </div>
+                            <div class="registry-filter-group">
+                                <label>&nbsp;</label>
+                                <button type="button" class="registry-btn-export" onclick="exportUnifiedRegistry()">📥 تصدير Excel</button>
+                            </div>
+                        </div>
+                        <div class="registry-counts" id="registryCounts">
+                            <div class="registry-count-card"><div class="num" id="registryCountTotal">0</div><div class="lbl">الإجمالي</div></div>
+                            <div class="registry-count-card"><div class="num" id="registryCountEmployee">0</div><div class="lbl">👤 موظفون</div></div>
+                            <div class="registry-count-card"><div class="num" id="registryCountCompany">0</div><div class="lbl">🏢 شركات</div></div>
+                            <div class="registry-count-card"><div class="num" id="registryCountMaterial">0</div><div class="lbl">📦 مواد</div></div>
+                        </div>
+                    </div>
+                    <div class="registry-table-wrap" id="registryTableContainer">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">اختر الفترة واضغط «بحث» لعرض السجل الموحّد</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="security-tab-panel" data-panel="company" id="securityTabPanelCompany" role="tabpanel" aria-labelledby="securityTabBtnCompany">
                 <div class="permits-section">
                     <div class="section-header">
@@ -1480,6 +1748,9 @@
             // 🔥 NEW: الاستماع للأحداث من صفحة الحارس
             window.addEventListener('storage', function(event) {
                 if (event.key === 'security_to_guard_permits') {
+                    updateRealTimeGuardNotifications();
+                }
+                if (event.key === 'security_guard_notifications') {
                     updateRealTimeGuardNotifications();
                 }
             });
@@ -1809,7 +2080,7 @@
 
         // =============== SECURITY DASHBOARD ===============
         function setSecurityPermitTab(tab) {
-            const valid = ['company', 'material', 'employee', 'rejected'];
+            const valid = ['registry', 'company', 'material', 'employee', 'rejected'];
             const t = valid.includes(tab) ? tab : 'company';
             document.querySelectorAll('.security-tab').forEach(btn => {
                 const on = btn.getAttribute('data-security-tab') === t;
@@ -1823,9 +2094,213 @@
                     panel.setAttribute('hidden', '');
                 }
             });
+            if (t === 'registry' && !window._registryInitialized) {
+                initUnifiedRegistry();
+            }
+            if (t === 'registry') {
+                loadUnifiedRegistry();
+            }
             try {
                 sessionStorage.setItem('securityDashboardPermitTab', t);
             } catch (err) { /* ignore */ }
+        }
+
+        // =============== UNIFIED REGISTRY ===============
+        let registryPeriod = 'month';
+
+        function initUnifiedRegistry() {
+            window._registryInitialized = true;
+            const yearSel = document.getElementById('registryYear');
+            const now = new Date();
+            if (yearSel) {
+                yearSel.innerHTML = '';
+                for (let y = now.getFullYear(); y >= now.getFullYear() - 5; y--) {
+                    yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+                }
+            }
+            const monthSel = document.getElementById('registryMonth');
+            if (monthSel) monthSel.value = String(now.getMonth() + 1);
+            setRegistryPeriod('month');
+        }
+
+        function setRegistryPeriod(period) {
+            registryPeriod = period;
+            document.querySelectorAll('.registry-period-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-period') === period);
+            });
+            const showMonth = period === 'month';
+            const showYear = period === 'month' || period === 'year';
+            const showCustom = period === 'custom';
+            const yg = document.getElementById('registryYearGroup');
+            const mg = document.getElementById('registryMonthGroup');
+            const fg = document.getElementById('registryFromGroup');
+            const tg = document.getElementById('registryToGroup');
+            if (yg) yg.style.display = showYear ? '' : 'none';
+            if (mg) mg.style.display = showMonth ? '' : 'none';
+            if (fg) fg.style.display = showCustom ? '' : 'none';
+            if (tg) tg.style.display = showCustom ? '' : 'none';
+        }
+
+        function buildRegistryQueryParams(format) {
+            const params = new URLSearchParams();
+            params.set('period', registryPeriod);
+            params.set('kind', document.getElementById('registryKind')?.value || 'all');
+            const q = document.getElementById('registrySearch')?.value?.trim();
+            if (q) params.set('q', q);
+            if (registryPeriod === 'month' || registryPeriod === 'year') {
+                params.set('year', document.getElementById('registryYear')?.value || new Date().getFullYear());
+            }
+            if (registryPeriod === 'month') {
+                params.set('month', document.getElementById('registryMonth')?.value || '1');
+            }
+            if (registryPeriod === 'custom') {
+                const from = document.getElementById('registryFrom')?.value;
+                const to = document.getElementById('registryTo')?.value;
+                if (from) params.set('from', from);
+                if (to) params.set('to', to);
+            }
+            const ef = document.getElementById('registryEntryFrom')?.value;
+            const et = document.getElementById('registryEntryTo')?.value;
+            const xf = document.getElementById('registryExitFrom')?.value;
+            const xt = document.getElementById('registryExitTo')?.value;
+            if (ef) params.set('entry_from', ef);
+            if (et) params.set('entry_to', et);
+            if (xf) params.set('exit_from', xf);
+            if (xt) params.set('exit_to', xt);
+            if (document.getElementById('registryHasEntry')?.checked) params.set('has_entry', '1');
+            if (document.getElementById('registryHasExit')?.checked) params.set('has_exit', '1');
+            if (format) params.set('format', format);
+            return params;
+        }
+
+        function registryKindBadge(kind) {
+            const labels = { employee: 'موظف', company: 'شركة', material: 'مواد' };
+            return `<span class="registry-kind-badge registry-kind-${kind}">${labels[kind] || kind}</span>`;
+        }
+        function registryActionButtons(item) {
+    const id = item.permit_id;
+
+    let btns = `<button type="button" class="registry-btn-view" onclick="registryViewItem('${item.kind}', ${id})">عرض</button>`;
+
+    if (item.can_print) {
+        if (item.kind === 'employee')
+            btns += `<button type="button" class="registry-btn-print" onclick="printOvertimePermit(${id})">طباعة</button>`;
+        else if (item.kind === 'company')
+            btns += `<button type="button" class="registry-btn-print" onclick="printCompanyPermit(${id})">طباعة</button>`;
+        else if (item.kind === 'material')
+            btns += `<button type="button" class="registry-btn-print" onclick="printMaterialExitPermit(${id})">طباعة</button>`;
+    }
+
+    if (item.can_approve) {
+        if (item.kind === 'employee') {
+            btns += `<button type="button" class="registry-btn-allow" onclick="securityDecision(${id}, 'allow')">موافقة</button>`;
+            btns += `<button type="button" class="registry-btn-deny"  onclick="securityDecision(${id}, 'deny')">رفض</button>`;
+        } else if (item.kind === 'company') {
+            btns += `<button type="button" class="registry-btn-allow" onclick="companyEntrySecurityDecision(${id}, 'allow')">موافقة</button>`;
+            btns += `<button type="button" class="registry-btn-deny"  onclick="companyEntrySecurityDecision(${id}, 'deny')">رفض</button>`;
+        } else if (item.kind === 'material') {
+            btns += `<button type="button" class="registry-btn-allow" onclick="materialExitSecurityDecision(${id}, 'approve')">موافقة</button>`;
+            btns += `<button type="button" class="registry-btn-deny"  onclick="materialExitSecurityDecision(${id}, 'reject')">رفض</button>`;
+        }
+    }
+
+    // زر Excel
+    const safeItem = JSON.stringify(item).replace(/"/g, '&quot;');
+    btns += `<button type="button"
+                style="background:#1d6f42;color:#fff;padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:12px;"
+                onclick="exportSinglePermitToExcel('${item.kind}', ${id}, JSON.parse(this.getAttribute('data-item')));"
+                data-item="${safeItem}">
+                📥 Excel
+             </button>`;
+
+    return `<div class="registry-actions">${btns}</div>`;
+}
+
+
+
+
+        function registryViewItem(kind, permitId) {
+            if (kind === 'employee') viewPermit(permitId);
+            else if (kind === 'company') viewCompanyEntryPermit(permitId);
+            else if (kind === 'material') viewMaterialExitPermit(permitId);
+        }
+
+        async function loadUnifiedRegistry() {
+            const container = document.getElementById('registryTableContainer');
+            if (!container) return;
+            container.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><p class="loading-text">جاري تحميل السجل...</p></div>`;
+            try {
+                const params = buildRegistryQueryParams();
+                const data = await fetchJson(`/api/permits/security-unified-registry?${params.toString()}`);
+                if (!data.success) {
+                    container.innerHTML = `<div class="alert alert-error"><span>❌</span><span>${data.message || 'خطأ في التحميل'}</span></div>`;
+                    return;
+                }
+                const items = data.items || [];
+                const counts = data.counts || { total: 0, employee: 0, company: 0, material: 0 };
+                document.getElementById('registryCountTotal').textContent = counts.total;
+                document.getElementById('registryCountEmployee').textContent = counts.employee;
+                document.getElementById('registryCountCompany').textContent = counts.company;
+                document.getElementById('registryCountMaterial').textContent = counts.material;
+                document.getElementById('registryTotalCount').textContent = `${counts.total} تصريح`;
+                if (items.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><h3 class="empty-title">لا توجد تصاريح</h3><p class="empty-description">جرّب توسيع الفترة أو تغيير معايير البحث</p></div>`;
+                    return;
+                }
+                const rows = items.map(it => `
+                    <tr>
+                        <td>${registryKindBadge(it.kind)}</td>
+                        <td><strong>#${it.permit_id}</strong></td>
+                        <td>${escapeHtmlGuardNotif(it.primary_label)}<br><small style="color:#94a3b8;">${escapeHtmlGuardNotif(it.secondary_label)}</small></td>
+                        <td>${escapeHtmlGuardNotif(it.status_label)}</td>
+                        <td>${it.request_date ? new Date(it.request_date).toLocaleDateString('ar-SA') : '—'}</td>
+                        <td>${escapeHtmlGuardNotif(it.actual_entry)}</td>
+                        <td>${escapeHtmlGuardNotif(it.actual_exit)}</td>
+                        <td>${registryActionButtons(it)}</td>
+                    </tr>
+                `).join('');
+                container.innerHTML = `
+                    <table class="registry-table">
+                        <thead>
+                            <tr>
+                                <th>النوع</th><th>رقم</th><th>الاسم / الشركة</th><th>الحالة</th>
+                                <th>تاريخ الطلب</th><th>وقت الدخول</th><th>وقت الخروج</th><th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>`;
+            } catch (err) {
+                console.error('loadUnifiedRegistry:', err);
+                container.innerHTML = `<div class="alert alert-error"><span>❌</span><span>حدث خطأ في تحميل السجل الموحّد</span></div>`;
+            }
+        }
+
+        async function exportUnifiedRegistry() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) { showNotification('❌ يرجى تسجيل الدخول', 'error'); return; }
+                const params = buildRegistryQueryParams('excel');
+                const response = await fetch(`/api/permits/security-unified-registry?${params.toString()}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) {
+                    showNotification('❌ فشل التصدير', 'error');
+                    return;
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `security-permits-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                showNotification('✅ تم تصدير الملف — افتحه في Excel', 'success');
+            } catch (err) {
+                console.error('exportUnifiedRegistry:', err);
+                showNotification('❌ حدث خطأ في التصدير', 'error');
+            }
         }
         
         async function loadSecurityData() {
@@ -3057,14 +3532,15 @@
 
         // 🔥🔥🔥 =============== NEW: GUARD NOTIFICATIONS SYSTEM =============== 🔥🔥🔥
         
-        // 🔥 NEW: دالة لجلب إشعارات الحارس من الخادم
+        let lastGuardNotificationsUnread = 0;
+
+        // 🔥 NEW: دالة لجلب إشعارات الحارس من الخادم (دخول/خروج فقط)
         async function loadGuardNotificationsFromServer() {
             try {
                 const userData = JSON.parse(localStorage.getItem('user'));
                 if (!userData) return [];
                 
-                // استخدام endpoint موجود بدلاً من guard-latest
-                const response = await fetch(`/api/notifications/${userData.username}`, {
+                const response = await fetch(`/api/notifications/guard-events/${userData.username}`, {
                     method: 'GET',
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -3075,12 +3551,10 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.notifications) {
-                        // فلترة الإشعارات للحارس فقط (آخر 10)
-                        return data.notifications.slice(0, 10);
+                        return data.notifications;
                     }
                 }
             } catch (error) {
-                // تجاهل الخطأ بصمت لتجنب إزعاج المستخدم
                 console.warn('⚠️ خطأ في جلب إشعارات الحارس:', error);
             }
             return [];
@@ -3119,8 +3593,13 @@
                 // 5. ❌ حذف: لا نعرض الإشعارات تلقائياً
                 // displayGuardNotifications(uniqueNotifications);
                 
-                // 6. تحديث العداد فقط
-                updateGuardNotificationBadge(uniqueNotifications.filter(n => !n.is_read).length);
+                // 6. تحديث العداد + صوت عند وصول إشعار جديد
+                const unreadCount = uniqueNotifications.filter(n => !n.is_read).length;
+                if (unreadCount > lastGuardNotificationsUnread) {
+                    playNotificationSound();
+                }
+                lastGuardNotificationsUnread = unreadCount;
+                updateGuardNotificationBadge(unreadCount);
                 
             } catch (error) {
                 console.error('⚠️ خطأ في تحديث إشعارات الحارس:', error);
@@ -3425,6 +3904,27 @@ function closeGuardNotificationsModal() {
         }
 
         /** يوحّد صفوف جدول الإشعارات (من API) مع شكل إشعارات الحارس المحلية */
+        function inferGuardNotificationTypeFromTitle(title) {
+            const t = String(title || '');
+            if (/تسجيل دخول موظف/.test(t)) return 'employee_checkin';
+            if (/تسجيل خروج موظف/.test(t)) return 'employee_checkout';
+            if (/تسجيل دخول شركة/.test(t)) return 'company_checkin';
+            if (/تسجيل خروج شركة/.test(t)) return 'company_checkout';
+            if (/تسجيل خروج مواد/.test(t)) return 'material_exit_completed';
+            return 'system_notice';
+        }
+
+        function parseGuardMessageFields(msgPlain) {
+            const fields = {};
+            const employeeMatch = msgPlain.match(/الموظف:\s*(.+?)(?:\n|$)/);
+            if (employeeMatch) fields.employee_name = employeeMatch[1].trim();
+            const companyMatch = msgPlain.match(/(?:الشركة|اسم الشركة):\s*(.+?)(?:\n|$)/);
+            if (companyMatch) fields.company_name = companyMatch[1].trim();
+            const guardMatch = msgPlain.match(/الحارس(?: المناوب)?:\s*(.+?)(?:\n|$)/);
+            if (guardMatch) fields.guard_name = guardMatch[1].trim();
+            return fields;
+        }
+
         function normalizeGuardNotificationRow(n) {
             if (n && n.data && typeof n.data === 'object' && (n.timestamp || n.created_at)) {
                 const out = { ...n };
@@ -3438,15 +3938,19 @@ function closeGuardNotificationsModal() {
             const body = combined || 'إشعار من النظام لمكتب الأمن';
             const ts = n.created_at || n.timestamp || new Date().toISOString();
             const permitId = n.permit_id != null ? n.permit_id : n.company_permit_id;
+            const parsed = parseGuardMessageFields(msgPlain);
+            const guardType = inferGuardNotificationTypeFromTitle(title);
             return {
                 id: n.notification_id != null ? `srv_${n.notification_id}` : (n.id || Date.now()),
                 notification_id: n.notification_id,
-                type: n.notification_type || n.type || 'system_notice',
-                guard_name: null,
+                type: guardType,
+                guard_name: parsed.guard_name || null,
                 data: {
                     message: body,
                     permit_id: permitId,
-                    employee_name: n.related_employee_name || ''
+                    employee_name: parsed.employee_name || n.related_employee_name || '',
+                    company_name: parsed.company_name || '',
+                    guard_name: parsed.guard_name || ''
                 },
                 timestamp: ts,
                 is_read: !!n.is_read,
@@ -3513,12 +4017,12 @@ function createNotificationItem(notification, isUnread) {
             typeText = 'توقيع حارس';
             break;
         case 'employee_checkin':
-            icon = '✅';
-            typeText = 'دخول موظف (نقطة الحراسة)';
+            icon = '🚪';
+            typeText = 'تسجيل دخول موظف (نقطة الحراسة)';
             break;
         case 'employee_checkout':
             icon = '🚪';
-            typeText = 'خروج موظف (نقطة الحراسة)';
+            typeText = 'تسجيل خروج موظف (نقطة الحراسة)';
             break;
         case 'company_checkin':
             icon = '🏢';
@@ -3562,7 +4066,9 @@ function createNotificationItem(notification, isUnread) {
     const person = escapeHtmlGuardNotif(guardNotificationPerson(notification));
     const sourceBadge = notification.guard_name
         ? `الحارس: ${escapeHtmlGuardNotif(notification.guard_name)}`
-        : (notification._fromServer ? 'من سجل النظام' : 'حارس (لم يُذكر الاسم)');
+        : (notification.data && notification.data.guard_name
+            ? `الحارس: ${escapeHtmlGuardNotif(notification.data.guard_name)}`
+            : (notification._fromServer ? 'من سجل النظام' : 'حارس (لم يُذكر الاسم)'));
     
     return `
         <div style="margin-bottom: 12px; padding: 15px; background: ${bgColor}; border-radius: 12px; border-right: 4px solid ${borderColor}; transition: all 0.3s;">
@@ -4913,6 +5419,278 @@ function createNotificationItem(notification, isUnread) {
                 console.error('❌ خطأ في إرسال إشعار للحرس:', error);
             }
         }
+
+        
+        async function exportSinglePermitToExcel(kind, permitId, rowItem) {
+    showNotification('⏳ جاري تجهيز ملف Excel...', 'info');
+    try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Authorization': 'Bearer ' + token };
+        let result = null;
+
+        if (kind === 'employee') {
+            const r = await fetch(`/api/permits/details/${permitId}`, { headers });
+            const d = await r.json();
+            if (d.success && d.permit) result = buildEmployeeTable(d.permit, rowItem);
+
+        } else if (kind === 'company') {
+            const r = await fetch(`/api/permits/company-entry/${permitId}`, { headers });
+            const d = await r.json();
+            if (d.success && d.permit) result = buildCompanyTable(d.permit, d.workers || [], rowItem);
+
+        } else if (kind === 'material') {
+            const r = await fetch(`/api/permits/material-exit/${permitId}`, { headers });
+            const d = await r.json();
+            if (d.success && d.permit) result = buildMaterialTable(d.permit, rowItem);
+        }
+
+        if (!result) { showNotification('❌ تعذّر جلب بيانات التصريح', 'error'); return; }
+
+        downloadTableAsCsv(result.headers, result.rows, kind, permitId);
+        showNotification('✅ تم تصدير التصريح — افتحه في Excel', 'success');
+
+    } catch (err) {
+        console.error('exportSinglePermitToExcel:', err);
+        showNotification('❌ حدث خطأ أثناء التصدير', 'error');
+    }
+}
+
+// ── موظف (بعد الدوام) ──────────────────────────────────────
+function buildEmployeeTable(p, row) {
+    const timeFmt = formatPermitFromToWithTimes(p);
+    const headers = [
+        'permit_id',
+        'نوع_التصريح',
+        'الحالة',
+        'الاسم_الكامل',
+        'الرقم_الوظيفي',
+        'المديرية',
+        'القسم',
+        'الهاتف',
+        'البريد_الإلكتروني',
+        'السبب',
+        'تاريخ_الطلب',
+        'من_تاريخ_ووقت',
+        'إلى_تاريخ_ووقت',
+        'الوقت_المتوقع',
+        'قرار_المدير',
+        'ملاحظات_المدير',
+        'تاريخ_قرار_المدير',
+        'مسؤول_الأمن',
+        'قرار_الأمن',
+        'ملاحظات_الأمن',
+        'تاريخ_قرار_الأمن',
+        'وقت_الدخول_الفعلي',
+        'حارس_الدخول',
+        'ملاحظات_حارس_الدخول',
+        'وقت_الخروج_الفعلي',
+        'حارس_الخروج',
+        'ملاحظات_حارس_الخروج',
+    ];
+    const rows = [[
+        p.permit_id,
+        'تصريح موظف (بعد الدوام)',
+        row.status_label || p.status || '',
+        p.full_name || p.employee_name || '',
+        p.job_number || '',
+        p.directorate || '',
+        p.department_name || p.department || '',
+        p.phone || '',
+        p.email || '',
+        p.reason || '',
+        fmtDateCell(p.request_date),
+        timeFmt.fromLine || p.start_date || '',
+        timeFmt.toLine  || p.end_date   || '',
+        p.expected_exit_time || '',
+        p.manager_decision || '',
+        p.manager_notes || '',
+        fmtDateCell(p.manager_decision_date),
+        p.security_username || '',
+        p.security_decision || '',
+        p.security_notes || '',
+        fmtDateCell(p.security_decision_date),
+        p.actual_entry_time || '',
+        p.entry_guard_username || '',
+        p.entry_notes || '',
+        p.actual_exit_time || '',
+        p.exit_guard_username || '',
+        p.exit_notes || '',
+    ]];
+    return { headers, rows };
+}
+
+// ── شركة ────────────────────────────────────────────────────
+function buildCompanyTable(p, workers, row) {
+    // الدائرة الطالبة
+    let deptText = '';
+    try {
+        let dept = p.requesting_department
+            ? (typeof p.requesting_department === 'string' ? JSON.parse(p.requesting_department) : p.requesting_department)
+            : null;
+        if (!dept && p.additional_notes) {
+            const n = typeof p.additional_notes === 'string' ? JSON.parse(p.additional_notes) : p.additional_notes;
+            if (n && n.requesting_department)
+                dept = typeof n.requesting_department === 'string' ? JSON.parse(n.requesting_department) : n.requesting_department;
+        }
+        if (dept) deptText = [dept.directorate, dept.department].filter(Boolean).join(' / ');
+    } catch (e) {}
+    if (!deptText) deptText = [p.directorate, p.department].filter(Boolean).join(' / ');
+
+    // أعمدة ثابتة للتصريح
+    const permHeaders = [
+        'permit_id',
+        'نوع_التصريح',
+        'الحالة',
+        'اسم_الشركة',
+        'المسؤول_عن_الشركة',
+        'هاتف_المسؤول',
+        'عنوان_الشركة',
+        'الموظف_المكلّف',
+        'الدائرة_القسم',
+        'الرقم_الوظيفي',
+        'المسؤول_المباشر',
+        'تاريخ_الدخول_المتوقع',
+        'تاريخ_الخروج_المتوقع',
+        'وقت_الدخول',
+        'وقت_الخروج',
+        'الغرض',
+        'عدد_العمال',
+        'ملاحظات_المدير',
+        'ملاحظات_الأمن',
+        'تاريخ_قرار_الأمن',
+    ];
+
+    const permRow = [
+        p.permit_id,
+        'تصريح دخول شركة',
+        row.status_label || p.status || '',
+        p.company_name || '',
+        p.company_representative || p.company_supervisor || '',
+        p.representative_phone || p.company_phone || '',
+        p.company_address || '',
+        p.employee_name || '',
+        deptText,
+        p.job_number || '',
+        p.supervisor_name || '',
+        fmtDateCell(p.expected_entry_date || p.start_date),
+        fmtDateCell(p.expected_exit_date  || p.end_date),
+        p.expected_entry_time || p.entry_time || '',
+        p.expected_exit_time  || p.exit_time  || '',
+        p.work_details || p.entry_purpose || '',
+        workers.length,
+        p.manager_notes || '',
+        p.security_notes || '',
+        fmtDateCell(p.security_decision_date),
+    ];
+
+    if (workers.length === 0) {
+        return { headers: permHeaders, rows: [permRow] };
+    }
+
+    // أعمدة العمال مُدمجة: لكل عامل 4 أعمدة
+    const maxW = workers.length;
+    const workerHeaders = [];
+    for (let i = 1; i <= maxW; i++) {
+        workerHeaders.push(`عامل${i}_الاسم`, `عامل${i}_الرقم_المدني`, `عامل${i}_المهنة`, `عامل${i}_رقم_البطاقة`);
+    }
+
+    const workerCells = [];
+    workers.forEach(w => {
+        workerCells.push(
+            w.worker_name        || '',
+            w.worker_id_number   || '',
+            w.worker_profession  || '',
+            w.worker_id          || '',
+        );
+    });
+
+    return {
+        headers: [...permHeaders, ...workerHeaders],
+        rows:    [[...permRow, ...workerCells]],
+    };
+}
+
+// ── إخراج مواد ──────────────────────────────────────────────
+function buildMaterialTable(p, row) {
+    const headers = [
+        'permit_id',
+        'نوع_التصريح',
+        'الحالة',
+        'اسم_الموظف',
+        'الرقم_الوظيفي',
+        'المديرية',
+        'القسم',
+        'المسؤول_المباشر',
+        'نوع_المادة_الجهاز',
+        'سبب_الإخراج',
+        'تاريخ_التصريح',
+        'الوقت_المطلوب',
+        'ملاحظات_المدير',
+        'ملاحظات_الأمن',
+        'تاريخ_قرار_الأمن',
+        'ملاحظات_الحارس',
+        'وقت_الخروج_الفعلي',
+    ];
+    const rows = [[
+        p.permit_id,
+        'تصريح إخراج مواد / أجهزة',
+        row.status_label || p.status || '',
+        p.employee_name || p.full_name || '',
+        p.job_number || '',
+        p.directorate || '',
+        p.department || '',
+        p.supervisor_name || '',
+        p.material_type || '',
+        p.exit_reason || '',
+        fmtDateCell(p.permit_date || p.created_at),
+        p.permit_time || '',
+        p.manager_notes || '',
+        p.security_notes || '',
+        fmtDateCell(p.security_decision_date),
+        p.guard_notes || '',
+        fmtDateCell(p.guard_verification_date),
+    ]];
+    return { headers, rows };
+}
+
+
+// ─── دوال مساعدة ─────────────────────────────────────────────
+
+function fmtDateCell(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleString('ar-SA'); } catch (e) { return String(iso); }
+}
+
+function csvEscape(val) {
+    const s = val == null ? '' : String(val);
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+}
+
+function downloadTableAsCsv(headers, rows, kind, permitId) {
+    const kindNames = { employee: 'موظف', company: 'شركة', material: 'مواد' };
+    const fileName  = `تصريح-${kindNames[kind] || kind}-${permitId}.csv`;
+
+    const lines = [
+        headers.map(csvEscape).join(','),
+        ...rows.map(row => row.map(csvEscape).join(',')),
+    ].join('\r\n');
+
+    const bom  = '\uFEFF';
+    const blob = new Blob([bom + lines], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href     = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
     </script>
 </body>
